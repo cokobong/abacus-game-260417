@@ -187,30 +187,30 @@ export default function App() {
   }, [lastData, gameState, checkAnswer]);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white font-sans p-4 md:p-8 flex flex-col items-center">
+    <div className="min-h-screen w-full bg-[#0f172a] text-white font-sans p-4 md:p-8 flex flex-col items-center overflow-x-hidden">
       {/* Header */}
-      <header className="w-full max-w-6xl flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div className="flex items-center gap-3">
+      <header className="w-full max-w-6xl shrink-0 flex flex-row justify-between items-center mb-2 md:mb-6 gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
           {appPhase === 'battle' && (
             <button 
               onClick={() => setAppPhase('setup')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors mr-2 text-slate-400 hover:text-white"
+              className="p-1.5 md:p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors mr-1 md:mr-2 text-slate-400 hover:text-white"
             >
-              <ArrowLeft className="w-6 h-6" />
+              <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           )}
-          <div className="bg-cyan-500 p-2 rounded-xl shadow-lg shadow-cyan-500/20">
-            <Zap className="w-8 h-8 text-white" />
+          <div className="bg-cyan-500 p-1.5 md:p-2 rounded-xl shadow-lg shadow-cyan-500/20">
+            <Zap className="w-5 h-5 md:w-8 md:h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-lg md:text-3xl font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             ABACUS DINO BATTLE
           </h1>
         </div>
 
         {appPhase === 'battle' && (
-          <div className={`px-4 py-2 rounded-full border flex items-center gap-2 transition-all ${isConnected ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-slate-700 bg-slate-800 text-slate-400'}`}>
-            {isConnected ? <Bluetooth className="w-4 h-4" /> : <BluetoothOff className="w-4 h-4" />}
-            <span className="text-sm font-medium">{status}</span>
+          <div className={`px-2 py-1 md:px-4 md:py-2 rounded-full border flex items-center gap-1 md:gap-2 transition-all ${isConnected ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-slate-700 bg-slate-800 text-slate-400'}`}>
+            {isConnected ? <Bluetooth className="w-3 h-3 md:w-4 md:h-4" /> : <BluetoothOff className="w-3 h-3 md:w-4 md:h-4" />}
+            <span className="text-xs md:text-sm font-medium">{status.replace('Disconnected', '해제됨').replace('Connected', '연결됨')}</span>
           </div>
         )}
       </header>
@@ -218,7 +218,7 @@ export default function App() {
       {/* Phase 1: Title Screen */}
       {appPhase === 'title' && (
         <div 
-          className="w-full max-w-4xl h-[75vh] min-h-[500px] max-h-[800px] flex flex-col justify-end items-center rounded-3xl overflow-hidden shadow-2xl relative border-2 border-slate-700 animate-in fade-in zoom-in duration-500 bg-slate-950"
+          className="w-full max-w-4xl flex-1 flex flex-col justify-end items-center rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl relative border-2 border-slate-700 animate-in fade-in zoom-in duration-500 bg-slate-950"
         >
           {/* Constrained Image Layer */}
           <div className="absolute inset-0 flex items-start justify-center pt-8 px-4">
@@ -243,9 +243,9 @@ export default function App() {
                 }
                 setAppPhase('setup');
               }}
-              className="mt-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-12 py-5 rounded-full font-black text-3xl shadow-[0_0_30px_rgba(6,182,212,0.6)] transition-all active:scale-95 flex items-center justify-center gap-3 border-[3px] border-cyan-400/50 hover:scale-105"
+              className="mt-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-8 md:px-12 py-4 md:py-5 rounded-full font-black text-2xl md:text-3xl shadow-[0_0_30px_rgba(6,182,212,0.6)] transition-all active:scale-95 flex items-center justify-center gap-3 border-[3px] border-cyan-400/50 hover:scale-105"
             >
-              Game Start <Play className="w-8 h-8 ml-2" />
+              Game Start <Play className="w-6 h-6 md:w-8 md:h-8 ml-2" />
             </button>
           </div>
         </div>
@@ -253,10 +253,10 @@ export default function App() {
 
       {/* Phase 2: Setup Screen */}
       {appPhase === 'setup' && (
-        <div className="w-full max-w-2xl flex flex-col gap-6 animate-in fade-in zoom-in duration-300">
+        <div className="w-full max-w-2xl flex-1 flex flex-col gap-4 md:gap-6 animate-in fade-in zoom-in duration-300 pb-8 px-2">
           
           {/* BLE Connection */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl md:rounded-3xl p-4 md:p-8 shrink-0">
             <h2 className="text-xl font-bold mb-6 text-cyan-400 flex items-center gap-2">
               <Bluetooth className="w-6 h-6" /> 1. 기기 연결
             </h2>
@@ -351,32 +351,32 @@ export default function App() {
 
       {/* Phase 2: Battle Screen */}
       {appPhase === 'battle' && (
-        <main className={`w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+        <main className={`w-full max-w-7xl h-[calc(100vh-140px)] min-h-[500px] grid grid-cols-2 lg:grid-cols-12 gap-2 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2 md:pb-0`}>
           
           {/* Left: Problem Area (Col Span 3) */}
-          <div className={`${isAttacking ? 'hidden' : 'lg:col-span-3 flex flex-col gap-6'}`}>
-            <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[400px]">
+          <div className={`${isAttacking ? 'hidden' : 'col-span-1 lg:col-span-3 order-2 lg:order-1 flex flex-col gap-2 md:gap-6 min-h-0'}`}>
+            <div className="bg-slate-900 border-2 border-slate-700 rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[200px] overflow-hidden">
               <AnimatePresence mode="wait">
                 {gameState === 'input' && currentProblem && (
                   <motion.div key="input" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex flex-col items-center">
-                    <div className="flex flex-col items-center w-full mb-6 gap-2">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">주판으로 계산하세요</span>
-                      <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full">
+                    <div className="flex flex-col items-center w-full mb-2 md:mb-6 gap-1 md:gap-2">
+                      <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest hidden md:inline-block">주판으로 계산하세요</span>
+                      <span className="text-[10px] md:text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-2 py-1 md:px-3 md:py-1 rounded-full">
                         문제 {problemIndex} / {totalProblems}
                       </span>
                     </div>
                     
                     {/* Vertical Problem Display */}
-                    <div className="flex flex-col items-end text-6xl font-black font-mono gap-3 w-full max-w-[200px]">
+                    <div className="flex flex-col items-end text-3xl sm:text-4xl md:text-6xl font-black font-mono gap-1 md:gap-3 w-full max-w-[120px] md:max-w-[200px]">
                       {currentProblem.terms.map((term, idx) => (
-                        <div key={idx} className="flex gap-6 w-full justify-between items-center">
-                          <span className="text-4xl text-slate-500">{idx > 0 ? (term > 0 ? '+' : '-') : ''}</span>
+                        <div key={idx} className="flex gap-4 w-full justify-between items-center">
+                          <span className="text-xl md:text-4xl text-slate-500">{idx > 0 ? (term > 0 ? '+' : '-') : ''}</span>
                           <span className={term > 0 ? 'text-white' : 'text-red-400'}>{Math.abs(term)}</span>
                         </div>
                       ))}
-                      <div className="w-full h-1 bg-slate-600 rounded-full my-2"></div>
-                      <div className="flex gap-6 w-full justify-between items-center text-cyan-500">
-                        <span className="text-4xl">=</span>
+                      <div className="w-full h-[2px] md:h-1 bg-slate-600 rounded-full my-1 md:my-2"></div>
+                      <div className="flex gap-4 w-full justify-between items-center text-cyan-500">
+                        <span className="text-xl md:text-4xl">=</span>
                         <span>?</span>
                       </div>
                     </div>
@@ -385,8 +385,8 @@ export default function App() {
               </AnimatePresence>
             </div>
             
-            {/* Info Card */}
-            <div className="bg-slate-800/30 border border-slate-700 rounded-3xl p-5">
+            {/* Info Card (hidden on mobile to save space) */}
+            <div className="hidden md:block bg-slate-800/30 border border-slate-700 rounded-3xl p-5">
               <div className="flex items-start gap-3">
                 <div className="bg-blue-500/20 p-2 rounded-xl shrink-0">
                   <ShieldAlert className="w-5 h-5 text-blue-400" />
@@ -402,31 +402,31 @@ export default function App() {
           </div>
 
           {/* Middle: Input & Controls (Col Span 4) */}
-          <div className={`${isAttacking ? 'hidden' : 'lg:col-span-4 flex flex-col gap-6'}`}>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[400px]">
+          <div className={`${isAttacking ? 'hidden' : 'col-span-1 lg:col-span-4 order-3 lg:order-2 flex flex-col gap-2 md:gap-6 min-h-0'}`}>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[200px]">
               <AnimatePresence mode="wait">
                 {gameState === 'input' && (
-                  <motion.div key="input-controls" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex flex-col items-center gap-6">
-                    <div className="w-full grid grid-cols-1 gap-4">
-                      <div className="bg-slate-900 p-6 rounded-3xl border border-slate-700 text-center shadow-lg">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">현재 주판 값</p>
-                        <p className="text-7xl font-black text-cyan-400">{lastData?.number ?? 0}</p>
+                  <motion.div key="input-controls" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full h-full flex flex-col items-center gap-2 md:gap-6">
+                    <div className="w-full flex-1 grid grid-cols-1 gap-2 md:gap-4 h-full min-h-0">
+                      <div className="bg-slate-900 p-2 md:p-6 rounded-2xl md:rounded-3xl border border-slate-700 text-center shadow-lg flex flex-col items-center justify-center">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-0 md:mb-2 tracking-widest hidden md:block">현재 주판 값</p>
+                        <p className="text-4xl sm:text-5xl md:text-7xl font-black text-cyan-400 leading-none">{lastData?.number ?? 0}</p>
                       </div>
                       <button 
                         onClick={() => setShowAnswer(!showAnswer)}
-                        className="bg-slate-900 p-4 rounded-3xl border border-slate-700 text-center hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                        className="bg-slate-900 p-2 md:p-4 rounded-2xl md:rounded-3xl border border-slate-700 text-center hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center"
                       >
-                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-widest">정답 확인</p>
-                        <p className="text-4xl font-black text-white">{showAnswer ? currentProblem?.answer : '??'}</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-0 md:mb-1 tracking-widest">정답 확인</p>
+                        <p className="text-xl sm:text-2xl md:text-4xl font-black text-white">{showAnswer ? currentProblem?.answer : '??'}</p>
                       </button>
                     </div>
 
                     <button 
                       onClick={checkAnswer}
-                      className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-cyan-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                      className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-sm md:text-xl shadow-xl shadow-cyan-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
-                      <CheckCircle2 className="w-6 h-6" />
-                      정답 제출 (OK)
+                      <CheckCircle2 className="w-4 h-4 md:w-6 md:h-6" />
+                      제출 (OK)
                     </button>
                   </motion.div>
                 )}
@@ -458,15 +458,15 @@ export default function App() {
           </div>
 
           {/* Right: Battle Area (Col Span 5 or Full) */}
-          <div className={`${isAttacking ? 'lg:col-span-12 h-[80vh] fixed inset-4 md:inset-8 z-50 bg-[#0f172a] shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-3xl p-4' : 'lg:col-span-5'} flex flex-col gap-6 transition-all duration-500`}>
-            <div className="bg-slate-800/80 border border-slate-700 rounded-3xl p-6 relative overflow-hidden min-h-[400px] flex flex-col items-center justify-between flex-1 bg-[url('/battle_bg.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
+          <div className={`${isAttacking ? 'col-span-2 lg:col-span-12 fixed inset-2 md:inset-8 z-50 bg-[#0f172a] shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-2xl md:rounded-3xl p-2 md:p-4' : 'col-span-2 lg:col-span-5 order-1 lg:order-3 min-h-[40dvh] lg:min-h-0'} flex flex-col gap-2 md:gap-6 transition-all duration-500`}>
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl md:rounded-3xl p-2 md:p-6 relative overflow-hidden flex flex-col items-center justify-between flex-1 bg-[url('/battle_bg.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
               {/* Boss HP Bar */}
               <div className="w-full px-2">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">BOSS T-REX</span>
-                  <span className="text-sm font-black text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">{dinoHp}%</span>
+                <div className="flex justify-between mb-1 md:mb-2">
+                  <span className="text-[10px] md:text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">BOSS T-REX</span>
+                  <span className="text-[10px] md:text-sm font-black text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">{dinoHp}%</span>
                 </div>
-                <div className="h-6 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
+                <div className="h-4 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-2 md:border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuNSIvPgo8L3N2Zz4=')] opacity-30 z-10 pointer-events-none mix-blend-overlay"></div>
                   <motion.div 
                     animate={{ width: `${dinoHp}%` }}
@@ -479,16 +479,16 @@ export default function App() {
               </div>
 
               {/* Battle Stage */}
-              <div className="flex-1 w-full flex items-center justify-around relative">
+              <div className="flex-1 w-full flex items-center justify-around relative my-4 md:my-0">
                 {/* Player Dino */}
                 <motion.div
                   animate={
-                    battleAction === 'playerAttack' ? { x: isAttacking ? [0, 700, 0] : [0, 300, 0], scale: [1, 1.3, 1] } :
-                    battleAction === 'bossAttack' ? { x: [0, -30, 30, -30, 0], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
-                    { y: [0, -5, 0] }
+                    battleAction === 'playerAttack' ? { x: isAttacking ? ["0%", "250%", "0%"] : ["0%", "80%", "0%"], scale: [1, 1.3, 1] } :
+                    battleAction === 'bossAttack' ? { x: ["0%", "-10%", "10%", "-10%", "0%"], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
+                    { y: ["0%", "-5%", "0%"] }
                   }
                   transition={{ duration: battleAction === 'none' ? 2 : 0.6, repeat: battleAction === 'none' ? Infinity : 0 }}
-                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-64 h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-40 h-40 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
+                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-40 h-40 sm:w-64 sm:h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-24 h-24 sm:w-32 sm:h-32 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
                 >
                   <img 
                     src={
@@ -501,23 +501,23 @@ export default function App() {
                     className="w-full h-full object-contain filter drop-shadow-xl"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-cyan-400 bg-slate-900/80 px-2 py-1 rounded border border-cyan-500/30 whitespace-nowrap z-10">
+                  <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-bold text-cyan-400 bg-slate-900/80 px-2 py-0.5 md:py-1 rounded border border-cyan-500/30 whitespace-nowrap z-10">
                     PLAYER
                   </div>
                 </motion.div>
 
                 {/* VS Icon */}
-                <div className="text-slate-700 font-black text-2xl md:text-4xl italic opacity-30 z-0">VS</div>
+                <div className="text-slate-700 font-black text-xl md:text-4xl italic opacity-30 z-0">VS</div>
 
                 {/* Boss Dino */}
                 <motion.div
                   animate={
-                    battleAction === 'bossAttack' ? { x: isAttacking ? [0, -700, 0] : [0, -300, 0], scale: [1, 1.3, 1] } :
-                    battleAction === 'playerAttack' ? { x: [0, 30, -30, 30, 0], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
-                    { y: [0, 5, 0] }
+                    battleAction === 'bossAttack' ? { x: isAttacking ? ["0%", "-250%", "0%"] : ["0%", "-80%", "0%"], scale: [1, 1.3, 1] } :
+                    battleAction === 'playerAttack' ? { x: ["0%", "10%", "-10%", "10%", "0%"], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
+                    { y: ["0%", "5%", "0%"] }
                   }
                   transition={{ duration: battleAction === 'none' ? 2.5 : 0.6, repeat: battleAction === 'none' ? Infinity : 0 }}
-                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-64 h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-40 h-40 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
+                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-40 h-40 sm:w-64 sm:h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-24 h-24 sm:w-32 sm:h-32 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
                 >
                   <img 
                     src={
@@ -530,19 +530,19 @@ export default function App() {
                     className="w-full h-full object-contain filter drop-shadow-2xl"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-red-500 bg-slate-900/80 px-2 py-1 rounded border border-red-500/30 whitespace-nowrap z-10">
+                  <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-bold text-red-500 bg-slate-900/80 px-2 py-0.5 md:py-1 rounded border border-red-500/30 whitespace-nowrap z-10">
                     BOSS
                   </div>
                 </motion.div>
               </div>
 
               {/* Player HP Bar */}
-              <div className="w-full px-2 mt-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-black text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">PLAYER</span>
-                  <span className="text-sm font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">{playerHp}%</span>
+              <div className="w-full px-2 mt-2 md:mt-4">
+                <div className="flex justify-between mb-1 md:mb-2">
+                  <span className="text-[10px] md:text-sm font-black text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">PLAYER</span>
+                  <span className="text-[10px] md:text-sm font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">{playerHp}%</span>
                 </div>
-                <div className="h-6 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
+                <div className="h-4 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-2 md:border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuNSIvPgo8L3N2Zz4=')] opacity-30 z-10 pointer-events-none mix-blend-overlay"></div>
                   <motion.div 
                     animate={{ width: `${playerHp}%` }}
@@ -573,7 +573,7 @@ export default function App() {
       )}
 
       {/* Footer / Debug */}
-      <footer className="mt-auto pt-12 text-slate-600 text-xs font-medium uppercase tracking-widest flex flex-col items-center gap-4">
+      <footer className="mt-auto pt-4 md:pt-12 pb-2 text-slate-600 text-[10px] md:text-xs font-medium uppercase tracking-widest flex flex-col items-center gap-2 md:gap-4 shrink-0">
         {isConnected && status.includes("더미") && (
           <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col items-center gap-4">
             <p className="text-cyan-400 font-bold">디버그: 주판 값 조절</p>
