@@ -1,608 +1,658 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Bluetooth, BluetoothOff, Play, RotateCcw, CheckCircle2, XCircle, Zap, ShieldAlert, ArrowLeft, Settings } from 'lucide-react';
-import { useAbacusBLE } from './hooks/useAbacusBLE';
-import { generateChapterProblem, Problem, ChapterType } from './utils/problemGenerator';
+import { useMemo, useState } from 'react';
+import {
+  Baby,
+  Bluetooth,
+  BookOpen,
+  CheckCircle2,
+  Coins,
+  Egg,
+  Heart,
+  Map,
+  Play,
+  Settings,
+  Shirt,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Utensils,
+} from 'lucide-react';
+import { BluetoothTestPanel } from './components/BluetoothTestPanel';
+
+type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
+type DinoView = 'care' | 'playground';
+
+const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: string; active: string }> = [
+  { id: 'training', label: '훈련장', icon: Play, color: 'text-cyan-700', active: 'from-cyan-300 to-sky-300 border-cyan-200' },
+  { id: 'dino', label: '우리 공룡', icon: Baby, color: 'text-amber-700', active: 'from-amber-300 to-orange-300 border-amber-200' },
+  { id: 'hatchery', label: '알 부화장', icon: Egg, color: 'text-orange-700', active: 'from-orange-300 to-yellow-300 border-orange-200' },
+  { id: 'shop', label: '상점', icon: ShoppingBag, color: 'text-violet-700', active: 'from-violet-300 to-fuchsia-300 border-violet-200' },
+  { id: 'pokedex', label: '도감', icon: BookOpen, color: 'text-sky-700', active: 'from-sky-300 to-blue-300 border-sky-200' },
+  { id: 'adventure', label: '모험', icon: Map, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
+  { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
+];
+
+const trainingProblems = [
+  { question: '7 + 5', answer: '12' },
+  { question: '13 - 6', answer: '7' },
+  { question: '24 + 18', answer: '42' },
+];
+
+const foodBag = [
+  { name: '말랑 열매', count: 3 },
+  { name: '나뭇잎', count: 5 },
+  { name: '공룡 쿠키', count: 1 },
+];
+
+const shopSections = [
+  {
+    title: '음식',
+    icon: Utensils,
+    tone: 'from-amber-100 to-orange-100 border-amber-200 text-amber-800',
+    items: [
+      { name: '나뭇잎', price: 30, detail: '배고픔 회복 소' },
+      { name: '말랑 열매', price: 80, detail: '행복과 EXP 보조' },
+      { name: '공룡 쿠키', price: 150, detail: '행복 증가 중' },
+      { name: '반짝 간식', price: 400, detail: '성장 보조' },
+    ],
+  },
+  {
+    title: '코스튬',
+    icon: Shirt,
+    tone: 'from-violet-100 to-fuchsia-100 border-violet-200 text-violet-800',
+    items: [
+      { name: '작은 모자', price: 150, detail: '첫 꾸미기' },
+      { name: '빨간 리본', price: 180, detail: '가벼운 꾸미기' },
+      { name: '탐험가 가방', price: 250, detail: '모험 분위기' },
+      { name: '별 목걸이', price: 400, detail: '행복 보너스 소' },
+    ],
+  },
+  {
+    title: '새로운 공룡',
+    icon: Egg,
+    tone: 'from-cyan-100 to-emerald-100 border-cyan-200 text-cyan-800',
+    items: [
+      { name: '일반 알 조각', price: 120, detail: '일반 알 목표' },
+      { name: '희귀 알 조각', price: 900, detail: '희귀 알 목표' },
+      { name: '따뜻한 둥지', price: 120, detail: '부화 진행 보조' },
+      { name: '탐험 지도 조각', price: 400, detail: '특별 알 단서' },
+    ],
+  },
+];
+
+const mapCards = [
+  { name: '숲길 산책', state: '준비 중', reward: '알 조각 후보' },
+  { name: '반짝 강가', state: '훈련 1세트 후 입장', reward: '코인 보너스' },
+  { name: '구름 언덕', state: '추후 공개', reward: '희귀 단서' },
+];
+
+const pokedexCards = [
+  { name: '초록 꼬마', rarity: '일반', unlocked: true },
+  { name: '통통 트리케라', rarity: '일반', unlocked: true },
+  { name: '???', rarity: '희귀', unlocked: false },
+  { name: '???', rarity: '특별', unlocked: false },
+  { name: '???', rarity: '전설', unlocked: false },
+];
 
 export default function App() {
-  const { connect, disconnect, connectDummy, setDummyNumber, isConnected, status, lastData } = useAbacusBLE();
-  
-  // App Phase State
-  const [appPhase, setAppPhase] = useState<'title' | 'setup' | 'battle'>('title');
-  
-  // Setup State
-  const [chapter, setChapter] = useState<ChapterType>(9);
-  const [termCount, setTermCount] = useState(3);
-  const [totalProblems, setTotalProblems] = useState(10);
-  
-  // Battle State
-  const [gameState, setGameState] = useState<'idle' | 'input' | 'result'>('idle');
-  const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
-  const [problemIndex, setProblemIndex] = useState(1);
-  const [dinoHp, setDinoHp] = useState(100);
-  const [playerHp, setPlayerHp] = useState(100);
-  const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [battleAction, setBattleAction] = useState<'none' | 'playerAttack' | 'bossAttack'>('none');
-  const isAttacking = battleAction !== 'none';
+  const [phase, setPhase] = useState<'title' | 'app'>('title');
+  const [activeTab, setActiveTab] = useState<MainTab>('training');
+  const [selectedProblem, setSelectedProblem] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [trainingFeedback, setTrainingFeedback] = useState('정답을 입력하고 확인해보세요.');
+  const [dinoView, setDinoView] = useState<DinoView>('care');
+  const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
+  const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
 
-  const audioRef = useRef<{ 
-    player_attack: HTMLAudioElement, 
-    boss_attack: HTMLAudioElement, 
-    win: HTMLAudioElement, 
-    idle: HTMLAudioElement, 
-    bgm: HTMLAudioElement 
-  } | null>(null);
+  const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
+  const currentProblem = trainingProblems[selectedProblem];
 
-  useEffect(() => {
-    audioRef.current = {
-      player_attack: new Audio('/player_attack.mp3'),
-      boss_attack: new Audio('/boss_attack.mp3'),
-      win: new Audio('/dino_win.mp3'),
-      idle: new Audio('/dino_idle.mp3'),
-      bgm: new Audio('/title_bgm.mp3') // 타이틀 BGM
-    };
-    if (audioRef.current.bgm) {
-      audioRef.current.bgm.loop = true;
-      audioRef.current.bgm.volume = 0.5;
-    }
-    if (audioRef.current.idle) {
-      audioRef.current.idle.loop = true;
-      audioRef.current.idle.volume = 0.7;
-    }
-
-    const handleInitialInteraction = () => {
-      if (audioRef.current?.bgm && audioRef.current.bgm.paused) {
-        audioRef.current.bgm.play().then(() => {
-          // Play successful, remove listeners
-          document.removeEventListener('click', handleInitialInteraction);
-          document.removeEventListener('touchstart', handleInitialInteraction);
-        }).catch(e => console.log('BGM Autoplay prevented:', e));
-      }
-    };
-
-    // Try to play immediately (might work if user already interacted with the app preview)
-    handleInitialInteraction();
-
-    // If blocked, wait for any click or touch on the screen
-    document.addEventListener('click', handleInitialInteraction);
-    document.addEventListener('touchstart', handleInitialInteraction);
-
-    return () => {
-      document.removeEventListener('click', handleInitialInteraction);
-      document.removeEventListener('touchstart', handleInitialInteraction);
-    };
-  }, []);
-
-  // Idle sound loop logic
-  useEffect(() => {
-    if (!audioRef.current?.idle) return;
-    
-    const idleAudio = audioRef.current.idle;
-    
-    // Play idle if we are in battle, waiting for input, and no attack is happening
-    const shouldPlayIdle = appPhase === 'battle' && gameState === 'input' && battleAction === 'none';
-
-    if (shouldPlayIdle) {
-      if (idleAudio.paused) {
-        idleAudio.play().catch(e => console.log('Idle Autoplay prevented:', e));
-      }
+  function checkTrainingAnswer() {
+    if (answer.trim() === currentProblem.answer) {
+      setTrainingFeedback('정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
     } else {
-      idleAudio.pause();
+      setTrainingFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
     }
-  }, [appPhase, gameState, battleAction]);
+  }
 
-  const playBGM = () => {
-    if (audioRef.current?.bgm && audioRef.current.bgm.paused) {
-      audioRef.current.bgm.play().catch(e => console.log('BGM Autoplay prevented:', e));
-    }
-  };
+  function chooseProblem(index: number) {
+    setSelectedProblem(index);
+    setAnswer('');
+    setTrainingFeedback('정답을 입력하고 확인해보세요.');
+  }
 
-  const playSound = (type: 'player_attack' | 'boss_attack' | 'win' | 'idle') => {
-    if (audioRef.current?.[type]) {
-      audioRef.current[type].currentTime = 0;
-      audioRef.current[type].play().catch(() => {});
-    }
-  };
-
-  const nextProblem = useCallback((idx?: number) => {
-    const prob = generateChapterProblem(chapter, termCount);
-    setCurrentProblem(prob);
-    setGameState('input');
-    setShowAnswer(false);
-    setFeedback(null);
-    if (idx !== undefined) setProblemIndex(idx);
-  }, [chapter, termCount]);
-
-  const startNewGame = useCallback(() => {
-    setDinoHp(100);
-    setPlayerHp(100);
-    setScore(0);
-    setGameState('idle');
-    setCurrentProblem(null);
-    setFeedback(null);
-    setBattleAction('none');
-    nextProblem(1);
-  }, [nextProblem]);
-
-  const handleCorrect = useCallback(() => {
-    if (gameState !== 'input') return;
-    
-    setBattleAction('playerAttack');
-    
-    // Player attack sound
-    playSound('player_attack');
-    
-    setScore(s => s + 10);
-    
-    const damage = 100 / totalProblems;
-    const newHp = dinoHp - damage;
-    setDinoHp(Math.max(0, newHp));
-    setFeedback({ type: 'success', message: '정답! 플레이어의 공격!' });
-    
-    setTimeout(() => {
-      setBattleAction('none');
-      setFeedback(null);
-      if (problemIndex >= totalProblems || newHp <= 0.1) {
-        playSound('win');
-        setGameState('result');
-      } else {
-        setProblemIndex(i => i + 1);
-        nextProblem();
-      }
-    }, 2000); // 2초 유지하여 전투 연출 시간 확보
-  }, [gameState, dinoHp, problemIndex, totalProblems, nextProblem]);
-
-  const handleWrong = useCallback(() => {
-    setBattleAction('bossAttack');
-    
-    // Boss attack sound
-    playSound('boss_attack');
-
-    setPlayerHp(h => Math.max(0, h - 10));
-    setFeedback({ type: 'error', message: '오답! 보스의 반격!' });
-    
-    setTimeout(() => {
-      setBattleAction('none');
-      setFeedback(null);
-    }, 2000); // 2초 유지
-  }, []);
-
-  const checkAnswer = useCallback(() => {
-    if (gameState !== 'input' || !currentProblem || !lastData) return;
-
-    if (lastData.number === currentProblem.answer) {
-      handleCorrect();
-    } else {
-      handleWrong();
-    }
-  }, [gameState, currentProblem, lastData, handleCorrect, handleWrong]);
-
-  // BLE 입력 감지 (버튼 눌림 체크)
-  useEffect(() => {
-    if (gameState === 'input' && lastData?.isConfirmed) {
-      checkAnswer();
-    }
-  }, [lastData, gameState, checkAnswer]);
-
-  return (
-    <div className="min-h-screen w-full bg-[#0f172a] text-white font-sans p-4 md:p-8 flex flex-col items-center overflow-x-hidden">
-      {/* Header */}
-      <header className="w-full max-w-6xl shrink-0 flex flex-row justify-between items-center mb-2 md:mb-6 gap-2">
-        <div className="flex items-center gap-2 md:gap-3">
-          {appPhase === 'battle' && (
-            <button 
-              onClick={() => setAppPhase('setup')}
-              className="p-1.5 md:p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors mr-1 md:mr-2 text-slate-400 hover:text-white"
-            >
-              <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-          )}
-          <div className="bg-cyan-500 p-1.5 md:p-2 rounded-xl shadow-lg shadow-cyan-500/20">
-            <Zap className="w-5 h-5 md:w-8 md:h-8 text-white" />
-          </div>
-          <h1 className="text-lg md:text-3xl font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            ABACUS DINO BATTLE
-          </h1>
-        </div>
-
-        {appPhase === 'battle' && (
-          <div className={`px-2 py-1 md:px-4 md:py-2 rounded-full border flex items-center gap-1 md:gap-2 transition-all ${isConnected ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-slate-700 bg-slate-800 text-slate-400'}`}>
-            {isConnected ? <Bluetooth className="w-3 h-3 md:w-4 md:h-4" /> : <BluetoothOff className="w-3 h-3 md:w-4 md:h-4" />}
-            <span className="text-xs md:text-sm font-medium">{status.replace('Disconnected', '해제됨').replace('Connected', '연결됨')}</span>
-          </div>
-        )}
-      </header>
-
-      {/* Phase 1: Title Screen */}
-      {appPhase === 'title' && (
-        <div 
-          className="w-full max-w-4xl flex-1 flex flex-col justify-end items-center rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl relative border-2 border-slate-700 animate-in fade-in zoom-in duration-500 bg-slate-950"
-        >
-          {/* Constrained Image Layer */}
-          <div className="absolute inset-0 flex items-start justify-center pt-8 px-4">
-            <img 
-              src="/title_image.png" 
-              alt="Abacus Dino Battle" 
-              className="w-full h-full max-h-[65vh] object-contain object-top filter drop-shadow-2xl"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-
-          {/* Overlay to ensure text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none"></div>
-          
-          <div className="relative z-10 w-full p-6 md:p-8 flex flex-col items-center">
-            
-            <button
-              onClick={() => {
-                if (audioRef.current?.bgm) {
-                  audioRef.current.bgm.pause();
-                  audioRef.current.bgm.currentTime = 0;
-                }
-                setAppPhase('setup');
-              }}
-              className="mt-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-8 md:px-12 py-4 md:py-5 rounded-full font-black text-2xl md:text-3xl shadow-[0_0_30px_rgba(6,182,212,0.6)] transition-all active:scale-95 flex items-center justify-center gap-3 border-[3px] border-cyan-400/50 hover:scale-105"
-            >
-              Game Start <Play className="w-6 h-6 md:w-8 md:h-8 ml-2" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Phase 2: Setup Screen */}
-      {appPhase === 'setup' && (
-        <div className="w-full max-w-2xl flex-1 flex flex-col gap-4 md:gap-6 animate-in fade-in zoom-in duration-300 pb-8 px-2">
-          
-          {/* BLE Connection */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl md:rounded-3xl p-4 md:p-8 shrink-0">
-            <h2 className="text-xl font-bold mb-6 text-cyan-400 flex items-center gap-2">
-              <Bluetooth className="w-6 h-6" /> 1. 기기 연결
-            </h2>
-            <div className="flex flex-col gap-4">
-              <div className={`px-4 py-3 rounded-xl border flex items-center gap-3 transition-all ${isConnected ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-slate-700 bg-slate-900 text-slate-400'}`}>
-                {isConnected ? <Bluetooth className="w-5 h-5" /> : <BluetoothOff className="w-5 h-5" />}
-                <span className="font-medium">{status}</span>
+  if (phase === 'title') {
+    return (
+      <div className="min-h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 p-4 text-slate-800 md:p-8">
+        <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
+          <section className="relative grid w-full gap-8 overflow-hidden rounded-[40px] border-4 border-white bg-white/78 p-6 shadow-[0_24px_60px_rgba(14,116,144,0.22)] backdrop-blur md:grid-cols-[1fr_0.9fr] md:p-10">
+            <SkyDecor />
+            <div className="relative z-10 flex flex-col justify-center">
+              <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border-2 border-cyan-200 bg-white px-5 py-2 text-sm font-black text-cyan-800 shadow-sm">
+                <Sparkles className="h-4 w-4" />
+                주산훈련으로 자라는 공룡 친구
               </div>
-              {!isConnected ? (
-                <div className="flex gap-3">
-                  <button onClick={connect} className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-cyan-600/30 transition-all active:scale-95">
-                    주판 연결
-                  </button>
-                  <button onClick={connectDummy} className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-bold transition-all">
-                    더미 연결 (테스트)
-                  </button>
-                </div>
-              ) : (
-                <button onClick={disconnect} className="bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition-all">
-                  연결 해제
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Chapter Selection */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8">
-            <h2 className="text-xl font-bold mb-6 text-cyan-400 flex items-center gap-2">
-              <Settings className="w-6 h-6" /> 2. 단원 선택 (10의 보수)
-            </h2>
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-              {([9, 8, 7, 6, 5, 4, 3, 2, 1] as ChapterType[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setChapter(c)}
-                  className={`py-3 rounded-xl font-bold transition-all ${chapter === c ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-700'}`}
-                >
-                  {c}의 덧셈
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Term Count Selection */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8">
-            <h2 className="text-xl font-bold mb-6 text-cyan-400 flex items-center gap-2">
-              <Settings className="w-6 h-6" /> 3. 한 문제당 숫자 개수
-            </h2>
-            <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-700">
-              {[3, 4, 5, 6].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setTermCount(n)}
-                  className={`flex-1 py-3 rounded-xl font-bold transition-all ${termCount === n ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  {n}개
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Total Problems Selection */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8">
-            <h2 className="text-xl font-bold mb-6 text-cyan-400 flex items-center gap-2">
-              <Settings className="w-6 h-6" /> 4. 총 기출 문제 수
-            </h2>
-            <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-700">
-              {[10, 15, 20].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setTotalProblems(n)}
-                  className={`flex-1 py-3 rounded-xl font-bold transition-all ${totalProblems === n ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  {n}문제
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setAppPhase('battle');
-              startNewGame();
-            }}
-            className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white py-5 rounded-2xl font-black text-2xl shadow-2xl shadow-cyan-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
-          >
-            <Play className="w-8 h-8" />
-            전투 시작!
-          </button>
-        </div>
-      )}
-
-      {/* Phase 2: Battle Screen */}
-      {appPhase === 'battle' && (
-        <main className={`w-full max-w-7xl h-[calc(100vh-140px)] min-h-[500px] grid grid-cols-2 lg:grid-cols-12 gap-2 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2 md:pb-0`}>
-          
-          {/* Left: Problem Area (Col Span 3) */}
-          <div className={`${isAttacking ? 'hidden' : 'col-span-1 lg:col-span-3 order-2 lg:order-1 flex flex-col gap-2 md:gap-6 min-h-0'}`}>
-            <div className="bg-slate-900 border-2 border-slate-700 rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[200px] overflow-hidden">
-              <AnimatePresence mode="wait">
-                {gameState === 'input' && currentProblem && (
-                  <motion.div key="input" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex flex-col items-center">
-                    <div className="flex flex-col items-center w-full mb-2 md:mb-6 gap-1 md:gap-2">
-                      <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest hidden md:inline-block">주판으로 계산하세요</span>
-                      <span className="text-[10px] md:text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-2 py-1 md:px-3 md:py-1 rounded-full">
-                        문제 {problemIndex} / {totalProblems}
-                      </span>
-                    </div>
-                    
-                    {/* Vertical Problem Display */}
-                    <div className="flex flex-col items-end text-3xl sm:text-4xl md:text-6xl font-black font-mono gap-1 md:gap-3 w-full max-w-[120px] md:max-w-[200px]">
-                      {currentProblem.terms.map((term, idx) => (
-                        <div key={idx} className="flex gap-4 w-full justify-between items-center">
-                          <span className="text-xl md:text-4xl text-slate-500">{idx > 0 ? (term > 0 ? '+' : '-') : ''}</span>
-                          <span className={term > 0 ? 'text-white' : 'text-red-400'}>{Math.abs(term)}</span>
-                        </div>
-                      ))}
-                      <div className="w-full h-[2px] md:h-1 bg-slate-600 rounded-full my-1 md:my-2"></div>
-                      <div className="flex gap-4 w-full justify-between items-center text-cyan-500">
-                        <span className="text-xl md:text-4xl">=</span>
-                        <span>?</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* Info Card (hidden on mobile to save space) */}
-            <div className="hidden md:block bg-slate-800/30 border border-slate-700 rounded-3xl p-5">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-500/20 p-2 rounded-xl shrink-0">
-                  <ShieldAlert className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm mb-1">학습 팁: {chapter}의 덧셈</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {currentProblem?.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Middle: Input & Controls (Col Span 4) */}
-          <div className={`${isAttacking ? 'hidden' : 'col-span-1 lg:col-span-4 order-3 lg:order-2 flex flex-col gap-2 md:gap-6 min-h-0'}`}>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col items-center justify-center shadow-inner relative flex-1 min-h-[200px]">
-              <AnimatePresence mode="wait">
-                {gameState === 'input' && (
-                  <motion.div key="input-controls" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full h-full flex flex-col items-center gap-2 md:gap-6">
-                    <div className="w-full flex-1 grid grid-cols-1 gap-2 md:gap-4 h-full min-h-0">
-                      <div className="bg-slate-900 p-2 md:p-6 rounded-2xl md:rounded-3xl border border-slate-700 text-center shadow-lg flex flex-col items-center justify-center">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-0 md:mb-2 tracking-widest hidden md:block">현재 주판 값</p>
-                        <p className="text-4xl sm:text-5xl md:text-7xl font-black text-cyan-400 leading-none">{lastData?.number ?? 0}</p>
-                      </div>
-                      <button 
-                        onClick={() => setShowAnswer(!showAnswer)}
-                        className="bg-slate-900 p-2 md:p-4 rounded-2xl md:rounded-3xl border border-slate-700 text-center hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center"
-                      >
-                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-0 md:mb-1 tracking-widest">정답 확인</p>
-                        <p className="text-xl sm:text-2xl md:text-4xl font-black text-white">{showAnswer ? currentProblem?.answer : '??'}</p>
-                      </button>
-                    </div>
-
-                    <button 
-                      onClick={checkAnswer}
-                      className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-sm md:text-xl shadow-xl shadow-cyan-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle2 className="w-4 h-4 md:w-6 md:h-6" />
-                      제출 (OK)
-                    </button>
-                  </motion.div>
-                )}
-
-                {gameState === 'result' && (
-                  <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                    <div className="bg-green-500/20 text-green-400 p-6 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                      <CheckCircle2 className="w-12 h-12" />
-                    </div>
-                    <h2 className="text-4xl font-black mb-2">VICTORY!</h2>
-                    <p className="text-slate-400 text-sm mb-6">공룡을 물리쳤습니다!</p>
-                    <div className="bg-slate-900 p-6 rounded-3xl border border-slate-700 inline-block w-full">
-                      <p className="text-sm font-bold text-slate-500 uppercase mb-2 tracking-widest">최종 점수</p>
-                      <p className="text-6xl font-black text-cyan-400">{score}</p>
-                    </div>
-                    
-                    <div className="mt-6">
-                      <button
-                        onClick={startNewGame}
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
-                      >
-                        <RotateCcw className="w-5 h-5" /> 다시 도전
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Right: Battle Area (Col Span 5 or Full) */}
-          <div className={`${isAttacking ? 'col-span-2 lg:col-span-12 fixed inset-2 md:inset-8 z-50 bg-[#0f172a] shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-2xl md:rounded-3xl p-2 md:p-4' : 'col-span-2 lg:col-span-5 order-1 lg:order-3 min-h-[40dvh] lg:min-h-0'} flex flex-col gap-2 md:gap-6 transition-all duration-500`}>
-            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl md:rounded-3xl p-2 md:p-6 relative overflow-hidden flex flex-col items-center justify-between flex-1 bg-[url('/battle_bg.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
-              {/* Boss HP Bar */}
-              <div className="w-full px-2">
-                <div className="flex justify-between mb-1 md:mb-2">
-                  <span className="text-[10px] md:text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">BOSS T-REX</span>
-                  <span className="text-[10px] md:text-sm font-black text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]">{dinoHp}%</span>
-                </div>
-                <div className="h-4 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-2 md:border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuNSIvPgo8L3N2Zz4=')] opacity-30 z-10 pointer-events-none mix-blend-overlay"></div>
-                  <motion.div 
-                    animate={{ width: `${dinoHp}%` }}
-                    className="h-full bg-gradient-to-b from-red-400 via-red-600 to-red-800 relative"
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 rounded-t-xl"></div>
-                    <div className="absolute inset-0 shadow-[0_0_15px_rgba(239,68,68,0.6)] mix-blend-screen"></div>
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Battle Stage */}
-              <div className="flex-1 w-full flex items-center justify-around relative my-4 md:my-0">
-                {/* Player Dino */}
-                <motion.div
-                  animate={
-                    battleAction === 'playerAttack' ? { x: isAttacking ? ["0%", "250%", "0%"] : ["0%", "80%", "0%"], scale: [1, 1.3, 1] } :
-                    battleAction === 'bossAttack' ? { x: ["0%", "-10%", "10%", "-10%", "0%"], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
-                    { y: ["0%", "-5%", "0%"] }
-                  }
-                  transition={{ duration: battleAction === 'none' ? 2 : 0.6, repeat: battleAction === 'none' ? Infinity : 0 }}
-                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-40 h-40 sm:w-64 sm:h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-24 h-24 sm:w-32 sm:h-32 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
-                >
-                  <img 
-                    src={
-                      gameState === 'result' && dinoHp <= 0 ? '/player_win.png' : // Win (바위 위)
-                      battleAction === 'playerAttack' ? '/player_attack.png' :      // Attack (달려가는 모습)
-                      battleAction === 'bossAttack' ? '/player_hit.png' :        // Hit (맞는 모습)
-                      '/player_idle.png'                                          // Idle (기본 서있는 모습)
-                    }
-                    alt="Player Dinosaur"
-                    className="w-full h-full object-contain filter drop-shadow-xl"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-bold text-cyan-400 bg-slate-900/80 px-2 py-0.5 md:py-1 rounded border border-cyan-500/30 whitespace-nowrap z-10">
-                    PLAYER
-                  </div>
-                </motion.div>
-
-                {/* VS Icon */}
-                <div className="text-slate-700 font-black text-xl md:text-4xl italic opacity-30 z-0">VS</div>
-
-                {/* Boss Dino */}
-                <motion.div
-                  animate={
-                    battleAction === 'bossAttack' ? { x: isAttacking ? ["0%", "-250%", "0%"] : ["0%", "-80%", "0%"], scale: [1, 1.3, 1] } :
-                    battleAction === 'playerAttack' ? { x: ["0%", "10%", "-10%", "10%", "0%"], filter: ['brightness(1)', 'brightness(2)', 'brightness(1)'] } :
-                    { y: ["0%", "5%", "0%"] }
-                  }
-                  transition={{ duration: battleAction === 'none' ? 2.5 : 0.6, repeat: battleAction === 'none' ? Infinity : 0 }}
-                  className={`relative flex items-center justify-center transition-all duration-500 ${isAttacking ? 'w-40 h-40 sm:w-64 sm:h-64 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]' : 'w-24 h-24 sm:w-32 sm:h-32 md:w-56 md:h-56 lg:w-64 lg:h-64'}`}
-                >
-                  <img 
-                    src={
-                      gameState === 'result' && playerHp <= 0 ? '/boss_win.png' : // Win
-                      battleAction === 'bossAttack' ? '/boss_attack.png' :      // Attack
-                      battleAction === 'playerAttack' ? '/boss_hit.png' :        // Hit
-                      '/boss_idle.png'                                          // Idle
-                    }
-                    alt="Boss Dinosaur"
-                    className="w-full h-full object-contain filter drop-shadow-2xl"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute -top-6 md:-top-8 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-bold text-red-500 bg-slate-900/80 px-2 py-0.5 md:py-1 rounded border border-red-500/30 whitespace-nowrap z-10">
-                    BOSS
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Player HP Bar */}
-              <div className="w-full px-2 mt-2 md:mt-4">
-                <div className="flex justify-between mb-1 md:mb-2">
-                  <span className="text-[10px] md:text-sm font-black text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">PLAYER</span>
-                  <span className="text-[10px] md:text-sm font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">{playerHp}%</span>
-                </div>
-                <div className="h-4 md:h-8 bg-slate-950 rounded-xl overflow-hidden border-2 md:border-[3px] border-slate-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] relative">
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuNSIvPgo8L3N2Zz4=')] opacity-30 z-10 pointer-events-none mix-blend-overlay"></div>
-                  <motion.div 
-                    animate={{ width: `${playerHp}%` }}
-                    className="h-full bg-gradient-to-b from-cyan-300 via-cyan-500 to-cyan-700 relative"
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 rounded-t-xl"></div>
-                    <div className="absolute inset-0 shadow-[0_0_15px_rgba(6,182,212,0.6)] mix-blend-screen"></div>
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Feedback Overlay */}
-              <AnimatePresence>
-                {feedback && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-3 rounded-2xl font-black text-lg shadow-2xl z-10 whitespace-nowrap ${feedback.type === 'success' ? 'bg-cyan-500 text-white' : 'bg-red-500 text-white'}`}
-                  >
-                    {feedback.message}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* Footer / Debug */}
-      <footer className="mt-auto pt-4 md:pt-12 pb-2 text-slate-600 text-[10px] md:text-xs font-medium uppercase tracking-widest flex flex-col items-center gap-2 md:gap-4 shrink-0">
-        {isConnected && status.includes("더미") && (
-          <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col items-center gap-4">
-            <p className="text-cyan-400 font-bold">디버그: 주판 값 조절</p>
-            <div className="flex items-center gap-4">
-              <input 
-                type="range" 
-                min="0" 
-                max="99" 
-                value={lastData?.number ?? 0}
-                onChange={(e) => setDummyNumber(parseInt(e.target.value), false)}
-                className="w-64 accent-cyan-500"
-              />
-              <button 
-                onClick={() => setDummyNumber(lastData?.number ?? 0, true)}
-                className="bg-cyan-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
+              <h1 className="text-5xl font-black leading-tight text-emerald-950 md:text-7xl">주산 공룡 모험</h1>
+              <p className="mt-5 max-w-xl text-xl font-black leading-relaxed text-emerald-800/80">
+                문제를 풀고 보상을 모아 알을 부화시키고, 내 공룡을 돌보는 밝은 학습 모험입니다.
+              </p>
+              <button
+                onClick={() => setPhase('app')}
+                className="mt-8 inline-flex min-h-20 w-fit items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-10 text-2xl font-black text-white shadow-[0_10px_0_#0891b2,0_20px_28px_rgba(8,145,178,0.28)] transition hover:brightness-105 active:translate-y-1 active:shadow-[0_5px_0_#0891b2]"
               >
-                기기 OK 버튼 시뮬레이션
+                훈련 시작
+                <Play className="h-7 w-7 fill-white" />
               </button>
             </div>
-            <p className="text-white text-lg font-black">{lastData?.number ?? 0}</p>
+
+            <div className="relative z-10 flex min-h-[440px] items-end justify-center rounded-[36px] bg-gradient-to-b from-sky-100 via-emerald-50 to-lime-200 p-6 shadow-inner">
+              <div className="absolute bottom-0 left-0 right-0 h-28 rounded-t-[50%] bg-lime-300/70" />
+              <div className="absolute left-8 top-8 rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 shadow-lg">
+                <p className="text-sm font-black text-cyan-700">오늘의 문제</p>
+                <p className="text-4xl font-black text-slate-950">7 + 5 = ?</p>
+              </div>
+              <div className="absolute right-8 top-8 rounded-full border-4 border-white bg-amber-300 px-5 py-3 text-lg font-black text-amber-950 shadow-lg">+10 코인</div>
+              <div className="absolute bottom-16 left-10 flex h-36 w-28 items-center justify-center rounded-[50%] border-8 border-white bg-gradient-to-br from-amber-200 to-orange-300 shadow-xl">
+                <Egg className="h-14 w-14 text-white" />
+              </div>
+              <DinoAvatar size="hero" />
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 pb-28 text-slate-800">
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_20%_25%,rgba(255,255,255,0.9),transparent_16%),radial-gradient(circle_at_72%_20%,rgba(255,255,255,0.75),transparent_14%)]" />
+      <header className="sticky top-0 z-20 px-3 py-3 md:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[28px] border-4 border-white bg-white/82 px-3 py-3 shadow-[0_12px_30px_rgba(14,116,144,0.16)] backdrop-blur md:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[22px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-400 text-white shadow-md">
+              <Baby className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-emerald-950 md:text-3xl">주산 공룡 모험</h1>
+              <p className="hidden text-sm font-black text-emerald-700/75 sm:block">주산훈련 → 보상 → 알부화와 성장</p>
+            </div>
           </div>
-        )}
-        <p>© 2024 ABACUS DINO BATTLE - EDUCATIONAL EDITION</p>
-        {isConnected && lastData && (
-          <div className="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800 text-[10px] font-mono">
-            RAW: {lastData.rawHex} | TENS: {lastData.tens} | ONES: {lastData.ones}
+          <div className="flex items-center gap-2">
+            <HeaderPill icon={Coins} label="1,240" tone="coin" />
+            <HeaderPill icon={Star} label="Lv. 3" tone="level" />
+            <HeaderPill icon={BookOpen} label="2/5" tone="book" />
           </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-7xl px-3 py-3 md:px-6">
+        <section className="mb-4 flex items-center gap-3 rounded-[30px] border-4 border-white bg-white/72 p-3 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur md:p-4">
+          <div className={`flex h-16 w-16 items-center justify-center rounded-[24px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
+            <activeMeta.icon className={`h-8 w-8 ${activeMeta.color}`} />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-emerald-950">{activeMeta.label}</h2>
+            <p className="text-sm font-black text-emerald-700/70">화면 흐름과 디자인 방향을 확인하는 목업입니다.</p>
+          </div>
+        </section>
+
+        {activeTab === 'training' && (
+          <TrainingView
+            currentProblem={currentProblem}
+            selectedProblem={selectedProblem}
+            answer={answer}
+            feedback={trainingFeedback}
+            onAnswer={setAnswer}
+            onCheck={checkTrainingAnswer}
+            onChooseProblem={chooseProblem}
+          />
         )}
-      </footer>
+        {activeTab === 'dino' && (
+          <DinoViewPanel
+            view={dinoView}
+            feedback={dinoFeedback}
+            onView={setDinoView}
+            onFeedback={setDinoFeedback}
+          />
+        )}
+        {activeTab === 'hatchery' && <HatcheryView />}
+        {activeTab === 'shop' && <ShopView feedback={shopFeedback} onFeedback={setShopFeedback} />}
+        {activeTab === 'pokedex' && <PokedexView />}
+        {activeTab === 'adventure' && <AdventureView />}
+        {activeTab === 'settings' && <SettingsView />}
+      </main>
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 px-2 pb-2">
+        <div className="mx-auto grid max-w-5xl grid-cols-7 gap-1 rounded-[30px] border-4 border-white bg-white/90 p-2 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur">
+          {mainTabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-[22px] border-2 text-[10px] font-black transition active:translate-y-1 sm:text-sm ${
+                  active
+                    ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_6px_0_rgba(15,23,42,0.16)]`
+                    : 'border-transparent bg-transparent text-slate-500 hover:bg-sky-50'
+                }`}
+              >
+                <Icon className={`h-6 w-6 ${active ? tab.color : 'text-slate-400'}`} />
+                <span className={active ? 'text-slate-900' : ''}>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
+  );
+}
+
+function TrainingView({
+  currentProblem,
+  selectedProblem,
+  answer,
+  feedback,
+  onAnswer,
+  onCheck,
+  onChooseProblem,
+}: {
+  currentProblem: { question: string; answer: string };
+  selectedProblem: number;
+  answer: string;
+  feedback: string;
+  onAnswer: (value: string) => void;
+  onCheck: () => void;
+  onChooseProblem: (index: number) => void;
+}) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <section className="game-panel p-4 md:p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-3xl font-black text-emerald-950">오늘의 주산훈련</h3>
+            <p className="mt-1 font-black text-emerald-700/70">훈련장 미션을 풀고 보상을 받아요.</p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border-4 border-white bg-sky-100 px-4 py-2 text-xs font-black text-sky-800 shadow-sm">
+            <Bluetooth className="h-4 w-4" />
+            주판 입력: 테스트 필요
+          </div>
+        </div>
+
+        <div className="mb-5 grid gap-3 sm:grid-cols-3">
+          {trainingProblems.map((problem, index) => (
+            <button
+              key={problem.question}
+              onClick={() => onChooseProblem(index)}
+              className={`min-h-24 rounded-[26px] border-4 px-4 text-left shadow-sm transition active:translate-y-1 ${
+                selectedProblem === index ? 'border-white bg-gradient-to-b from-cyan-200 to-sky-200 text-cyan-950 shadow-[0_6px_0_#67e8f9]' : 'border-white bg-white/80 text-slate-600'
+              }`}
+            >
+              <p className="text-xs font-black text-cyan-700">미션 {index + 1}</p>
+              <p className="mt-1 text-3xl font-black">{problem.question}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-[34px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-5 shadow-inner md:p-8">
+          <div className="text-center">
+            <p className="mb-2 text-sm font-black text-cyan-700">선택한 문제</p>
+            <p className="text-7xl font-black text-emerald-950 md:text-8xl">{currentProblem.question}</p>
+          </div>
+          <div className="mx-auto mt-8 grid max-w-xl gap-3 sm:grid-cols-[1fr_auto]">
+            <input
+              value={answer}
+              onChange={(event) => onAnswer(event.target.value)}
+              inputMode="numeric"
+              placeholder="답 입력"
+              className="min-h-20 rounded-[24px] border-4 border-white bg-white px-5 text-4xl font-black text-slate-900 shadow-inner outline-none focus:border-cyan-300"
+            />
+            <button onClick={onCheck} className="game-button min-h-20 bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-cyan">
+              <CheckCircle2 className="h-6 w-6" />
+              정답 확인
+            </button>
+          </div>
+          <p className="mx-auto mt-5 max-w-xl rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">{feedback}</p>
+        </div>
+      </section>
+
+      <aside className="grid content-start gap-3">
+        <RewardCard icon={Coins} title="코인 보상" value="+10" tone="from-amber-200 to-yellow-300 text-amber-900" />
+        <RewardCard icon={Egg} title="알 부화 게이지" value="+3%" tone="from-orange-200 to-amber-300 text-orange-900" />
+        <RewardCard icon={Heart} title="공룡 기분" value="+1" tone="from-pink-200 to-rose-300 text-rose-900" />
+        <div className="rounded-[30px] border-4 border-white bg-lime-100 p-5 shadow-lg">
+          <h4 className="text-xl font-black text-emerald-950">핵심 루프</h4>
+          <p className="mt-2 font-black leading-relaxed text-emerald-700/80">훈련을 끝내면 보상을 얻고, 보상은 알부화와 공룡 돌봄으로 이어집니다.</p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function AdventureView() {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
+      <section className="rounded-[34px] border-4 border-white bg-gradient-to-b from-emerald-100 to-lime-100 p-6 shadow-lg">
+        <h3 className="text-3xl font-black text-emerald-950">모험 준비</h3>
+        <p className="mt-3 font-black leading-relaxed text-emerald-700/80">추후 주산훈련 결과와 연결되어 알 조각과 단서를 얻는 탐험 콘텐츠입니다.</p>
+      </section>
+      <section className="grid gap-4 md:grid-cols-3">
+        {mapCards.map((card) => (
+          <article key={card.name} className="rounded-[32px] border-4 border-white bg-white/86 p-5 shadow-lg">
+            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-b from-emerald-200 to-lime-300 text-emerald-800 shadow-inner">
+              <Map className="h-12 w-12" />
+            </div>
+            <h4 className="text-2xl font-black text-emerald-950">{card.name}</h4>
+            <p className="mt-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-black text-emerald-800">{card.state}</p>
+            <p className="mt-3 font-black text-slate-500">{card.reward}</p>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function HatcheryView() {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <section className="game-panel p-4 md:p-6">
+        <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[36px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-6 text-center shadow-inner">
+          <div className="relative mb-8">
+            <div className="absolute inset-x-8 bottom-0 h-10 rounded-full bg-orange-900/10 blur-md" />
+            <div className="relative flex h-64 w-48 items-center justify-center rounded-[50%] border-[12px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-xl">
+              <Egg className="h-24 w-24 text-orange-400" />
+            </div>
+            <div className="absolute -right-8 top-10 rounded-full border-4 border-white bg-cyan-400 px-4 py-2 text-lg font-black text-white shadow-lg">+3%</div>
+          </div>
+          <h3 className="text-4xl font-black text-emerald-950">미확인 일반 알</h3>
+          <p className="mt-2 max-w-md font-black leading-relaxed text-emerald-700/75">훈련장에서 문제를 풀면 부화 게이지가 오르고, 알의 단서가 조금씩 공개됩니다.</p>
+          <div className="mt-8 w-full max-w-lg rounded-[26px] border-4 border-white bg-white/80 p-4 shadow-sm">
+            <div className="mb-2 flex justify-between text-sm font-black text-emerald-800">
+              <span>부화 진행률</span>
+              <span>62%</span>
+            </div>
+            <div className="h-7 overflow-hidden rounded-full bg-orange-100 shadow-inner">
+              <div className="h-full w-[62%] rounded-full bg-gradient-to-r from-orange-400 to-cyan-400" />
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside className="grid content-start gap-3">
+        <RewardCard icon={Play} title="다음 행동" value="훈련 1세트" tone="from-cyan-200 to-sky-300 text-cyan-900" />
+        <RewardCard icon={Sparkles} title="알 힌트" value="작은 발자국" tone="from-amber-200 to-yellow-300 text-amber-900" />
+        <RewardCard icon={ShoppingBag} title="보조 아이템" value="따뜻한 둥지" tone="from-orange-200 to-amber-300 text-orange-900" />
+      </aside>
+    </div>
+  );
+}
+
+function DinoViewPanel({
+  view,
+  feedback,
+  onView,
+  onFeedback,
+}: {
+  view: DinoView;
+  feedback: string;
+  onView: (view: DinoView) => void;
+  onFeedback: (message: string) => void;
+}) {
+  if (view === 'playground') {
+    return (
+      <section className="game-panel p-4 md:p-6">
+        <button onClick={() => onView('care')} className="mb-4 rounded-full border-4 border-white bg-white/90 px-5 py-3 text-sm font-black text-emerald-800 shadow-sm">
+          우리 공룡으로 돌아가기
+        </button>
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div className="relative flex min-h-[520px] flex-col items-center justify-end overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-6 text-center shadow-inner">
+            <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-lime-400/70" />
+            <DinoAvatar size="hero" />
+            <h3 className="relative z-10 text-4xl font-black text-emerald-950">작은 놀이터</h3>
+            <p className="relative z-10 mt-2 rounded-full bg-white/90 px-5 py-2 font-black text-emerald-700 shadow-sm">{feedback}</p>
+          </div>
+          <div className="grid content-start gap-3">
+            <PlayButton label="쓰다듬기" onClick={() => onFeedback('행복 +1')} />
+            <PlayButton label="공 던지기" onClick={() => onFeedback('행복 +1, 체력 -1')} />
+            <PlayButton label="쉬게 하기" onClick={() => onFeedback('체력 +1')} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <section className="game-panel p-4 md:p-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
+          <div className="relative flex min-h-[560px] items-end justify-center overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-6">
+            <div className="absolute bottom-0 left-0 right-0 h-36 rounded-t-[50%] bg-lime-400/70" />
+            <div className="absolute right-8 top-8 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-800 shadow-lg">기분 좋음</div>
+            <DinoAvatar size="hero" />
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="text-sm font-black text-amber-700">대표 공룡</p>
+            <h3 className="text-5xl font-black text-emerald-950">초록 꼬마</h3>
+            <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-base font-black text-amber-800">Lv. 3 · 성장 상태: 어린 공룡</p>
+            <div className="mt-6 grid gap-4">
+              <Meter label="EXP" value={44} tone="from-cyan-400 to-sky-500" />
+              <Meter label="배고픔" value={68} tone="from-amber-400 to-orange-500" />
+              <Meter label="행복" value={74} tone="from-pink-400 to-rose-500" />
+              <Meter label="체력" value={81} tone="from-emerald-400 to-lime-500" />
+            </div>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button onClick={() => onFeedback('말랑 열매를 줬어요. 행복 +1')} className="game-button min-h-18 bg-gradient-to-b from-amber-300 to-orange-400 shadow-orange">
+                먹이주기
+              </button>
+              <button onClick={() => onView('playground')} className="game-button min-h-18 bg-gradient-to-b from-emerald-300 to-emerald-500 shadow-green">
+                놀이터로 이동
+              </button>
+            </div>
+            <p className="mt-5 rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-lg font-black text-emerald-900 shadow-sm">{feedback}</p>
+          </div>
+        </div>
+      </section>
+      <aside className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <h4 className="mb-4 text-2xl font-black text-emerald-950">보유 사료 가방</h4>
+        <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+          {foodBag.map((food) => (
+            <div key={food.name} className="flex min-h-28 flex-col items-center justify-center rounded-[26px] border-4 border-white bg-gradient-to-b from-amber-100 to-orange-100 p-3 text-center shadow-sm">
+              <Utensils className="mb-2 h-7 w-7 text-orange-500" />
+              <span className="text-sm font-black text-amber-950">{food.name}</span>
+              <span className="mt-1 rounded-full bg-white px-3 py-1 text-sm font-black text-orange-700">x{food.count}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function ShopView({ feedback, onFeedback }: { feedback: string; onFeedback: (message: string) => void }) {
+  return (
+    <div className="grid gap-5">
+      <section className="rounded-[34px] border-4 border-white bg-gradient-to-r from-violet-100 to-fuchsia-100 p-5 shadow-lg">
+        <h3 className="text-3xl font-black text-violet-950">상점 목업</h3>
+        <p className="mt-2 font-black text-violet-800/75">음식, 코스튬, 새로운 공룡 목표 구조를 확인합니다.</p>
+        <p className="mt-4 rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 font-black text-violet-800 shadow-sm">{feedback}</p>
+      </section>
+      {shopSections.map((section) => {
+        const Icon = section.icon;
+        return (
+          <section key={section.title} className={`rounded-[34px] border-4 bg-gradient-to-b p-5 shadow-lg ${section.tone}`}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[22px] border-4 border-white bg-white/90 shadow-sm">
+                <Icon className="h-8 w-8" />
+              </div>
+              <h4 className="text-3xl font-black">{section.title}</h4>
+            </div>
+            <div className="grid gap-3 md:grid-cols-4">
+              {section.items.map((item) => (
+                <article key={item.name} className="rounded-[28px] border-4 border-white bg-white/86 p-4 shadow-sm">
+                  <h5 className="text-xl font-black text-slate-950">{item.name}</h5>
+                  <p className="mt-2 min-h-12 text-sm font-black text-slate-500">{item.detail}</p>
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 px-3 py-1 text-sm font-black text-amber-950">
+                      <Coins className="h-4 w-4 text-amber-600" />
+                      {item.price}
+                    </span>
+                    <button onClick={() => onFeedback(`목업: ${item.name} 구매 예정`)} className="rounded-full bg-violet-500 px-4 py-2 text-sm font-black text-white shadow-[0_4px_0_#7c3aed] transition active:translate-y-1 active:shadow-none">
+                      구매
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function PokedexView() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {pokedexCards.map((card, index) => (
+        <article key={`${card.name}-${card.rarity}-${index}`} className="rounded-[32px] border-4 border-white bg-white/86 p-4 shadow-lg">
+          <div className={`mb-4 flex h-44 items-center justify-center rounded-[28px] ${card.unlocked ? 'bg-gradient-to-b from-sky-100 to-lime-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
+            {card.unlocked ? (
+              <DinoAvatar size="small" />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-slate-400 text-5xl font-black text-white">?</div>
+            )}
+          </div>
+          <h3 className="text-xl font-black text-emerald-950">{card.name}</h3>
+          <p className="mt-1 inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-black text-sky-800">{card.rarity}</p>
+          <p className="mt-3 text-sm font-black text-slate-500">{card.unlocked ? '발견 완료' : '알 부화 후 공개'}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function SettingsView() {
+  return (
+    <div className="grid gap-5">
+      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <h3 className="text-3xl font-black text-slate-950">설정</h3>
+        <p className="mt-2 font-black text-slate-500">문제 설정과 저장 기능은 추후 연결 예정입니다.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <SettingChip label="숫자 개수" value="3개" />
+          <SettingChip label="숫자 크기" value="한 자리/두 자리 예시" />
+          <SettingChip label="세트 문제 수" value="20문제 예정" />
+          <SettingChip label="연산 방식" value="덧셈 + 뺄셈" />
+        </div>
+      </section>
+      <section className="rounded-[28px] border-4 border-dashed border-slate-300 bg-white/70 p-4 md:p-5">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-white">
+            <Bluetooth className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 className="text-xl font-black text-slate-950">주산 입력 장치 연결 테스트</h4>
+            <p className="text-sm font-bold text-slate-500">Bluetooth 주판 입력을 확인하는 개발자 테스트 영역입니다.</p>
+          </div>
+        </div>
+        <div className="scale-[0.98] rounded-[24px] bg-white/70 p-2">
+          <BluetoothTestPanel />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function HeaderPill({ icon: Icon, label, tone }: { icon: typeof Coins; label: string; tone: 'coin' | 'level' | 'book' }) {
+  const toneClass = {
+    coin: 'from-amber-200 to-yellow-300 text-amber-950',
+    level: 'from-pink-200 to-rose-300 text-rose-950',
+    book: 'from-sky-200 to-cyan-300 text-sky-950',
+  }[tone];
+
+  return (
+    <div className={`inline-flex min-h-12 items-center gap-2 rounded-full border-4 border-white bg-gradient-to-b px-4 text-sm font-black shadow-sm ${toneClass}`}>
+      <Icon className="h-5 w-5" />
+      {label}
+    </div>
+  );
+}
+
+function DinoAvatar({ size }: { size: 'small' | 'large' | 'hero' }) {
+  const shellSize = size === 'hero' ? 'h-[360px] w-[360px]' : size === 'large' ? 'h-64 w-64' : 'h-28 w-28';
+  const bodySize = size === 'hero' ? 'h-52 w-56' : size === 'large' ? 'h-36 w-40' : 'h-16 w-20';
+  const headSize = size === 'hero' ? 'h-36 w-40' : size === 'large' ? 'h-24 w-28' : 'h-12 w-14';
+  const eyeSize = size === 'hero' ? 'h-4 w-4' : size === 'large' ? 'h-3 w-3' : 'h-1.5 w-1.5';
+
+  return (
+    <div className={`relative z-10 ${shellSize} drop-shadow-2xl`} aria-label="초록 꼬마 공룡">
+      <div className={`absolute bottom-[13%] left-1/2 ${bodySize} -translate-x-1/2 rounded-[45%] border-4 border-emerald-200 bg-emerald-400`} />
+      <div className={`absolute left-1/2 top-[12%] ${headSize} -translate-x-1/2 rounded-[45%] border-4 border-emerald-200 bg-emerald-300`} />
+      <div className="absolute left-[38%] top-[27%] h-[12%] w-[12%] rounded-full bg-white">
+        <div className={`absolute left-1/2 top-1/2 ${eyeSize} -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800`} />
+      </div>
+      <div className="absolute right-[38%] top-[27%] h-[12%] w-[12%] rounded-full bg-white">
+        <div className={`absolute left-1/2 top-1/2 ${eyeSize} -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-800`} />
+      </div>
+      <div className="absolute left-1/2 top-[43%] h-[4%] w-[18%] -translate-x-1/2 rounded-full bg-emerald-700/35" />
+      <div className="absolute bottom-[30%] left-[17%] h-[16%] w-[12%] rotate-[-20deg] rounded-full bg-emerald-300" />
+      <div className="absolute bottom-[30%] right-[17%] h-[16%] w-[12%] rotate-[20deg] rounded-full bg-emerald-300" />
+      <div className="absolute bottom-[4%] left-[34%] h-[18%] w-[13%] rounded-full bg-emerald-500" />
+      <div className="absolute bottom-[4%] right-[34%] h-[18%] w-[13%] rounded-full bg-emerald-500" />
+      <div className="absolute right-[5%] top-[52%] h-[18%] w-[30%] rotate-[28deg] rounded-full bg-emerald-300" />
+      <div className="absolute left-1/2 top-[8%] h-[8%] w-[8%] -translate-x-1/2 rounded-full bg-amber-200" />
+      <div className="absolute left-[42%] top-[7%] h-[6%] w-[6%] rounded-full bg-amber-200" />
+      <div className="absolute right-[42%] top-[7%] h-[6%] w-[6%] rounded-full bg-amber-200" />
+    </div>
+  );
+}
+
+function RewardCard({ icon: Icon, title, value, tone }: { icon: typeof Coins; title: string; value: string; tone: string }) {
+  return (
+    <div className={`rounded-[30px] border-4 border-white bg-gradient-to-b p-5 shadow-lg ${tone}`}>
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-[20px] bg-white/80 shadow-sm">
+        <Icon className="h-7 w-7" />
+      </div>
+      <p className="text-sm font-black opacity-80">{title}</p>
+      <p className="mt-1 text-3xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function Meter({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
+      <div className="mb-2 flex justify-between text-sm font-black text-emerald-900">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="h-6 overflow-hidden rounded-full bg-slate-100 shadow-inner">
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${value}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function PlayButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="game-button min-h-20 bg-gradient-to-b from-emerald-300 to-emerald-500 shadow-green">
+      {label}
+    </button>
+  );
+}
+
+function SettingChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border-4 border-white bg-slate-50 px-4 py-3 shadow-sm">
+      <p className="text-xs font-black text-slate-400">{label}</p>
+      <p className="mt-1 font-black text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function SkyDecor() {
+  return (
+    <>
+      <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-yellow-200/80" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 rounded-t-[50%] bg-lime-300/60" />
+      <div className="absolute left-1/2 top-8 h-12 w-36 rounded-full bg-white/70 blur-sm" />
+    </>
   );
 }
