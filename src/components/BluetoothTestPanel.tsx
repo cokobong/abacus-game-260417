@@ -12,6 +12,8 @@ interface BluetoothLogEntry {
   raw: string;
   hex: string;
   text: string;
+  parsedNumber: number | null;
+  note: string;
 }
 
 interface BluetoothErrorState {
@@ -19,7 +21,23 @@ interface BluetoothErrorState {
   message: string;
 }
 
-export function BluetoothTestPanel() {
+export interface BluetoothNotificationPayload {
+  id: number;
+  time: string;
+  bytes: number[];
+  raw: string;
+  hex: string;
+  text: string;
+  parsedNumber: number | null;
+  isConfirmSignal: boolean;
+  note: string;
+}
+
+interface BluetoothTestPanelProps {
+  onNotification?: (payload: BluetoothNotificationPayload) => void;
+}
+
+export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) {
   const [availability, setAvailability] = useState<Availability>('checking');
   const [availabilityError, setAvailabilityError] = useState('');
   const [serviceUuid, setServiceUuid] = useState(DEFAULT_SERVICE_UUID);
@@ -165,13 +183,36 @@ export function BluetoothTestPanel() {
       text = 'decode 오류';
     }
 
+    const parsedNumber = parseBluetoothNumber(bytes, text);
+    const isConfirmSignal = bytes[bytes.length - 1] === 0x01;
+    const note = [
+      parsedNumber === null ? 'number parse skipped' : `number parsed: ${parsedNumber}`,
+      isConfirmSignal ? 'confirm signal received' : '',
+    ].filter(Boolean).join(' / ');
+
+    const payload: BluetoothNotificationPayload = {
+      id: Date.now(),
+      time: new Date().toLocaleTimeString(),
+      bytes: Array.from(bytes),
+      raw,
+      hex,
+      text,
+      parsedNumber,
+      isConfirmSignal,
+      note,
+    };
+
+    onNotification?.(payload);
+
     setLogs((current) => [
       {
-        id: Date.now(),
-        time: new Date().toLocaleTimeString(),
+        id: payload.id,
+        time: payload.time,
         raw,
         hex,
         text,
+        parsedNumber,
+        note,
       },
       ...current,
     ].slice(0, 20));
@@ -301,6 +342,8 @@ export function BluetoothTestPanel() {
                     <p><span className="text-slate-400">raw value:</span> {log.raw}</p>
                     <p><span className="text-slate-400">hex:</span> {log.hex}</p>
                     <p><span className="text-slate-400">text:</span> {log.text}</p>
+                    <p><span className="text-slate-400">number:</span> {log.parsedNumber ?? '-'}</p>
+                    {log.note && <p><span className="text-slate-400">note:</span> {log.note}</p>}
                   </article>
                 ))}
               </div>
@@ -335,6 +378,45 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 
 function compactUuidList(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
+}
+
+function parseBluetoothNumber(bytes: Uint8Array, text: string) {
+  const mapped = parseFleduTwoDigitNumber(bytes);
+  if (mapped !== null) return mapped;
+
+  const normalizedText = text.trim();
+  if (/^\d+$/.test(normalizedText)) {
+    return Number(normalizedText);
+  }
+
+  return null;
+}
+
+function parseFleduTwoDigitNumber(bytes: Uint8Array) {
+  if (bytes.length <= 8) return null;
+
+  const tens = mapFleduDigit(bytes[7]);
+  const ones = mapFleduDigit(bytes[8]);
+  if (tens < 0 || ones < 0) return null;
+
+  return tens * 10 + ones;
+}
+
+function mapFleduDigit(byteValue: number) {
+  const map: Record<number, number> = {
+    0x1F: 0,
+    0x17: 1,
+    0x13: 2,
+    0x11: 3,
+    0x10: 4,
+    0x0F: 5,
+    0x07: 6,
+    0x03: 7,
+    0x01: 8,
+    0x00: 9,
+  };
+
+  return map[byteValue] ?? -1;
 }
 
 function normalizeError(caught: unknown): BluetoothErrorState {

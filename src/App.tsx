@@ -16,7 +16,7 @@ import {
   Star,
   Utensils,
 } from 'lucide-react';
-import { BluetoothTestPanel } from './components/BluetoothTestPanel';
+import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
@@ -99,6 +99,7 @@ export default function App() {
   const [selectedProblem, setSelectedProblem] = useState(0);
   const [answer, setAnswer] = useState('');
   const [trainingFeedback, setTrainingFeedback] = useState('정답을 입력하고 확인해보세요.');
+  const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
@@ -118,6 +119,14 @@ export default function App() {
     setSelectedProblem(index);
     setAnswer('');
     setTrainingFeedback('정답을 입력하고 확인해보세요.');
+  }
+
+  function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
+    setLastBluetoothInput(payload);
+
+    if (payload.parsedNumber !== null) {
+      setAnswer(String(payload.parsedNumber));
+    }
   }
 
   if (phase === 'title') {
@@ -201,6 +210,7 @@ export default function App() {
             selectedProblem={selectedProblem}
             answer={answer}
             feedback={trainingFeedback}
+            bluetoothInput={lastBluetoothInput}
             onAnswer={setAnswer}
             onCheck={checkTrainingAnswer}
             onChooseProblem={chooseProblem}
@@ -218,7 +228,7 @@ export default function App() {
         {activeTab === 'shop' && <ShopView feedback={shopFeedback} onFeedback={setShopFeedback} />}
         {activeTab === 'pokedex' && <PokedexView />}
         {activeTab === 'adventure' && <AdventureView />}
-        {activeTab === 'settings' && <SettingsView />}
+        {activeTab === 'settings' && <SettingsView onBluetoothNotification={handleBluetoothNotification} />}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 px-2 pb-2">
@@ -252,6 +262,7 @@ function TrainingView({
   selectedProblem,
   answer,
   feedback,
+  bluetoothInput,
   onAnswer,
   onCheck,
   onChooseProblem,
@@ -260,10 +271,14 @@ function TrainingView({
   selectedProblem: number;
   answer: string;
   feedback: string;
+  bluetoothInput: BluetoothNotificationPayload | null;
   onAnswer: (value: string) => void;
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
 }) {
+  const bluetoothStatus = bluetoothInput ? 'Bluetooth 입력 수신' : 'Bluetooth 입력 대기';
+  const bluetoothStatusTone = bluetoothInput ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800';
+
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
       <section className="game-panel p-4 md:p-6">
@@ -272,9 +287,9 @@ function TrainingView({
             <h3 className="text-3xl font-black text-emerald-950">오늘의 주산훈련</h3>
             <p className="mt-1 font-black text-emerald-700/70">훈련장 미션을 풀고 보상을 받아요.</p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border-4 border-white bg-sky-100 px-4 py-2 text-xs font-black text-sky-800 shadow-sm">
+          <div className={`inline-flex items-center gap-2 rounded-full border-4 border-white px-4 py-2 text-xs font-black shadow-sm ${bluetoothStatusTone}`}>
             <Bluetooth className="h-4 w-4" />
-            주판 입력: 테스트 필요
+            {bluetoothStatus}
           </div>
         </div>
 
@@ -310,6 +325,20 @@ function TrainingView({
               <CheckCircle2 className="h-6 w-6" />
               정답 확인
             </button>
+          </div>
+          <div className="mx-auto mt-3 grid max-w-xl gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-xs font-black text-slate-600 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-emerald-800">마지막 Bluetooth 수신값</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+                {bluetoothInput?.parsedNumber ?? '-'}
+              </span>
+            </div>
+            <p className="break-all font-mono font-bold text-slate-500">raw: {bluetoothInput?.raw ?? '-'}</p>
+            <p className="break-all font-mono font-bold text-slate-500">hex: {bluetoothInput?.hex ?? '-'}</p>
+            <p className="break-all font-mono font-bold text-slate-500">text: {bluetoothInput?.text ?? '-'}</p>
+            {bluetoothInput?.isConfirmSignal && (
+              <p className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">confirm signal received</p>
+            )}
           </div>
           <p className="mx-auto mt-5 max-w-xl rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">{feedback}</p>
         </div>
@@ -529,7 +558,7 @@ function PokedexView() {
   );
 }
 
-function SettingsView() {
+function SettingsView({ onBluetoothNotification }: { onBluetoothNotification: (payload: BluetoothNotificationPayload) => void }) {
   return (
     <div className="grid gap-5">
       <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
@@ -553,7 +582,7 @@ function SettingsView() {
           </div>
         </div>
         <div className="scale-[0.98] rounded-[24px] bg-white/70 p-2">
-          <BluetoothTestPanel />
+          <BluetoothTestPanel onNotification={onBluetoothNotification} />
         </div>
       </section>
     </div>
