@@ -110,15 +110,20 @@ export default function App() {
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number } | null>(null);
   const answerRef = useRef('');
+  const currentProblemAnswerRef = useRef(trainingProblems[0].answer);
+  const submissionResultRef = useRef<SubmissionResult>(null);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
   const currentProblem = trainingProblems[selectedProblem];
+  currentProblemAnswerRef.current = currentProblem.answer;
+  submissionResultRef.current = submissionResult;
 
   function resetTrainingInput(message = RESET_TRAINING_FEEDBACK) {
     answerRef.current = '';
     lastBluetoothConfirmRef.current = null;
     setAnswer('');
     setTrainingFeedback(message);
+    submissionResultRef.current = null;
     setSubmissionResult(null);
   }
 
@@ -131,6 +136,7 @@ export default function App() {
     answerRef.current = value;
     setAnswer(value);
     setTrainingFeedback('정답을 입력하고 확인해보세요.');
+    submissionResultRef.current = null;
     setSubmissionResult(null);
   }
 
@@ -142,14 +148,16 @@ export default function App() {
       return;
     }
 
-    if (submissionResult === 'correct') {
+    if (submissionResultRef.current === 'correct') {
       return;
     }
 
-    if (submittedAnswer === currentProblem.answer) {
+    if (submittedAnswer === currentProblemAnswerRef.current) {
+      submissionResultRef.current = 'correct';
       setSubmissionResult('correct');
       setTrainingFeedback('정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
     } else {
+      submissionResultRef.current = 'wrong';
       setSubmissionResult('wrong');
       setTrainingFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
     }
