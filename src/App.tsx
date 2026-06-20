@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Baby,
   Bluetooth,
@@ -100,15 +100,30 @@ export default function App() {
   const [answer, setAnswer] = useState('');
   const [trainingFeedback, setTrainingFeedback] = useState('정답을 입력하고 확인해보세요.');
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
+  const [submittedProblemIndex, setSubmittedProblemIndex] = useState<number | null>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
+  const lastBluetoothConfirmAtRef = useRef(0);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
   const currentProblem = trainingProblems[selectedProblem];
 
-  function checkTrainingAnswer() {
-    if (answer.trim() === currentProblem.answer) {
+  function handleSubmitAnswer(value = answer) {
+    const submittedAnswer = value.trim();
+
+    if (!submittedAnswer) {
+      setTrainingFeedback('답을 먼저 입력해주세요.');
+      return;
+    }
+
+    if (submittedProblemIndex === selectedProblem) {
+      return;
+    }
+
+    setSubmittedProblemIndex(selectedProblem);
+
+    if (submittedAnswer === currentProblem.answer) {
       setTrainingFeedback('정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
     } else {
       setTrainingFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
@@ -118,14 +133,27 @@ export default function App() {
   function chooseProblem(index: number) {
     setSelectedProblem(index);
     setAnswer('');
+    setSubmittedProblemIndex(null);
     setTrainingFeedback('정답을 입력하고 확인해보세요.');
   }
 
   function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
     setLastBluetoothInput(payload);
 
+    const nextAnswer = payload.parsedNumber !== null ? String(payload.parsedNumber) : answer;
+
     if (payload.parsedNumber !== null) {
-      setAnswer(String(payload.parsedNumber));
+      setAnswer(nextAnswer);
+    }
+
+    if (payload.isConfirmSignal) {
+      const now = Date.now();
+      if (now - lastBluetoothConfirmAtRef.current < 600) {
+        return;
+      }
+
+      lastBluetoothConfirmAtRef.current = now;
+      handleSubmitAnswer(nextAnswer);
     }
   }
 
@@ -212,7 +240,7 @@ export default function App() {
             feedback={trainingFeedback}
             bluetoothInput={lastBluetoothInput}
             onAnswer={setAnswer}
-            onCheck={checkTrainingAnswer}
+            onCheck={handleSubmitAnswer}
             onChooseProblem={chooseProblem}
           />
         )}
