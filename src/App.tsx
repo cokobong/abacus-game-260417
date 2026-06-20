@@ -20,6 +20,10 @@ import { BluetoothTestPanel, type BluetoothNotificationPayload } from './compone
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
+type SubmitSource = 'manual' | 'bluetooth';
+type SubmissionResult = 'correct' | 'wrong' | null;
+
+const RESET_TRAINING_FEEDBACK = '주판을 초기화한 뒤 새 답을 입력하세요.';
 
 const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: string; active: string }> = [
   { id: 'training', label: '훈련장', icon: Play, color: 'text-cyan-700', active: 'from-cyan-300 to-sky-300 border-cyan-200' },
@@ -100,50 +104,87 @@ export default function App() {
   const [answer, setAnswer] = useState('');
   const [trainingFeedback, setTrainingFeedback] = useState('정답을 입력하고 확인해보세요.');
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
-  const [submittedProblemIndex, setSubmittedProblemIndex] = useState<number | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult>(null);
+  const [hasFreshInputForCurrentProblem, setHasFreshInputForCurrentProblem] = useState(false);
   const [dinoView, setDinoView] = useState<DinoView>('care');
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const lastBluetoothConfirmAtRef = useRef(0);
+  const lastSubmittedBluetoothAnswerRef = useRef<string | null>(null);
+  const hasFreshInputForCurrentProblemRef = useRef(false);
+  const answerRef = useRef('');
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
   const currentProblem = trainingProblems[selectedProblem];
 
-  function handleSubmitAnswer(value = answer) {
+  function resetTrainingInput(message = RESET_TRAINING_FEEDBACK) {
+    answerRef.current = '';
+    lastBluetoothConfirmAtRef.current = 0;
+    setAnswer('');
+    setTrainingFeedback(message);
+    setSubmissionResult(null);
+    setHasFreshInputForCurrentProblem(false);
+    hasFreshInputForCurrentProblemRef.current = false;
+    lastSubmittedBluetoothAnswerRef.current = null;
+  }
+
+  function handleAnswerChange(value: string) {
+    answerRef.current = value;
+    setAnswer(value);
+  }
+
+  function handleBluetoothNumber(value: string) {
+    answerRef.current = value;
+    lastBluetoothConfirmAtRef.current = 0;
+    setAnswer(value);
+    setTrainingFeedback('정답을 입력하고 확인해보세요.');
+    setSubmissionResult(null);
+    setHasFreshInputForCurrentProblem(true);
+    hasFreshInputForCurrentProblemRef.current = true;
+  }
+
+  function handleSubmitAnswer(source: SubmitSource, value = answerRef.current) {
     const submittedAnswer = value.trim();
+
+    if (source === 'bluetooth' && !hasFreshInputForCurrentProblemRef.current) {
+      setTrainingFeedback('새 문제입니다. 주판을 초기화하고 답을 다시 입력해주세요.');
+      return;
+    }
 
     if (!submittedAnswer) {
       setTrainingFeedback('답을 먼저 입력해주세요.');
       return;
     }
 
-    if (submittedProblemIndex === selectedProblem) {
+    if (submissionResult === 'correct') {
       return;
     }
 
-    setSubmittedProblemIndex(selectedProblem);
+    if (source === 'bluetooth') {
+      lastSubmittedBluetoothAnswerRef.current = submittedAnswer;
+      setHasFreshInputForCurrentProblem(false);
+      hasFreshInputForCurrentProblemRef.current = false;
+    }
 
     if (submittedAnswer === currentProblem.answer) {
+      setSubmissionResult('correct');
       setTrainingFeedback('정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
     } else {
+      setSubmissionResult('wrong');
       setTrainingFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
     }
   }
 
   function chooseProblem(index: number) {
     setSelectedProblem(index);
-    setAnswer('');
-    setSubmittedProblemIndex(null);
-    setTrainingFeedback('정답을 입력하고 확인해보세요.');
+    resetTrainingInput();
   }
 
   function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
     setLastBluetoothInput(payload);
 
-    const nextAnswer = payload.parsedNumber !== null ? String(payload.parsedNumber) : answer;
-
-    if (payload.parsedNumber !== null) {
-      setAnswer(nextAnswer);
+    if (payload.parsedNumber !== null && !payload.isConfirmSignal) {
+      handleBluetoothNumber(String(payload.parsedNumber));
     }
 
     if (payload.isConfirmSignal) {
@@ -153,7 +194,7 @@ export default function App() {
       }
 
       lastBluetoothConfirmAtRef.current = now;
-      handleSubmitAnswer(nextAnswer);
+      handleSubmitAnswer('bluetooth');
     }
   }
 
@@ -239,8 +280,9 @@ export default function App() {
             answer={answer}
             feedback={trainingFeedback}
             bluetoothInput={lastBluetoothInput}
-            onAnswer={setAnswer}
-            onCheck={handleSubmitAnswer}
+            hasFreshBluetoothInput={hasFreshInputForCurrentProblem}
+            onAnswer={handleAnswerChange}
+            onCheck={() => handleSubmitAnswer('manual')}
             onChooseProblem={chooseProblem}
           />
         )}
@@ -291,6 +333,7 @@ function TrainingView({
   answer,
   feedback,
   bluetoothInput,
+  hasFreshBluetoothInput,
   onAnswer,
   onCheck,
   onChooseProblem,
@@ -300,6 +343,7 @@ function TrainingView({
   answer: string;
   feedback: string;
   bluetoothInput: BluetoothNotificationPayload | null;
+  hasFreshBluetoothInput: boolean;
   onAnswer: (value: string) => void;
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
@@ -364,6 +408,7 @@ function TrainingView({
             <p className="break-all font-mono font-bold text-slate-500">raw: {bluetoothInput?.raw ?? '-'}</p>
             <p className="break-all font-mono font-bold text-slate-500">hex: {bluetoothInput?.hex ?? '-'}</p>
             <p className="break-all font-mono font-bold text-slate-500">text: {bluetoothInput?.text ?? '-'}</p>
+            <p className="break-all font-bold text-slate-500">현재 문제 새 입력: {hasFreshBluetoothInput ? '예' : '아니오'}</p>
             {bluetoothInput?.isConfirmSignal && (
               <p className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">confirm signal received</p>
             )}
