@@ -17,13 +17,12 @@ import {
   Utensils,
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
+import { trainingProblems } from './data/trainingProblems';
+import { useTrainingSession } from './hooks/useTrainingSession';
+import type { TrainingProblem } from './types/game';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
-type SubmitSource = 'manual' | 'bluetooth';
-type SubmissionResult = 'correct' | 'wrong' | null;
-
-const RESET_TRAINING_FEEDBACK = '주판알을 새 답에 맞게 움직인 뒤 리턴 버튼을 눌러주세요.';
 
 const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: string; active: string }> = [
   { id: 'training', label: '훈련장', icon: Play, color: 'text-cyan-700', active: 'from-cyan-300 to-sky-300 border-cyan-200' },
@@ -33,12 +32,6 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
   { id: 'pokedex', label: '도감', icon: BookOpen, color: 'text-sky-700', active: 'from-sky-300 to-blue-300 border-sky-200' },
   { id: 'adventure', label: '모험', icon: Map, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
   { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
-];
-
-const trainingProblems = [
-  { question: '7 + 5', answer: '12' },
-  { question: '13 - 6', answer: '7' },
-  { question: '24 + 18', answer: '42' },
 ];
 
 const foodBag = [
@@ -100,72 +93,17 @@ const pokedexCards = [
 export default function App() {
   const [phase, setPhase] = useState<'title' | 'app'>('title');
   const [activeTab, setActiveTab] = useState<MainTab>('training');
-  const [selectedProblem, setSelectedProblem] = useState(0);
-  const [answer, setAnswer] = useState('');
-  const [trainingFeedback, setTrainingFeedback] = useState('정답을 입력하고 확인해보세요.');
+  const training = useTrainingSession(trainingProblems);
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResult>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
-  const lastBluetoothConfirmRef = useRef<{ hex: string; time: number } | null>(null);
-  const answerRef = useRef('');
-  const currentProblemAnswerRef = useRef(trainingProblems[0].answer);
-  const submissionResultRef = useRef<SubmissionResult>(null);
+  const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
-  const currentProblem = trainingProblems[selectedProblem];
-  currentProblemAnswerRef.current = currentProblem.answer;
-  submissionResultRef.current = submissionResult;
-
-  function resetTrainingInput(message = RESET_TRAINING_FEEDBACK) {
-    answerRef.current = '';
-    lastBluetoothConfirmRef.current = null;
-    setAnswer('');
-    setTrainingFeedback(message);
-    submissionResultRef.current = null;
-    setSubmissionResult(null);
-  }
-
-  function handleAnswerChange(value: string) {
-    answerRef.current = value;
-    setAnswer(value);
-  }
 
   function handleBluetoothNumber(value: string) {
-    answerRef.current = value;
-    setAnswer(value);
-    setTrainingFeedback('정답을 입력하고 확인해보세요.');
-    submissionResultRef.current = null;
-    setSubmissionResult(null);
-  }
-
-  function handleSubmitAnswer(source: SubmitSource, value = answerRef.current) {
-    const submittedAnswer = value.trim();
-
-    if (!submittedAnswer) {
-      setTrainingFeedback('답을 먼저 입력해주세요.');
-      return;
-    }
-
-    if (submissionResultRef.current === 'correct') {
-      return;
-    }
-
-    if (submittedAnswer === currentProblemAnswerRef.current) {
-      submissionResultRef.current = 'correct';
-      setSubmissionResult('correct');
-      setTrainingFeedback('정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
-    } else {
-      submissionResultRef.current = 'wrong';
-      setSubmissionResult('wrong');
-      setTrainingFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
-    }
-  }
-
-  function chooseProblem(index: number) {
-    setSelectedProblem(index);
-    resetTrainingInput();
+    training.setAnswer(value);
   }
 
   function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
@@ -178,21 +116,20 @@ export default function App() {
     if (payload.isConfirmSignal) {
       const now = Date.now();
       const lastConfirm = lastBluetoothConfirmRef.current;
-      if (lastConfirm?.hex === payload.hex && now - lastConfirm.time < 600) {
+      if (lastConfirm?.hex === payload.hex && lastConfirm.problemIndex === training.currentProblemIndex && now - lastConfirm.time < 600) {
         return;
       }
 
-      lastBluetoothConfirmRef.current = { hex: payload.hex, time: now };
+      lastBluetoothConfirmRef.current = { hex: payload.hex, time: now, problemIndex: training.currentProblemIndex };
 
       if (payload.parsedNumber === null) {
-        setTrainingFeedback('주판 값을 읽지 못했어요. 주판알을 답에 맞게 움직이고 다시 눌러주세요.');
+        training.reportBluetoothParseError();
         return;
       }
 
       const bluetoothAnswer = String(payload.parsedNumber);
-      answerRef.current = bluetoothAnswer;
-      setAnswer(bluetoothAnswer);
-      handleSubmitAnswer('bluetooth', bluetoothAnswer);
+      training.setAnswer(bluetoothAnswer);
+      training.submitAnswer('bluetooth', bluetoothAnswer);
     }
   }
 
@@ -273,14 +210,18 @@ export default function App() {
 
         {activeTab === 'training' && (
           <TrainingView
-            currentProblem={currentProblem}
-            selectedProblem={selectedProblem}
-            answer={answer}
-            feedback={trainingFeedback}
+            problems={trainingProblems}
+            currentProblem={training.currentProblem}
+            currentProblemIndex={training.currentProblemIndex}
+            totalProblems={training.totalProblems}
+            correctCount={training.correctCount}
+            answer={training.answer}
+            feedback={training.feedback}
+            isSetComplete={training.isSetComplete}
             bluetoothInput={lastBluetoothInput}
-            onAnswer={handleAnswerChange}
-            onCheck={() => handleSubmitAnswer('manual')}
-            onChooseProblem={chooseProblem}
+            onAnswer={training.setAnswer}
+            onCheck={() => training.submitAnswer('manual')}
+            onChooseProblem={training.chooseProblem}
           />
         )}
         {activeTab === 'dino' && (
@@ -325,19 +266,27 @@ export default function App() {
 }
 
 function TrainingView({
+  problems,
   currentProblem,
-  selectedProblem,
+  currentProblemIndex,
+  totalProblems,
+  correctCount,
   answer,
   feedback,
+  isSetComplete,
   bluetoothInput,
   onAnswer,
   onCheck,
   onChooseProblem,
 }: {
-  currentProblem: { question: string; answer: string };
-  selectedProblem: number;
+  problems: TrainingProblem[];
+  currentProblem: TrainingProblem;
+  currentProblemIndex: number;
+  totalProblems: number;
+  correctCount: number;
   answer: string;
   feedback: string;
+  isSetComplete: boolean;
   bluetoothInput: BluetoothNotificationPayload | null;
   onAnswer: (value: string) => void;
   onCheck: () => void;
@@ -352,7 +301,9 @@ function TrainingView({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-3xl font-black text-emerald-950">오늘의 주산훈련</h3>
-            <p className="mt-1 font-black text-emerald-700/70">훈련장 미션을 풀고 보상을 받아요.</p>
+            <p className="mt-1 font-black text-emerald-700/70">
+              {isSetComplete ? `세트 완료! 정답 ${correctCount}/${totalProblems}` : `문제 ${currentProblemIndex + 1}/${totalProblems} · 정답 ${correctCount}개`}
+            </p>
           </div>
           <div className={`inline-flex items-center gap-2 rounded-full border-4 border-white px-4 py-2 text-xs font-black shadow-sm ${bluetoothStatusTone}`}>
             <Bluetooth className="h-4 w-4" />
@@ -361,34 +312,35 @@ function TrainingView({
         </div>
 
         <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          {trainingProblems.map((problem, index) => (
+          {problems.map((problem, index) => (
             <button
-              key={problem.question}
+              key={problem.id}
               onClick={() => onChooseProblem(index)}
               className={`min-h-24 rounded-[26px] border-4 px-4 text-left shadow-sm transition active:translate-y-1 ${
-                selectedProblem === index ? 'border-white bg-gradient-to-b from-cyan-200 to-sky-200 text-cyan-950 shadow-[0_6px_0_#67e8f9]' : 'border-white bg-white/80 text-slate-600'
+                currentProblemIndex === index ? 'border-white bg-gradient-to-b from-cyan-200 to-sky-200 text-cyan-950 shadow-[0_6px_0_#67e8f9]' : 'border-white bg-white/80 text-slate-600'
               }`}
             >
               <p className="text-xs font-black text-cyan-700">미션 {index + 1}</p>
-              <p className="mt-1 text-3xl font-black">{problem.question}</p>
+              <p className="mt-1 text-3xl font-black">{problem.displayText}</p>
             </button>
           ))}
         </div>
 
         <div className="rounded-[34px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-5 shadow-inner md:p-8">
           <div className="text-center">
-            <p className="mb-2 text-sm font-black text-cyan-700">선택한 문제</p>
-            <p className="text-7xl font-black text-emerald-950 md:text-8xl">{currentProblem.question}</p>
+            <p className="mb-2 text-sm font-black text-cyan-700">{isSetComplete ? '세트 완료' : '현재 문제'}</p>
+            <p className="text-7xl font-black text-emerald-950 md:text-8xl">{isSetComplete ? '완료!' : currentProblem.displayText}</p>
           </div>
           <div className="mx-auto mt-8 grid max-w-xl gap-3 sm:grid-cols-[1fr_auto]">
             <input
               value={answer}
               onChange={(event) => onAnswer(event.target.value)}
+              disabled={isSetComplete}
               inputMode="numeric"
               placeholder="답 입력"
               className="min-h-20 rounded-[24px] border-4 border-white bg-white px-5 text-4xl font-black text-slate-900 shadow-inner outline-none focus:border-cyan-300"
             />
-            <button onClick={onCheck} className="game-button min-h-20 bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-cyan">
+            <button disabled={isSetComplete} onClick={onCheck} className="game-button min-h-20 bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-cyan disabled:cursor-not-allowed disabled:opacity-60">
               <CheckCircle2 className="h-6 w-6" />
               정답 확인
             </button>
@@ -408,6 +360,11 @@ function TrainingView({
             )}
           </div>
           <p className="mx-auto mt-5 max-w-xl rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">{feedback}</p>
+          {isSetComplete && (
+            <div className="mx-auto mt-3 max-w-xl rounded-[24px] border-4 border-white bg-lime-100 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">
+              세트 완료 상태입니다. 실제 보상 저장과 성장 정산은 다음 단계에서 연결합니다.
+            </div>
+          )}
         </div>
       </section>
 
