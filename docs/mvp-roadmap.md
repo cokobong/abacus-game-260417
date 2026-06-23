@@ -238,15 +238,17 @@ MVP 이후에 확장할 것:
 
 추천 순서:
 
-1. 구조 체크 완료
-2. egg item 구매 / `ownedEggs` / `activeEgg` 구조
-3. 코스튬 구매 / 보유 상태 정리
-4. 코스튬 장착
-5. 디자인 목업 재정리
-6. 컴포넌트 분리 / UI 리팩터링
+1. `abacus-curriculum.md` 작성
+2. `StageConfig` 타입/데이터 구조 추가
+3. MVP 1차 stage만 문제 생성기와 연결
+4. 훈련장 stage 선택 UI 추가
+5. 부모 설정/자동 추천은 나중에 구현
+6. 디자인 목업 재정리
+7. 컴포넌트 분리 / UI 리팩터링
 
 주의:
 
 - 당장은 디자인 리팩터링보다 상태 구조 안정화를 우선한다.
 - `egg` 단일 구조를 `ownedEggs + activeEggId`로 바꿀 때 localStorage migration을 함께 설계한다.
 - 코스튬은 구매와 장착을 분리해 구현한다.
+- 주산 훈련 난이도는 `easy / normal / hard`가 아니라 stage id 기반으로 설계한다.
