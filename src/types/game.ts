@@ -75,8 +75,28 @@ export interface DinosaurState {
   stamina: number;
 }
 
+export interface OwnedDinosaur {
+  id: Id;
+  speciesId: Id;
+  name: string;
+  rarity: 'common' | 'rare' | 'epic' | 'special' | 'legendary';
+  level: number;
+  exp: number;
+  mood: number;
+  hunger: number;
+  stamina: number;
+  obtainedAt: UnixTimeMs;
+}
+
 export interface EggState {
   id: Id;
   name: string;
+  rarity: 'normal' | 'rare' | 'special';
+  eggType: string;
   hatchProgress: number;
+  lastHatchedDinosaurName?: string;
+  lastHatchedDinosaurRarity?: OwnedDinosaur['rarity'];
+  lastHatchMessage?: string;
+  // TODO: When egg purchases are added, move toward ownedEggs + activeEggId.
+  // Flow: shop egg purchase -> choose owned egg -> train active egg -> hatch at 100%.
 }

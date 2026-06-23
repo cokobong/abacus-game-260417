@@ -4,6 +4,8 @@ import {
   Bluetooth,
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Coins,
   Egg,
   Heart,
@@ -19,9 +21,11 @@ import {
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { fallbackFoodEffect, getFoodItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
 import { rewardConfig } from './config/rewardConfig';
+import { trainingFatigueConfig } from './config/trainingFatigueConfig';
+import { dinosaurSpecies } from './data/dinosaurSpecies';
 import { trainingProblems } from './data/trainingProblems';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { DinosaurState, EggState, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
+import type { DinosaurState, EggState, OwnedDinosaur, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
 import { applyRewardsToDummyState, createRewardsFromBundle, formatRewardBundleSummary } from './utils/rewardCalculator';
 
@@ -33,6 +37,8 @@ type GameState = {
   userProfile: UserProfile | null;
   player: { coins: number };
   dinosaur: DinosaurState;
+  ownedDinosaurs: OwnedDinosaur[];
+  discoveredSpeciesIds: string[];
   egg: EggState;
   inventory: InventoryItemState[];
 };
@@ -53,14 +59,6 @@ const mapCards = [
   { name: '구름 언덕', state: '추후 공개', reward: '희귀 단서' },
 ];
 
-const pokedexCards = [
-  { name: '초록 꼬마', rarity: '일반', unlocked: true },
-  { name: '통통 트리케라', rarity: '일반', unlocked: true },
-  { name: '???', rarity: '희귀', unlocked: false },
-  { name: '???', rarity: '특별', unlocked: false },
-  { name: '???', rarity: '전설', unlocked: false },
-];
-
 const initialDinosaurState: DinosaurState = {
   id: 'dino-green-little',
   name: '초록 꼬마',
@@ -74,7 +72,22 @@ const initialDinosaurState: DinosaurState = {
 const initialEggState: EggState = {
   id: 'egg-normal-mystery',
   name: '미확인 일반 알',
+  rarity: 'normal',
+  eggType: 'starter-normal',
   hatchProgress: 62,
+};
+
+const initialOwnedDinosaur: OwnedDinosaur = {
+  id: 'owned-dino-green-little',
+  speciesId: 'green-little',
+  name: initialDinosaurState.name,
+  rarity: 'common',
+  level: initialDinosaurState.level,
+  exp: initialDinosaurState.exp,
+  mood: initialDinosaurState.mood,
+  hunger: initialDinosaurState.hunger,
+  stamina: initialDinosaurState.stamina,
+  obtainedAt: 0,
 };
 
 const initialInventory: InventoryItemState[] = [
@@ -85,15 +98,30 @@ const initialInventory: InventoryItemState[] = [
   { itemId: 'green-starter-egg', quantity: 0 },
 ];
 
+const hatchableDinosaurPool = dinosaurSpecies;
+
 const defaultGameState: GameState = {
   userProfile: null,
   player: { coins: 1240 },
   dinosaur: initialDinosaurState,
+  ownedDinosaurs: [initialOwnedDinosaur],
+  discoveredSpeciesIds: [initialOwnedDinosaur.speciesId],
   egg: initialEggState,
   inventory: initialInventory,
 };
 
 function normalizeGameState(state: Partial<GameState>): GameState {
+  const ownedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs ?? defaultGameState.ownedDinosaurs);
+  const discoveredSpeciesIds = getUniqueSpeciesIds([...(state.discoveredSpeciesIds ?? defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
+  const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, state.userProfile?.selectedDinosaurId);
+  const userProfile = state.userProfile
+    ? {
+        ...state.userProfile,
+        selectedDinosaurId: selectedDinosaur?.id ?? state.userProfile.selectedDinosaurId,
+        dinosaurName: selectedDinosaur?.name ?? state.userProfile.dinosaurName,
+      }
+    : null;
+
   return {
     ...defaultGameState,
     ...state,
@@ -104,18 +132,110 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     dinosaur: {
       ...defaultGameState.dinosaur,
       ...state.dinosaur,
+      ...(selectedDinosaur ? ownedDinosaurToDinosaurState(selectedDinosaur) : {}),
     },
+    ownedDinosaurs,
+    discoveredSpeciesIds,
     egg: {
       ...defaultGameState.egg,
       ...state.egg,
+      hatchProgress: clampPercent(state.egg?.hatchProgress ?? defaultGameState.egg.hatchProgress),
     },
     inventory: state.inventory ?? defaultGameState.inventory,
-    userProfile: state.userProfile ?? null,
+    userProfile,
   };
 }
 
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
+}
+
+function getUniqueSpeciesIds(speciesIds: string[]) {
+  return Array.from(new Set(speciesIds));
+}
+
+function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
+  const seenSpeciesIds = new Set<string>();
+
+  return ownedDinosaurs.filter((dinosaur) => {
+    if (seenSpeciesIds.has(dinosaur.speciesId)) return false;
+
+    seenSpeciesIds.add(dinosaur.speciesId);
+    return true;
+  });
+}
+
+function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
+  const ownedSpeciesIds = new Set(getUniqueOwnedDinosaurs(ownedDinosaurs).map((dinosaur) => dinosaur.speciesId));
+  return hatchableDinosaurPool.filter((species) => !ownedSpeciesIds.has(species.speciesId));
+}
+
+function getSelectedOwnedDinosaur(ownedDinosaurs: OwnedDinosaur[], selectedDinosaurId?: string | null) {
+  return ownedDinosaurs.find((dinosaur) => dinosaur.id === selectedDinosaurId) ?? ownedDinosaurs[0] ?? null;
+}
+
+function ownedDinosaurToDinosaurState(dinosaur: OwnedDinosaur): DinosaurState {
+  return {
+    id: dinosaur.id,
+    name: dinosaur.name,
+    level: dinosaur.level,
+    exp: dinosaur.exp,
+    mood: dinosaur.mood,
+    hunger: dinosaur.hunger,
+    stamina: dinosaur.stamina,
+  };
+}
+
+function updateSelectedOwnedDinosaur(state: GameState, updater: (dinosaur: OwnedDinosaur) => OwnedDinosaur): GameState {
+  const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs);
+  const selectedDinosaur = getSelectedOwnedDinosaur(uniqueOwnedDinosaurs, state.userProfile?.selectedDinosaurId);
+  if (!selectedDinosaur) return state;
+
+  const updatedDinosaur = updater(selectedDinosaur);
+  const ownedDinosaurs = uniqueOwnedDinosaurs.map((dinosaur) => (dinosaur.id === updatedDinosaur.id ? updatedDinosaur : dinosaur));
+
+  return {
+    ...state,
+    dinosaur: ownedDinosaurToDinosaurState(updatedDinosaur),
+    ownedDinosaurs,
+    userProfile: state.userProfile
+      ? {
+          ...state.userProfile,
+          selectedDinosaurId: updatedDinosaur.id,
+          dinosaurName: updatedDinosaur.name,
+        }
+      : state.userProfile,
+  };
+}
+
+function getTrainingConditionEffects(dinosaur: OwnedDinosaur) {
+  const isLowEnergy = dinosaur.stamina < trainingFatigueConfig.lowEnergyThreshold;
+  const isLowFullness = dinosaur.hunger < trainingFatigueConfig.lowFullnessThreshold;
+  const rewardMultiplier = isLowEnergy || isLowFullness ? trainingFatigueConfig.lowConditionRewardMultiplier : 1;
+  const warnings = [
+    isLowEnergy ? '공룡이 조금 지쳤어요. 놀이터에서 쉬게 해주세요!' : null,
+    isLowFullness ? '배가 고파요. 먹이를 주면 더 힘내서 훈련할 수 있어요!' : null,
+  ].filter(Boolean) as string[];
+
+  return {
+    rewardMultiplier,
+    staminaCost: trainingFatigueConfig.energyCostPerCorrect,
+    hungerCost: trainingFatigueConfig.fullnessCostPerCorrect,
+    warnings,
+  };
+}
+
+function formatTrainingRewardFeedback(dinosaur: OwnedDinosaur) {
+  const effects = getTrainingConditionEffects(dinosaur);
+  const adjustedExp = Math.max(0, Math.round(rewardConfig.correctAnswer.dinosaurExp * effects.rewardMultiplier));
+  const rewardParts = [`코인 +${rewardConfig.correctAnswer.coins}`, `알 부화 게이지 +${rewardConfig.correctAnswer.hatchProgress}%`, `공룡 EXP +${adjustedExp}`];
+
+  if (rewardConfig.correctAnswer.dinosaurMood > 0) {
+    rewardParts.push(`공룡 기분 +${rewardConfig.correctAnswer.dinosaurMood}`);
+  }
+
+  const costParts = [`체력 -${effects.staminaCost}`, `포만감 -${effects.hungerCost}`];
+  return [...rewardParts, ...costParts, ...effects.warnings].join(', ');
 }
 
 function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
@@ -142,12 +262,15 @@ export default function App() {
   const hasMountedRef = useRef(false);
   const skipNextSaveRef = useRef(false);
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
+  const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
+  const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const [lastRewards, setLastRewards] = useState<Reward[]>([]);
   const [setCompleteRewards, setSetCompleteRewards] = useState<Reward[]>([]);
+  const [lastTrainingEffects, setLastTrainingEffects] = useState<string[]>([]);
   const training = useTrainingSession(trainingProblems, {
     onCorrectAnswer: () => applyRewardBundle('problem_correct'),
     onSetComplete: () => applyRewardBundle('set_complete'),
-    formatCorrectRewardFeedback: () => `정답! ${formatRewardBundleSummary(rewardConfig.correctAnswer)}`,
+    formatCorrectRewardFeedback: () => `정답! ${formatTrainingRewardFeedback(activeOwnedDinosaur)}`,
     formatSetCompleteFeedback: () => `세트 완료! ${formatRewardBundleSummary(rewardConfig.setComplete)}`,
   });
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
@@ -184,6 +307,7 @@ export default function App() {
     setSelectedFoodItemId('soft-berry');
     setLastRewards([]);
     setSetCompleteRewards([]);
+    setLastTrainingEffects([]);
     setDinoFeedback('저장 데이터를 초기화했어요.');
     setShopFeedback('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
     setStorageFeedback('저장 데이터를 초기화하고 기본 상태로 되돌렸어요.');
@@ -201,18 +325,21 @@ export default function App() {
       childName,
       ageOrGrade,
       createdAt,
-      selectedDinosaurId: initialDinosaurState.id,
+      selectedDinosaurId: initialOwnedDinosaur.id,
       dinosaurName,
       parentModeEnabled: false,
+    };
+    const starterDinosaur: OwnedDinosaur = {
+      ...initialOwnedDinosaur,
+      name: dinosaurName,
     };
 
     setGameState({
       ...defaultGameState,
       userProfile,
-      dinosaur: {
-        ...defaultGameState.dinosaur,
-        name: dinosaurName,
-      },
+      dinosaur: ownedDinosaurToDinosaurState(starterDinosaur),
+      ownedDinosaurs: [starterDinosaur],
+      discoveredSpeciesIds: [starterDinosaur.speciesId],
     });
     setDinoFeedback(`${dinosaurName}와 함께 모험을 시작해요.`);
     setPhase('app');
@@ -220,32 +347,73 @@ export default function App() {
 
   function applyRewardBundle(reason: RewardReason) {
     const bundle = reason === 'set_complete' ? rewardConfig.setComplete : rewardConfig.correctAnswer;
-    const rewards = createRewardsFromBundle(reason, bundle, {
-      dinosaurId: gameState.dinosaur.id,
+    const targetDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
+    const trainingEffects = reason === 'problem_correct' ? getTrainingConditionEffects(targetDinosaur) : null;
+    const adjustedBundle =
+      trainingEffects && trainingEffects.rewardMultiplier < 1
+        ? {
+            ...bundle,
+            dinosaurExp: Math.max(0, Math.round(bundle.dinosaurExp * trainingEffects.rewardMultiplier)),
+          }
+        : bundle;
+    const adjustedRewards = createRewardsFromBundle(reason, adjustedBundle, {
+      dinosaurId: targetDinosaur.id,
       eggId: gameState.egg.id,
     });
 
-    setGameState((current) => applyRewardsToDummyState(current, rewards));
+    setGameState((current) => {
+      const selectedDinosaur = getSelectedOwnedDinosaur(current.ownedDinosaurs, current.userProfile?.selectedDinosaurId);
+      if (!selectedDinosaur) return applyRewardsToDummyState(current, adjustedRewards);
+
+      const rewardAppliedState = applyRewardsToDummyState(
+        {
+          ...current,
+          dinosaur: ownedDinosaurToDinosaurState(selectedDinosaur),
+        },
+        adjustedRewards,
+      );
+      const currentTrainingEffects = reason === 'problem_correct' ? getTrainingConditionEffects(selectedDinosaur) : null;
+
+      return updateSelectedOwnedDinosaur(
+        {
+          ...current,
+          player: rewardAppliedState.player,
+          egg: rewardAppliedState.egg,
+        },
+        (dinosaur) => ({
+          ...dinosaur,
+          exp: rewardAppliedState.dinosaur.exp,
+          mood: rewardAppliedState.dinosaur.mood,
+          stamina: currentTrainingEffects ? clampPercent(dinosaur.stamina - currentTrainingEffects.staminaCost) : dinosaur.stamina,
+          hunger: currentTrainingEffects ? clampPercent(dinosaur.hunger - currentTrainingEffects.hungerCost) : dinosaur.hunger,
+        }),
+      );
+    });
 
     if (reason === 'set_complete') {
-      setSetCompleteRewards(rewards);
+      setSetCompleteRewards(adjustedRewards);
       return;
     }
 
-    setLastRewards(rewards);
+    setLastRewards(adjustedRewards);
+    setLastTrainingEffects([
+      `체력 -${trainingEffects?.staminaCost ?? 0}`,
+      `포만감 -${trainingEffects?.hungerCost ?? 0}`,
+      ...(trainingEffects?.rewardMultiplier && trainingEffects.rewardMultiplier < 1 ? [`EXP 보상 ${Math.round(trainingEffects.rewardMultiplier * 100)}% 적용`] : []),
+      ...(trainingEffects?.warnings ?? []),
+    ]);
   }
 
   function applyDinosaurInteraction(changes: DinosaurInteractionChange, message: string) {
-    setGameState((current) => ({
-      ...current,
-      dinosaur: {
-        ...current.dinosaur,
-        exp: clampPercent(current.dinosaur.exp + (changes.exp ?? 0)),
-        mood: clampPercent(current.dinosaur.mood + (changes.mood ?? 0)),
-        hunger: clampPercent(current.dinosaur.hunger + (changes.hunger ?? 0)),
-        stamina: clampPercent(current.dinosaur.stamina + (changes.stamina ?? 0)),
-      },
-    }));
+    setGameState((current) =>
+      updateSelectedOwnedDinosaur(current, (dinosaur) => ({
+        ...dinosaur,
+        exp: clampPercent(dinosaur.exp + (changes.exp ?? 0)),
+        mood: clampPercent(dinosaur.mood + (changes.mood ?? 0)),
+        hunger: clampPercent(dinosaur.hunger + (changes.hunger ?? 0)),
+        stamina: clampPercent(dinosaur.stamina + (changes.stamina ?? 0)),
+      })),
+    );
     setDinoFeedback(message);
   }
 
@@ -291,14 +459,13 @@ export default function App() {
       remainingQuantity = Math.max(0, (currentInventoryItem?.quantity ?? 0) - 1);
 
       return {
-        ...current,
-        dinosaur: {
-          ...current.dinosaur,
-          exp: clampPercent(current.dinosaur.exp + (effect.exp ?? 0)),
-          mood: clampPercent(current.dinosaur.mood + (effect.mood ?? 0)),
-          hunger: clampPercent(current.dinosaur.hunger + (effect.hunger ?? 0)),
-          stamina: clampPercent(current.dinosaur.stamina + (effect.stamina ?? 0)),
-        },
+        ...updateSelectedOwnedDinosaur(current, (dinosaur) => ({
+          ...dinosaur,
+          exp: clampPercent(dinosaur.exp + (effect.exp ?? 0)),
+          mood: clampPercent(dinosaur.mood + (effect.mood ?? 0)),
+          hunger: clampPercent(dinosaur.hunger + (effect.hunger ?? 0)),
+          stamina: clampPercent(dinosaur.stamina + (effect.stamina ?? 0)),
+        })),
         inventory: current.inventory.map((item) => (item.itemId === inventoryItem.itemId ? { ...item, quantity: remainingQuantity } : item)),
       };
     });
@@ -353,6 +520,96 @@ export default function App() {
     });
 
     setShopFeedback(`${item.name}를 구매했어요! 코인 -${item.price}`);
+  }
+
+  function hatchEgg() {
+    setGameState((current) => {
+      if (current.egg.hatchProgress < 100) return current;
+
+      const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
+      const ownedSpeciesIds = new Set(uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId));
+      const hatchedTemplate = getAvailableHatchSpecies(uniqueOwnedDinosaurs)[0];
+
+      if (!hatchedTemplate) {
+        return {
+          ...current,
+          ownedDinosaurs: uniqueOwnedDinosaurs,
+          discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
+          egg: {
+            ...current.egg,
+            lastHatchMessage: '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.',
+          },
+        };
+      }
+
+      if (ownedSpeciesIds.has(hatchedTemplate.speciesId)) {
+        return {
+          ...current,
+          ownedDinosaurs: uniqueOwnedDinosaurs,
+          discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
+          egg: {
+            ...current.egg,
+            lastHatchMessage: '이미 만난 공룡이에요.',
+          },
+        };
+      }
+
+      const obtainedAt = Date.now();
+      const newDinosaur: OwnedDinosaur = {
+        id: `owned-${hatchedTemplate.speciesId}-${obtainedAt}`,
+        speciesId: hatchedTemplate.speciesId,
+        name: hatchedTemplate.defaultName,
+        rarity: hatchedTemplate.rarity,
+        level: 1,
+        exp: 0,
+        mood: 70,
+        hunger: 70,
+        stamina: 70,
+        obtainedAt,
+      };
+
+      return {
+        ...current,
+        ownedDinosaurs: [...uniqueOwnedDinosaurs, newDinosaur],
+        discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId), newDinosaur.speciesId]),
+        egg: {
+          ...current.egg,
+          id: `egg-normal-${obtainedAt}`,
+          name: '미확인 일반 알',
+          rarity: 'normal',
+          eggType: 'starter-normal',
+          hatchProgress: 0,
+          lastHatchedDinosaurName: newDinosaur.name,
+          lastHatchedDinosaurRarity: newDinosaur.rarity,
+          lastHatchMessage: `${newDinosaur.name}가 태어났어요! 도감에 새 공룡이 등록되었어요.`,
+        },
+      };
+    });
+  }
+
+  function selectAdjacentDinosaur(direction: -1 | 1) {
+    setGameState((current) => {
+      const ownedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
+      if (ownedDinosaurs.length === 0) return current;
+
+      const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, current.userProfile?.selectedDinosaurId) ?? ownedDinosaurs[0];
+      const selectedIndex = Math.max(0, ownedDinosaurs.findIndex((dinosaur) => dinosaur.id === selectedDinosaur.id));
+      const nextIndex = (selectedIndex + direction + ownedDinosaurs.length) % ownedDinosaurs.length;
+      const nextDinosaur = ownedDinosaurs[nextIndex];
+
+      return {
+        ...current,
+        dinosaur: ownedDinosaurToDinosaurState(nextDinosaur),
+        ownedDinosaurs,
+        userProfile: current.userProfile
+          ? {
+              ...current.userProfile,
+              selectedDinosaurId: nextDinosaur.id,
+              dinosaurName: nextDinosaur.name,
+            }
+          : current.userProfile,
+      };
+    });
   }
 
   function handleBluetoothNumber(value: string) {
@@ -448,7 +705,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <HeaderPill icon={Coins} label={gameState.player.coins.toLocaleString()} tone="coin" />
-            <HeaderPill icon={Star} label={`Lv. ${gameState.dinosaur.level}`} tone="level" />
+            <HeaderPill icon={Star} label={`Lv. ${activeDinosaur.level}`} tone="level" />
             <HeaderPill icon={BookOpen} label="2/5" tone="book" />
           </div>
         </div>
@@ -475,9 +732,13 @@ export default function App() {
             answer={training.answer}
             feedback={training.feedback}
             lastRewards={lastRewards}
+            lastTrainingEffects={lastTrainingEffects}
             setCompleteRewards={setCompleteRewards}
             isSetComplete={training.isSetComplete}
             bluetoothInput={lastBluetoothInput}
+            activeOwnedDinosaur={activeOwnedDinosaur}
+            ownedDinosaurs={gameState.ownedDinosaurs}
+            onSelectAdjacentDinosaur={selectAdjacentDinosaur}
             onAnswer={training.setAnswer}
             onCheck={() => training.submitAnswer('manual')}
             onChooseProblem={training.chooseProblem}
@@ -486,19 +747,22 @@ export default function App() {
         {activeTab === 'dino' && (
           <DinoViewPanel
             view={dinoView}
-            dinosaur={gameState.dinosaur}
+            dinosaur={activeDinosaur}
+            activeOwnedDinosaur={activeOwnedDinosaur}
+            ownedDinosaurs={gameState.ownedDinosaurs}
             feedback={dinoFeedback}
             inventory={gameState.inventory}
             selectedFoodItemId={selectedFoodItemId}
             onView={setDinoView}
             onSelectFood={setSelectedFoodItemId}
+            onSelectAdjacentDinosaur={selectAdjacentDinosaur}
             onDinosaurInteraction={applyDinosaurInteraction}
             onFeed={feedDinosaur}
           />
         )}
-        {activeTab === 'hatchery' && <HatcheryView egg={gameState.egg} />}
+        {activeTab === 'hatchery' && <HatcheryView egg={gameState.egg} ownedDinosaurs={gameState.ownedDinosaurs} onHatchEgg={hatchEgg} />}
         {activeTab === 'shop' && <ShopView feedback={shopFeedback} inventory={gameState.inventory} onPurchase={purchaseItem} />}
-        {activeTab === 'pokedex' && <PokedexView />}
+        {activeTab === 'pokedex' && <PokedexView ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} />}
         {activeTab === 'adventure' && <AdventureView />}
         {activeTab === 'settings' && (
           <SettingsView
@@ -545,9 +809,13 @@ function TrainingView({
   answer,
   feedback,
   lastRewards,
+  lastTrainingEffects,
   setCompleteRewards,
   isSetComplete,
   bluetoothInput,
+  activeOwnedDinosaur,
+  ownedDinosaurs,
+  onSelectAdjacentDinosaur,
   onAnswer,
   onCheck,
   onChooseProblem,
@@ -560,15 +828,21 @@ function TrainingView({
   answer: string;
   feedback: string;
   lastRewards: Reward[];
+  lastTrainingEffects: string[];
   setCompleteRewards: Reward[];
   isSetComplete: boolean;
   bluetoothInput: BluetoothNotificationPayload | null;
+  activeOwnedDinosaur: OwnedDinosaur;
+  ownedDinosaurs: OwnedDinosaur[];
+  onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
   onAnswer: (value: string) => void;
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
 }) {
   const bluetoothStatus = bluetoothInput ? 'Bluetooth 입력 수신' : 'Bluetooth 입력 대기';
   const bluetoothStatusTone = bluetoothInput ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800';
+  const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
+  const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
@@ -644,9 +918,16 @@ function TrainingView({
       </section>
 
       <aside className="grid content-start gap-3">
+        <TrainingDinosaurCard
+          dinosaur={activeDinosaur}
+          activeOwnedDinosaur={activeOwnedDinosaur}
+          ownedDinosaurs={ownedDinosaurs}
+          onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
+        />
         <RewardCard icon={Coins} title="정답 코인" value={`+${rewardConfig.correctAnswer.coins}`} tone="from-amber-200 to-yellow-300 text-amber-900" />
         <RewardCard icon={Egg} title="정답 부화 게이지" value={`+${rewardConfig.correctAnswer.hatchProgress}%`} tone="from-orange-200 to-amber-300 text-orange-900" />
         <RewardCard icon={Heart} title="정답 공룡 기분" value={`+${rewardConfig.correctAnswer.dinosaurMood}`} tone="from-pink-200 to-rose-300 text-rose-900" />
+        <RewardCard icon={Sparkles} title="함께 훈련" value={activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} tone="from-cyan-200 to-sky-300 text-cyan-900" />
         <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
           <h4 className="text-xl font-black text-emerald-950">최근 획득 보상</h4>
           <div className="mt-3 grid gap-2">
@@ -660,12 +941,75 @@ function TrainingView({
               <p className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-500">정답 후 여기에 표시됩니다.</p>
             )}
           </div>
+          {lastTrainingEffects.length > 0 && (
+            <div className="mt-3 grid gap-2">
+              {lastTrainingEffects.map((effect) => (
+                <p key={effect} className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-800">
+                  {effect}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
         <div className="rounded-[30px] border-4 border-white bg-lime-100 p-5 shadow-lg">
           <h4 className="text-xl font-black text-emerald-950">핵심 루프</h4>
           <p className="mt-2 font-black leading-relaxed text-emerald-700/80">훈련을 끝내면 보상을 얻고, 보상은 알부화와 공룡 돌봄으로 이어집니다.</p>
         </div>
       </aside>
+    </div>
+  );
+}
+
+function TrainingDinosaurCard({
+  dinosaur,
+  activeOwnedDinosaur,
+  ownedDinosaurs,
+  onSelectAdjacentDinosaur,
+}: {
+  dinosaur: DinosaurState;
+  activeOwnedDinosaur: OwnedDinosaur;
+  ownedDinosaurs: OwnedDinosaur[];
+  onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
+}) {
+  const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
+  const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
+
+  return (
+    <div className="rounded-[30px] border-4 border-white bg-white/86 p-5 shadow-lg">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <button
+          aria-label="이전 훈련 공룡"
+          disabled={uniqueOwnedCount <= 1}
+          onClick={() => onSelectAdjacentDinosaur(-1)}
+          className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-lime-100 text-emerald-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <ChevronLeft className="h-7 w-7" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-black text-cyan-700">함께 훈련 중!</p>
+          <h4 className="text-2xl font-black text-emerald-950">{dinosaur.name}</h4>
+        </div>
+        <button
+          aria-label="다음 훈련 공룡"
+          disabled={uniqueOwnedCount <= 1}
+          onClick={() => onSelectAdjacentDinosaur(1)}
+          className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-lime-100 text-emerald-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <ChevronRight className="h-7 w-7" />
+        </button>
+      </div>
+      <div className="flex min-h-44 items-end justify-center rounded-[28px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-3 shadow-inner">
+        <DinoAvatar size="small" />
+      </div>
+      <p className="mt-3 rounded-full bg-amber-100 px-4 py-2 text-center text-sm font-black text-amber-800">
+        {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
+      </p>
+      <div className="mt-4 grid gap-3">
+        <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
+        <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
+        <Meter label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
+        <Meter label="포만감" value={dinosaur.hunger} tone="from-amber-400 to-orange-500" />
+      </div>
     </div>
   );
 }
@@ -758,7 +1102,17 @@ function AdventureView() {
   );
 }
 
-function HatcheryView({ egg }: { egg: EggState }) {
+function HatcheryView({ egg, ownedDinosaurs, onHatchEgg }: { egg: EggState; ownedDinosaurs: OwnedDinosaur[]; onHatchEgg: () => void }) {
+  const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
+  const hasAvailableHatchSpecies = getAvailableHatchSpecies(uniqueOwnedDinosaurs).length > 0;
+  const isProgressReady = egg.hatchProgress >= 100;
+  const canHatch = isProgressReady && hasAvailableHatchSpecies;
+  const hatchGuideText = !hasAvailableHatchSpecies
+    ? '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.'
+    : isProgressReady
+      ? '부화 준비 완료! 새 공룡을 만나볼까요?'
+      : '훈련을 해서 알을 부화시켜요!';
+
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
       <section className="game-panel p-4 md:p-6">
@@ -771,7 +1125,9 @@ function HatcheryView({ egg }: { egg: EggState }) {
             <div className="absolute -right-8 top-10 rounded-full border-4 border-white bg-cyan-400 px-4 py-2 text-lg font-black text-white shadow-lg">+{rewardConfig.correctAnswer.hatchProgress}%</div>
           </div>
           <h3 className="text-4xl font-black text-emerald-950">{egg.name}</h3>
-          <p className="mt-2 max-w-md font-black leading-relaxed text-emerald-700/75">훈련장에서 문제를 풀면 부화 게이지가 오르고, 알의 단서가 조금씩 공개됩니다.</p>
+          <p className="mt-2 max-w-md font-black leading-relaxed text-emerald-700/75">
+            {hatchGuideText}
+          </p>
           <div className="mt-8 w-full max-w-lg rounded-[26px] border-4 border-white bg-white/80 p-4 shadow-sm">
             <div className="mb-2 flex justify-between text-sm font-black text-emerald-800">
               <span>부화 진행률</span>
@@ -781,12 +1137,32 @@ function HatcheryView({ egg }: { egg: EggState }) {
               <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-cyan-400" style={{ width: `${egg.hatchProgress}%` }} />
             </div>
           </div>
+          <button
+            disabled={!canHatch}
+            onClick={onHatchEgg}
+            className="mt-6 inline-flex min-h-16 items-center justify-center gap-2 rounded-[24px] border-4 border-white bg-gradient-to-b from-orange-400 to-amber-500 px-8 text-lg font-black text-white shadow-[0_7px_0_#d97706] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Egg className="h-6 w-6" />
+            부화하기
+          </button>
+          {egg.lastHatchedDinosaurName && (
+            <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">
+              {egg.lastHatchMessage ?? `${egg.lastHatchedDinosaurName}가 태어났어요! 도감에 새 공룡이 등록되었어요.`}
+            </p>
+          )}
+          {!egg.lastHatchedDinosaurName && egg.lastHatchMessage && (
+            <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">{egg.lastHatchMessage}</p>
+          )}
         </div>
       </section>
       <aside className="grid content-start gap-3">
         <RewardCard icon={Play} title="다음 행동" value="훈련 1세트" tone="from-cyan-200 to-sky-300 text-cyan-900" />
-        <RewardCard icon={Sparkles} title="알 힌트" value="작은 발자국" tone="from-amber-200 to-yellow-300 text-amber-900" />
-        <RewardCard icon={ShoppingBag} title="보조 아이템" value="따뜻한 둥지" tone="from-orange-200 to-amber-300 text-orange-900" />
+        <RewardCard icon={Sparkles} title="부화 상태" value={!hasAvailableHatchSpecies ? '전체 발견' : canHatch ? '준비 완료' : `${100 - egg.hatchProgress}% 남음`} tone="from-amber-200 to-yellow-300 text-amber-900" />
+        <RewardCard icon={Baby} title="보유 공룡" value={`${uniqueOwnedDinosaurs.length}마리`} tone="from-orange-200 to-amber-300 text-orange-900" />
+        <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
+          <h4 className="text-xl font-black text-emerald-950">최근 획득</h4>
+          <p className="mt-2 font-black text-slate-600">{egg.lastHatchedDinosaurName ? `${egg.lastHatchedDinosaurName} · ${egg.lastHatchedDinosaurRarity}` : '아직 부화한 공룡이 없어요.'}</p>
+        </div>
       </aside>
     </div>
   );
@@ -795,24 +1171,33 @@ function HatcheryView({ egg }: { egg: EggState }) {
 function DinoViewPanel({
   view,
   dinosaur,
+  activeOwnedDinosaur,
+  ownedDinosaurs,
   feedback,
   inventory,
   selectedFoodItemId,
   onView,
   onSelectFood,
+  onSelectAdjacentDinosaur,
   onDinosaurInteraction,
   onFeed,
 }: {
   view: DinoView;
   dinosaur: DinosaurState;
+  activeOwnedDinosaur: OwnedDinosaur;
+  ownedDinosaurs: OwnedDinosaur[];
   feedback: string;
   inventory: InventoryItemState[];
   selectedFoodItemId: string | null;
   onView: (view: DinoView) => void;
   onSelectFood: (itemId: string) => void;
+  onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
   onDinosaurInteraction: (changes: DinosaurInteractionChange, message: string) => void;
   onFeed: () => void;
 }) {
+  const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
+  const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
+
   if (view === 'playground') {
     return (
       <section className="game-panel p-4 md:p-6">
@@ -830,7 +1215,9 @@ function DinoViewPanel({
             <div className="rounded-[30px] border-4 border-white bg-white/86 p-5 shadow-lg">
               <p className="text-sm font-black text-amber-700">놀이터 상태</p>
               <h3 className="mt-1 text-3xl font-black text-emerald-950">{dinosaur.name}</h3>
-              <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-800">Lv. {dinosaur.level}</p>
+              <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-800">
+                {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
+              </p>
               <div className="mt-4 grid gap-3">
                 <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
                 <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
@@ -858,12 +1245,35 @@ function DinoViewPanel({
           <div className="relative flex min-h-[560px] items-end justify-center overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-6">
             <div className="absolute bottom-0 left-0 right-0 h-36 rounded-t-[50%] bg-lime-400/70" />
             <div className="absolute right-8 top-8 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-800 shadow-lg">기분 {dinosaur.mood}%</div>
+            {uniqueOwnedCount > 1 && (
+              <>
+                <button
+                  aria-label="이전 공룡"
+                  onClick={() => onSelectAdjacentDinosaur(-1)}
+                  className="absolute left-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+                >
+                  <ChevronLeft className="h-10 w-10" />
+                </button>
+                <button
+                  aria-label="다음 공룡"
+                  onClick={() => onSelectAdjacentDinosaur(1)}
+                  className="absolute right-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+                >
+                  <ChevronRight className="h-10 w-10" />
+                </button>
+              </>
+            )}
             <DinoAvatar size="hero" />
           </div>
           <div className="flex flex-col justify-center">
             <p className="text-sm font-black text-amber-700">대표 공룡</p>
             <h3 className="text-5xl font-black text-emerald-950">{dinosaur.name}</h3>
-            <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-base font-black text-amber-800">Lv. {dinosaur.level} · 성장 상태: 어린 공룡</p>
+            <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-base font-black text-amber-800">
+              {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
+            </p>
+            <p className="mt-3 rounded-[20px] border-4 border-white bg-white/80 px-4 py-3 text-sm font-black text-slate-500">
+              {activeSpecies?.description ?? '보유한 공룡을 돌볼 수 있어요.'}
+            </p>
             <div className="mt-6 grid gap-4">
               <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
               <Meter label="포만감" value={dinosaur.hunger} tone="from-amber-400 to-orange-500" />
@@ -985,23 +1395,66 @@ function ShopView({ feedback, inventory, onPurchase }: { feedback: string; inven
   );
 }
 
-function PokedexView() {
+const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
+  common: '일반',
+  rare: '희귀',
+  epic: '영웅',
+  special: '특별',
+  legendary: '전설',
+};
+
+function PokedexView({ ownedDinosaurs, discoveredSpeciesIds }: { ownedDinosaurs: OwnedDinosaur[]; discoveredSpeciesIds: string[] }) {
+  const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
+  const ownedCountBySpecies = uniqueOwnedDinosaurs.reduce<Record<string, number>>((counts, dinosaur) => {
+    counts[dinosaur.speciesId] = (counts[dinosaur.speciesId] ?? 0) + 1;
+    return counts;
+  }, {});
+  const discoveredSpeciesSet = new Set([...discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
+  const discoveredCount = dinosaurSpecies.filter((species) => discoveredSpeciesSet.has(species.speciesId)).length;
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {pokedexCards.map((card, index) => (
-        <article key={`${card.name}-${card.rarity}-${index}`} className="rounded-[32px] border-4 border-white bg-white/86 p-4 shadow-lg">
-          <div className={`mb-4 flex h-44 items-center justify-center rounded-[28px] ${card.unlocked ? 'bg-gradient-to-b from-sky-100 to-lime-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
-            {card.unlocked ? (
-              <DinoAvatar size="small" />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-slate-400 text-5xl font-black text-white">?</div>
-            )}
+    <div className="grid gap-5">
+      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-3xl font-black text-emerald-950">공룡 도감</h3>
+            <p className="mt-2 font-black text-slate-500">부화로 만난 공룡 종이 여기에 등록돼요.</p>
           </div>
-          <h3 className="text-xl font-black text-emerald-950">{card.name}</h3>
-          <p className="mt-1 inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-black text-sky-800">{card.rarity}</p>
-          <p className="mt-3 text-sm font-black text-slate-500">{card.unlocked ? '발견 완료' : '알 부화 후 공개'}</p>
-        </article>
-      ))}
+          <div className="rounded-[24px] bg-sky-100 px-5 py-3 text-lg font-black text-sky-900">
+            발견한 공룡 {discoveredCount} / {dinosaurSpecies.length}
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {dinosaurSpecies.map((species) => {
+          const isDiscovered = discoveredSpeciesSet.has(species.speciesId);
+          const ownedCount = ownedCountBySpecies[species.speciesId] ?? 0;
+
+          return (
+            <article key={species.speciesId} className={`rounded-[32px] border-4 border-white p-4 shadow-lg ${isDiscovered ? 'bg-white/86' : 'bg-slate-100/86'}`}>
+              <div className={`mb-4 flex h-44 items-center justify-center rounded-[28px] ${isDiscovered ? 'bg-gradient-to-b from-sky-100 to-lime-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
+                {isDiscovered ? (
+                  <DinoAvatar size="small" />
+                ) : (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-slate-400 text-5xl font-black text-white">{species.silhouette}</div>
+                )}
+              </div>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className={`text-xl font-black ${isDiscovered ? 'text-emerald-950' : 'text-slate-500'}`}>{isDiscovered ? species.displayName : '???'}</h3>
+                {isDiscovered && <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-black text-lime-800">보유 {ownedCount}마리</span>}
+              </div>
+              <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-black ${isDiscovered ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'}`}>
+                {rarityLabels[species.rarity]}
+              </p>
+              <p className="mt-3 min-h-16 text-sm font-black leading-relaxed text-slate-500">{isDiscovered ? species.description : species.unlockHint}</p>
+              <p className={`mt-3 rounded-full px-3 py-1 text-center text-xs font-black ${isDiscovered ? 'bg-emerald-100 text-emerald-800' : 'bg-white/80 text-slate-500'}`}>
+                {isDiscovered ? '우리 공룡에서 키울 수 있어요' : '미발견'}
+              </p>
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }
