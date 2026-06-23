@@ -7,6 +7,7 @@
 
 - `docs/game-structure.md`
 - `docs/game-settings.md`
+- `docs/balance-config.md`
 - `docs/shop-items.md`
 - `docs/bluetooth-abacus.md`
 - `docs/mockup-review.md`
@@ -15,8 +16,10 @@
 ## 1. 설계 원칙
 
 - 훈련 세션 진행 상태는 화면 컴포넌트 안에 흩어두지 않고 `TrainingSession` 같은 별도 상태로 관리한다.
+- 운영 중 조정될 수 있는 난이도, 보상, 부화, 성장, 상점, UX 타이밍 수치는 로직에 하드코딩하지 않고 `docs/balance-config.md` 기준으로 별도 config/data 파일에서 관리한다.
 - 세트 진행 중 임시 입력, 피드백, 현재 문제 상태는 메모리에 둔다.
 - 코인, EXP, 공룡 성장, 알 부화 진행, 아이템 구매, 도감 해금처럼 영구 보존이 필요한 결과만 `SaveData`에 저장한다.
+- 전역 config와 플레이어 저장값은 분리한다. 예를 들어 정답당 코인, 콤보 보너스, 상점 가격표는 config이고, 현재 보유 코인, 인벤토리 수량, 알 진행도는 저장값이다.
 - 문제풀이 중 매 입력마다 전체 저장 데이터를 갱신하지 않는다. 기본 저장 시점은 세트 완료 정산, 구매, 아이템 사용, 부화 완료, 설정 변경이다.
 - 물리 주판에는 별도 초기화 버튼이 없다. 새 문제 시작 시 앱 내부 입력값과 피드백만 초기화한다.
 - Bluetooth 리턴 버튼은 현재 주판알 배열값 전송과 정답 확인 역할을 함께 한다.
@@ -60,6 +63,7 @@ type RewardReason = "problem_correct" | "set_complete" | "streak" | "accuracy" |
 interface TrainingSession {
   id: Id;
   status: SessionStatus;
+  configVersion: string;
   settings: TrainingSettingsSnapshot;
   problems: TrainingProblem[];
   currentProblemIndex: number;
@@ -85,6 +89,7 @@ interface TrainingSettingsSnapshot {
 | --- | --- |
 | `id` | 세트 단위 고유 ID |
 | `status` | 세트 진행 상태 |
+| `configVersion` | 세트 시작 시 적용된 밸런스 config version |
 | `settings` | 세트 시작 시점의 문제 설정 스냅샷 |
 | `problems` | 세트에 포함된 문제 목록 |
 | `currentProblemIndex` | 자동 진행 중 현재 문제 위치 |
@@ -106,6 +111,7 @@ interface TrainingSettingsSnapshot {
 
 - `id`
 - `status`
+- `configVersion`
 - `settings`
 - `problems`
 - `currentProblemIndex`
@@ -118,6 +124,7 @@ interface TrainingSettingsSnapshot {
 
 - `feedbackUntil`
 - `pendingRewards`
+- config 세부 version 묶음
 - 일시정지 상태
 - 중도 이탈 복구 상태
 - 약한 유형 분석용 메타데이터
@@ -925,8 +932,15 @@ interface SaveData {
 
 interface SaveSettings {
   training: TrainingSettingsSnapshot;
+  parent: ParentTunableSettings;
   audioEnabled: boolean;
   bluetoothPreferred: boolean;
+}
+
+interface ParentTunableSettings {
+  autoDifficultyEnabled: boolean;
+  maxDifficultyProfileId: Id | null;
+  recommendedSetsPerDay: number;
 }
 
 interface SaveMeta {
@@ -949,6 +963,10 @@ interface SaveMeta {
 | `recentResults` | 최근 학습 결과 목록 |
 | `settings` | 문제 설정, 오디오, Bluetooth 선호 등 |
 | `meta` | 저장 시각, migration, 백업 정보 |
+
+`SaveSettings`에는 부모가 선택한 사용자 설정만 저장한다.
+전역 밸런스 수치인 정답당 코인, 세트 완료 보너스, 일일 소프트캡, 상점 가격, 레벨별 필요 EXP, UX 딜레이는 `SaveData`에 복사하지 않고 config에서 읽는다.
+단, 이미 생성된 알의 `requiredProgress`처럼 생성 시점의 플레이 경험을 유지해야 하는 값은 인스턴스 데이터에 복사해 저장할 수 있다.
 
 ### 연결 화면/기능
 
@@ -985,12 +1003,13 @@ interface SaveMeta {
 문서 설계 이후 실제 코드화는 아래 순서가 좋다.
 
 1. `TrainingSettingsSnapshot`, `TrainingProblem`, `TrainingSession`, `TrainingAnswer`, `TrainingResult`부터 구현한다.
-2. 문제 생성 함수와 공통 채점 함수를 만든다.
-3. Bluetooth와 키패드가 같은 제출 함수로 들어오도록 입력 컨트롤러를 만든다.
-4. 세트 완료 시 `Reward[]`와 `TrainingResult`를 계산한다.
-5. `PlayerProfile`, `Dinosaur`, `Egg`, `InventoryItem`, `DexEntry`, `SaveData` 기본값을 만든다.
-6. 세트 완료 정산을 `SaveData`에 반영하고 `localStorage` 저장/복원을 붙인다.
-7. 이후 상점 구매, 아이템 사용, 부화 완료, 도감 해금을 별도 reducer/action으로 확장한다.
+2. `difficultyConfig`, `rewardConfig`, `economyConfig` 같은 초기 config 파일을 만든다.
+3. 문제 생성 함수와 공통 채점 함수를 만들고, 문제 생성에 필요한 수치는 `difficultyConfig`에서 읽는다.
+4. Bluetooth와 키패드가 같은 제출 함수로 들어오도록 입력 컨트롤러를 만든다.
+5. 세트 완료 시 `rewardConfig`, `economyConfig`를 입력으로 받아 `Reward[]`와 `TrainingResult`를 계산한다.
+6. `PlayerProfile`, `Dinosaur`, `Egg`, `InventoryItem`, `DexEntry`, `SaveData` 기본값을 만든다.
+7. 세트 완료 정산을 `SaveData`에 반영하고 `localStorage` 저장/복원을 붙인다.
+8. 이후 `eggConfig`, `growthConfig`, `shopConfig`, `fatigueConfig`, `uxTimingConfig`를 붙여 상점 구매, 아이템 사용, 부화 완료, 도감 해금을 별도 reducer/action으로 확장한다.
 
 1차 구현의 핵심은 훈련 세션과 저장 가능한 정산 결과를 먼저 안정화하는 것이다.
 상점, 도감, 모험은 데이터 구조를 준비하되, 실제 화면 동작은 훈련 세트 완료와 저장 복원이 안정된 뒤 붙이는 편이 안전하다.
