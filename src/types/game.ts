@@ -8,6 +8,32 @@ export type TrainingSessionStatus = 'running' | 'showing_feedback' | 'completed'
 export type SubmissionResult = 'correct' | 'wrong' | null;
 export type RewardReason = 'problem_correct' | 'set_complete';
 export type RewardType = 'coin' | 'exp' | 'hatch_progress' | 'dinosaur_mood';
+export type AbacusOperation = 'add' | 'subtract';
+export type AbacusComplementType = 'none' | 'five' | 'ten' | 'mixed';
+export type AbacusStageStatus = 'mvp' | 'planned' | 'later';
+
+export interface AbacusStageConfig {
+  id: Id;
+  title: string;
+  textbookLevel: string;
+  objective: string;
+  digitCount: 1 | 2 | 3;
+  numberCount: number;
+  operations: AbacusOperation[];
+  maxNumber: number;
+  minResult: number;
+  maxResult: number;
+  allowCarry: boolean;
+  allowBorrow: boolean;
+  complementType: AbacusComplementType;
+  complementFocus?: string;
+  rowCount: 2 | 3 | 4 | 5;
+  problemCountPerSet: number;
+  rewardMultiplier: number;
+  generatorStrategy: string;
+  status: AbacusStageStatus;
+  sourceNote?: string;
+}
 
 export interface TrainingProblem {
   id: Id;
