@@ -102,11 +102,11 @@ export function formatRewardSummary(rewards: Reward[]) {
 }
 
 export function formatRewardBundleSummary(bundle: RewardBundleConfig) {
-  const parts = [`코인 +${bundle.coins}`, `알 부화 게이지 +${bundle.hatchProgress}%`, `공룡 EXP +${bundle.dinosaurExp}`];
+  const parts = [bundle.coins ? `코인 +${bundle.coins}` : null, bundle.hatchProgress ? `알 부화 게이지 +${bundle.hatchProgress}%` : null, bundle.dinosaurExp ? `공룡 EXP +${bundle.dinosaurExp}` : null].filter(Boolean) as string[];
 
   if (bundle.dinosaurMood > 0) {
     parts.push(`공룡 기분 +${bundle.dinosaurMood}`);
   }
 
-  return parts.join(', ');
+  return parts.join(', ') || '보상 없음';
 }

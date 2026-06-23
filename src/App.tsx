@@ -19,13 +19,13 @@ import {
   Utensils,
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
-import { fallbackFoodEffect, getFoodItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
+import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
 import { rewardConfig } from './config/rewardConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { dinosaurSpecies } from './data/dinosaurSpecies';
 import { trainingProblems } from './data/trainingProblems';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { DinosaurState, EggState, OwnedDinosaur, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
+import type { CostumeSlot, DinosaurState, EggState, EquippedCostumes, OwnedDinosaur, OwnedEgg, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
 import { applyRewardsToDummyState, createRewardsFromBundle, formatRewardBundleSummary } from './utils/rewardCalculator';
 
@@ -40,6 +40,9 @@ type GameState = {
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
   egg: EggState;
+  ownedEggs: OwnedEgg[];
+  activeEggId: string | null;
+  ownedCostumeIds: string[];
   inventory: InventoryItemState[];
 };
 
@@ -77,6 +80,16 @@ const initialEggState: EggState = {
   hatchProgress: 62,
 };
 
+const initialOwnedEgg: OwnedEgg = {
+  id: 'owned-egg-starter-normal',
+  eggItemId: 'green-starter-egg',
+  name: '초록 알',
+  rarity: initialEggState.rarity,
+  eggType: initialEggState.eggType,
+  hatchProgress: initialEggState.hatchProgress,
+  createdAt: 0,
+};
+
 const initialOwnedDinosaur: OwnedDinosaur = {
   id: 'owned-dino-green-little',
   speciesId: 'green-little',
@@ -107,6 +120,9 @@ const defaultGameState: GameState = {
   ownedDinosaurs: [initialOwnedDinosaur],
   discoveredSpeciesIds: [initialOwnedDinosaur.speciesId],
   egg: initialEggState,
+  ownedEggs: [initialOwnedEgg],
+  activeEggId: initialOwnedEgg.id,
+  ownedCostumeIds: [],
   inventory: initialInventory,
 };
 
@@ -114,6 +130,10 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const ownedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs ?? defaultGameState.ownedDinosaurs);
   const discoveredSpeciesIds = getUniqueSpeciesIds([...(state.discoveredSpeciesIds ?? defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
   const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, state.userProfile?.selectedDinosaurId);
+  const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
+  const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
+  const activeEggId = activeEgg?.id ?? null;
+  const ownedCostumeIds = getUniqueSpeciesIds([...(state.ownedCostumeIds ?? []), ...getOwnedCostumeIdsFromInventory(state.inventory ?? defaultGameState.inventory)]);
   const userProfile = state.userProfile
     ? {
         ...state.userProfile,
@@ -138,9 +158,16 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     discoveredSpeciesIds,
     egg: {
       ...defaultGameState.egg,
-      ...state.egg,
-      hatchProgress: clampPercent(state.egg?.hatchProgress ?? defaultGameState.egg.hatchProgress),
+      ...(activeEggToEggState(activeEgg) ?? {}),
+      ...(!activeEgg ? state.egg : {}),
+      lastHatchedDinosaurName: state.egg?.lastHatchedDinosaurName,
+      lastHatchedDinosaurRarity: state.egg?.lastHatchedDinosaurRarity,
+      lastHatchMessage: state.egg?.lastHatchMessage,
+      hatchProgress: activeEgg ? activeEgg.hatchProgress : clampPercent(state.egg?.hatchProgress ?? defaultGameState.egg.hatchProgress),
     },
+    ownedEggs,
+    activeEggId,
+    ownedCostumeIds,
     inventory: state.inventory ?? defaultGameState.inventory,
     userProfile,
   };
@@ -157,17 +184,114 @@ function getUniqueSpeciesIds(speciesIds: string[]) {
 function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
   const seenSpeciesIds = new Set<string>();
 
-  return ownedDinosaurs.filter((dinosaur) => {
-    if (seenSpeciesIds.has(dinosaur.speciesId)) return false;
+  return ownedDinosaurs
+    .filter((dinosaur) => {
+      if (seenSpeciesIds.has(dinosaur.speciesId)) return false;
 
-    seenSpeciesIds.add(dinosaur.speciesId);
-    return true;
-  });
+      seenSpeciesIds.add(dinosaur.speciesId);
+      return true;
+    })
+    .map((dinosaur) => ({
+      ...dinosaur,
+      equippedCostumes: dinosaur.equippedCostumes ?? {},
+    }));
 }
 
 function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
   const ownedSpeciesIds = new Set(getUniqueOwnedDinosaurs(ownedDinosaurs).map((dinosaur) => dinosaur.speciesId));
   return hatchableDinosaurPool.filter((species) => !ownedSpeciesIds.has(species.speciesId));
+}
+
+function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
+  const sourceEggs =
+    ownedEggs !== undefined
+      ? ownedEggs
+      : legacyEgg
+        ? [
+            {
+              id: legacyEgg.id,
+              eggItemId: legacyEgg.eggType === 'rare-spark' ? 'rare-spark-egg' : 'green-starter-egg',
+              name: legacyEgg.name,
+              rarity: legacyEgg.rarity,
+              eggType: legacyEgg.eggType,
+              hatchProgress: legacyEgg.hatchProgress,
+              createdAt: 0,
+            },
+          ]
+        : defaultGameState.ownedEggs;
+
+  return sourceEggs.map((egg) => ({
+    ...egg,
+    hatchProgress: clampPercent(egg.hatchProgress),
+  }));
+}
+
+function getSelectedOwnedEgg(ownedEggs: OwnedEgg[], activeEggId?: string | null) {
+  return ownedEggs.find((egg) => egg.id === activeEggId) ?? ownedEggs[0] ?? null;
+}
+
+function activeEggToEggState(egg: OwnedEgg | null): EggState | null {
+  if (!egg) return null;
+
+  return {
+    id: egg.id,
+    name: egg.name,
+    rarity: egg.rarity,
+    eggType: egg.eggType,
+    hatchProgress: egg.hatchProgress,
+  };
+}
+
+function createOwnedEggFromItem(itemId: string, createdAt = Date.now()): OwnedEgg | null {
+  const item = getEggItemConfig(itemId);
+  if (!item) return null;
+
+  return {
+    id: `owned-egg-${item.id}-${createdAt}`,
+    eggItemId: item.id,
+    name: item.name,
+    rarity: item.rarity,
+    eggType: item.eggType,
+    hatchProgress: 0,
+    createdAt,
+  };
+}
+
+function addInventoryQuantity(inventory: InventoryItemState[], itemId: string, quantity: number) {
+  const existingItem = inventory.find((item) => item.itemId === itemId);
+  if (!existingItem) return [...inventory, { itemId, quantity }];
+
+  return inventory.map((item) => (item.itemId === itemId ? { ...item, quantity: item.quantity + quantity } : item));
+}
+
+function getOwnedCostumeIdsFromInventory(inventory: InventoryItemState[]) {
+  return inventory.filter((item) => item.quantity > 0 && getItemConfig(item.itemId)?.category === 'costume').map((item) => item.itemId);
+}
+
+function getCostumeName(itemId?: string) {
+  if (!itemId) return null;
+
+  const item = getItemConfig(itemId);
+  return item?.category === 'costume' ? item.name : null;
+}
+
+function formatEquippedCostumes(equippedCostumes?: EquippedCostumes) {
+  const names = Object.values(equippedCostumes ?? {})
+    .map((itemId) => getCostumeName(itemId))
+    .filter(Boolean);
+
+  return names.length > 0 ? names.join(', ') : '착용 없음';
+}
+
+function getCostumeSlotLabel(slot: CostumeSlot) {
+  const labels: Record<CostumeSlot, string> = {
+    head: '머리',
+    neck: '목',
+    body: '몸',
+    accessory: '장식',
+  };
+
+  return labels[slot];
 }
 
 function getSelectedOwnedDinosaur(ownedDinosaurs: OwnedDinosaur[], selectedDinosaurId?: string | null) {
@@ -228,7 +352,7 @@ function getTrainingConditionEffects(dinosaur: OwnedDinosaur) {
 function formatTrainingRewardFeedback(dinosaur: OwnedDinosaur) {
   const effects = getTrainingConditionEffects(dinosaur);
   const adjustedExp = Math.max(0, Math.round(rewardConfig.correctAnswer.dinosaurExp * effects.rewardMultiplier));
-  const rewardParts = [`코인 +${rewardConfig.correctAnswer.coins}`, `알 부화 게이지 +${rewardConfig.correctAnswer.hatchProgress}%`, `공룡 EXP +${adjustedExp}`];
+  const rewardParts = [`코인 +${rewardConfig.correctAnswer.coins}`, `공룡 EXP +${adjustedExp}`];
 
   if (rewardConfig.correctAnswer.dinosaurMood > 0) {
     rewardParts.push(`공룡 기분 +${rewardConfig.correctAnswer.dinosaurMood}`);
@@ -264,6 +388,7 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
   const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
+  const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
   const [lastRewards, setLastRewards] = useState<Reward[]>([]);
   const [setCompleteRewards, setSetCompleteRewards] = useState<Reward[]>([]);
   const [lastTrainingEffects, setLastTrainingEffects] = useState<string[]>([]);
@@ -271,7 +396,10 @@ export default function App() {
     onCorrectAnswer: () => applyRewardBundle('problem_correct'),
     onSetComplete: () => applyRewardBundle('set_complete'),
     formatCorrectRewardFeedback: () => `정답! ${formatTrainingRewardFeedback(activeOwnedDinosaur)}`,
-    formatSetCompleteFeedback: () => `세트 완료! ${formatRewardBundleSummary(rewardConfig.setComplete)}`,
+    formatSetCompleteFeedback: () => {
+      const hatchItem = getHatchItemConfig(rewardConfig.hatchItemRewardOnSetComplete);
+      return `세트 완료! ${formatRewardBundleSummary(rewardConfig.setComplete)}, ${hatchItem?.name ?? rewardConfig.hatchItemRewardOnSetComplete} ${rewardConfig.hatchItemQuantityOnSetComplete}개를 얻었어요.`;
+    },
   });
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
@@ -340,6 +468,9 @@ export default function App() {
       dinosaur: ownedDinosaurToDinosaurState(starterDinosaur),
       ownedDinosaurs: [starterDinosaur],
       discoveredSpeciesIds: [starterDinosaur.speciesId],
+      ownedEggs: [initialOwnedEgg],
+      activeEggId: initialOwnedEgg.id,
+      egg: activeEggToEggState(initialOwnedEgg) ?? defaultGameState.egg,
     });
     setDinoFeedback(`${dinosaurName}와 함께 모험을 시작해요.`);
     setPhase('app');
@@ -358,27 +489,32 @@ export default function App() {
         : bundle;
     const adjustedRewards = createRewardsFromBundle(reason, adjustedBundle, {
       dinosaurId: targetDinosaur.id,
-      eggId: gameState.egg.id,
+      eggId: activeEgg?.id ?? 'no-active-egg',
     });
+    const displayRewards = adjustedRewards.filter((reward) => reward.type !== 'hatch_progress');
 
     setGameState((current) => {
       const selectedDinosaur = getSelectedOwnedDinosaur(current.ownedDinosaurs, current.userProfile?.selectedDinosaurId);
-      if (!selectedDinosaur) return applyRewardsToDummyState(current, adjustedRewards);
+      const rewardsForCurrent = adjustedRewards.filter((reward) => reward.type !== 'hatch_progress');
+      if (!selectedDinosaur) return applyRewardsToDummyState(current, rewardsForCurrent);
 
       const rewardAppliedState = applyRewardsToDummyState(
         {
           ...current,
           dinosaur: ownedDinosaurToDinosaurState(selectedDinosaur),
         },
-        adjustedRewards,
+        rewardsForCurrent.filter((reward) => reward.type !== 'hatch_progress'),
       );
       const currentTrainingEffects = reason === 'problem_correct' ? getTrainingConditionEffects(selectedDinosaur) : null;
 
-      return updateSelectedOwnedDinosaur(
+      const nextState = updateSelectedOwnedDinosaur(
         {
           ...current,
           player: rewardAppliedState.player,
-          egg: rewardAppliedState.egg,
+          inventory:
+            reason === 'set_complete'
+              ? addInventoryQuantity(current.inventory, rewardConfig.hatchItemRewardOnSetComplete, rewardConfig.hatchItemQuantityOnSetComplete)
+              : current.inventory,
         },
         (dinosaur) => ({
           ...dinosaur,
@@ -388,14 +524,18 @@ export default function App() {
           hunger: currentTrainingEffects ? clampPercent(dinosaur.hunger - currentTrainingEffects.hungerCost) : dinosaur.hunger,
         }),
       );
+
+      return nextState;
     });
 
     if (reason === 'set_complete') {
-      setSetCompleteRewards(adjustedRewards);
+      setSetCompleteRewards(displayRewards);
+      const hatchItem = getHatchItemConfig(rewardConfig.hatchItemRewardOnSetComplete);
+      setLastTrainingEffects([`${hatchItem?.name ?? rewardConfig.hatchItemRewardOnSetComplete} ${rewardConfig.hatchItemQuantityOnSetComplete}개를 얻었어요.`]);
       return;
     }
 
-    setLastRewards(adjustedRewards);
+    setLastRewards(displayRewards);
     setLastTrainingEffects([
       `체력 -${trainingEffects?.staminaCost ?? 0}`,
       `포만감 -${trainingEffects?.hungerCost ?? 0}`,
@@ -482,7 +622,7 @@ export default function App() {
       return;
     }
 
-    if (item.category === 'dinosaur' || item.category === 'egg') {
+    if (item.category === 'dinosaur') {
       setShopFeedback('공룡 해금 기능은 다음 단계에서 연결 예정입니다.');
       return;
     }
@@ -492,8 +632,9 @@ export default function App() {
       return;
     }
 
-    const ownedQuantity = gameState.inventory.find((inventoryItem) => inventoryItem.itemId === item.id)?.quantity ?? 0;
-    if (item.category === 'costume' && ownedQuantity > 0) {
+    const isOwnedCostume = item.category === 'costume' && gameState.ownedCostumeIds.includes(item.id);
+    const ownedQuantity = item.category === 'egg' ? gameState.ownedEggs.filter((egg) => egg.eggItemId === item.id).length : item.category === 'costume' ? (isOwnedCostume ? 1 : 0) : gameState.inventory.find((inventoryItem) => inventoryItem.itemId === item.id)?.quantity ?? 0;
+    if (isOwnedCostume) {
       setShopFeedback('이미 보유 중이에요.');
       return;
     }
@@ -503,10 +644,44 @@ export default function App() {
       return;
     }
 
+    if (item.category === 'egg') {
+      const newEgg = createOwnedEggFromItem(item.id);
+      if (!newEgg) {
+        setShopFeedback(`알 정보를 찾지 못했어요. itemId: ${item.id}`);
+        return;
+      }
+
+      setGameState((current) => ({
+        ...current,
+        player: {
+          ...current.player,
+          coins: current.player.coins - item.price,
+        },
+        ownedEggs: [...current.ownedEggs, newEgg],
+        activeEggId: current.activeEggId ?? newEgg.id,
+        egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
+      }));
+      setShopFeedback(`${item.name}을 구매했어요! 코인 -${item.price}`);
+      return;
+    }
+
+    if (item.category === 'costume') {
+      setGameState((current) => ({
+        ...current,
+        player: {
+          ...current.player,
+          coins: current.player.coins - item.price,
+        },
+        ownedCostumeIds: current.ownedCostumeIds.includes(item.id) ? current.ownedCostumeIds : [...current.ownedCostumeIds, item.id],
+      }));
+      setShopFeedback(`${item.name}를 구매했어요!`);
+      return;
+    }
+
     setGameState((current) => {
       const existingInventoryItem = current.inventory.find((inventoryItem) => inventoryItem.itemId === item.id);
       const nextInventory = existingInventoryItem
-        ? current.inventory.map((inventoryItem) => (inventoryItem.itemId === item.id ? { ...inventoryItem, quantity: item.category === 'costume' ? 1 : inventoryItem.quantity + 1 } : inventoryItem))
+        ? current.inventory.map((inventoryItem) => (inventoryItem.itemId === item.id ? { ...inventoryItem, quantity: inventoryItem.quantity + 1 } : inventoryItem))
         : [...current.inventory, { itemId: item.id, quantity: 1 }];
 
       return {
@@ -524,7 +699,8 @@ export default function App() {
 
   function hatchEgg() {
     setGameState((current) => {
-      if (current.egg.hatchProgress < 100) return current;
+      const currentActiveEgg = getSelectedOwnedEgg(current.ownedEggs, current.activeEggId);
+      if (!currentActiveEgg || currentActiveEgg.hatchProgress < 100) return current;
 
       const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
       const ownedSpeciesIds = new Set(uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId));
@@ -537,6 +713,7 @@ export default function App() {
           discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
           egg: {
             ...current.egg,
+            ...(activeEggToEggState(currentActiveEgg) ?? {}),
             lastHatchMessage: '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.',
           },
         };
@@ -549,6 +726,7 @@ export default function App() {
           discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
           egg: {
             ...current.egg,
+            ...(activeEggToEggState(currentActiveEgg) ?? {}),
             lastHatchMessage: '이미 만난 공룡이에요.',
           },
         };
@@ -568,17 +746,24 @@ export default function App() {
         obtainedAt,
       };
 
+      const nextOwnedEggs = current.ownedEggs.filter((egg) => egg.id !== currentActiveEgg.id);
+      const nextActiveEgg = getSelectedOwnedEgg(nextOwnedEggs, nextOwnedEggs[0]?.id);
+
       return {
         ...current,
         ownedDinosaurs: [...uniqueOwnedDinosaurs, newDinosaur],
         discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId), newDinosaur.speciesId]),
+        ownedEggs: nextOwnedEggs,
+        activeEggId: nextActiveEgg?.id ?? null,
         egg: {
           ...current.egg,
-          id: `egg-normal-${obtainedAt}`,
-          name: '미확인 일반 알',
-          rarity: 'normal',
-          eggType: 'starter-normal',
-          hatchProgress: 0,
+          ...(activeEggToEggState(nextActiveEgg) ?? {
+            id: `no-active-egg-${obtainedAt}`,
+            name: '선택된 알 없음',
+            rarity: 'normal' as const,
+            eggType: 'none',
+            hatchProgress: 0,
+          }),
           lastHatchedDinosaurName: newDinosaur.name,
           lastHatchedDinosaurRarity: newDinosaur.rarity,
           lastHatchMessage: `${newDinosaur.name}가 태어났어요! 도감에 새 공룡이 등록되었어요.`,
@@ -610,6 +795,87 @@ export default function App() {
           : current.userProfile,
       };
     });
+  }
+
+  function selectActiveEgg(eggId: string) {
+    setGameState((current) => {
+      const nextActiveEgg = current.ownedEggs.find((egg) => egg.id === eggId) ?? null;
+      if (!nextActiveEgg) return current;
+
+      return {
+        ...current,
+        activeEggId: nextActiveEgg.id,
+        egg: {
+          ...current.egg,
+          ...(activeEggToEggState(nextActiveEgg) ?? {}),
+        },
+      };
+    });
+  }
+
+  function useHatchItem(itemId: string) {
+    const item = getHatchItemConfig(itemId);
+    if (!item) return;
+
+    setGameState((current) => {
+      const activeEgg = getSelectedOwnedEgg(current.ownedEggs, current.activeEggId);
+      if (!activeEgg) {
+        return {
+          ...current,
+          egg: {
+            ...current.egg,
+            lastHatchMessage: '부화시킬 알을 선택해주세요.',
+          },
+        };
+      }
+
+      const inventoryItem = current.inventory.find((entry) => entry.itemId === item.id);
+      if (!inventoryItem || inventoryItem.quantity <= 0) {
+        return {
+          ...current,
+          egg: {
+            ...current.egg,
+            ...(activeEggToEggState(activeEgg) ?? {}),
+            lastHatchMessage: '상점에서 부화 아이템을 구매하거나 훈련 세트를 완료해보세요.',
+          },
+        };
+      }
+
+      const nextOwnedEggs = current.ownedEggs.map((egg) => (egg.id === activeEgg.id ? { ...egg, hatchProgress: clampPercent(egg.hatchProgress + item.effect.hatchProgress) } : egg));
+      const nextActiveEgg = getSelectedOwnedEgg(nextOwnedEggs, activeEgg.id);
+
+      return {
+        ...current,
+        ownedEggs: nextOwnedEggs,
+        inventory: current.inventory.map((entry) => (entry.itemId === item.id ? { ...entry, quantity: Math.max(0, entry.quantity - 1) } : entry)),
+        egg: {
+          ...current.egg,
+          ...(activeEggToEggState(nextActiveEgg) ?? {}),
+          lastHatchMessage: `${item.name}을 사용했어요! 알 부화 게이지 +${item.effect.hatchProgress}%`,
+        },
+      };
+    });
+  }
+
+  function equipCostume(itemId: string) {
+    const item = getItemConfig(itemId);
+    if (item?.category !== 'costume') return;
+
+    if (!gameState.ownedCostumeIds.includes(item.id)) {
+      setDinoFeedback('보유 중인 코스튬만 착용할 수 있어요.');
+      return;
+    }
+
+    setGameState((current) =>
+      updateSelectedOwnedDinosaur(current, (dinosaur) => ({
+        ...dinosaur,
+        equippedCostumes: {
+          ...(dinosaur.equippedCostumes ?? {}),
+          [item.slot]: item.id,
+        },
+      })),
+    );
+    setDinoFeedback(`${item.name}를 착용했어요.`);
   }
 
   function handleBluetoothNumber(value: string) {
@@ -750,18 +1016,20 @@ export default function App() {
             dinosaur={activeDinosaur}
             activeOwnedDinosaur={activeOwnedDinosaur}
             ownedDinosaurs={gameState.ownedDinosaurs}
+            ownedCostumeIds={gameState.ownedCostumeIds}
             feedback={dinoFeedback}
             inventory={gameState.inventory}
             selectedFoodItemId={selectedFoodItemId}
             onView={setDinoView}
             onSelectFood={setSelectedFoodItemId}
             onSelectAdjacentDinosaur={selectAdjacentDinosaur}
+            onEquipCostume={equipCostume}
             onDinosaurInteraction={applyDinosaurInteraction}
             onFeed={feedDinosaur}
           />
         )}
-        {activeTab === 'hatchery' && <HatcheryView egg={gameState.egg} ownedDinosaurs={gameState.ownedDinosaurs} onHatchEgg={hatchEgg} />}
-        {activeTab === 'shop' && <ShopView feedback={shopFeedback} inventory={gameState.inventory} onPurchase={purchaseItem} />}
+        {activeTab === 'hatchery' && <HatcheryView egg={gameState.egg} ownedEggs={gameState.ownedEggs} activeEggId={gameState.activeEggId} ownedDinosaurs={gameState.ownedDinosaurs} inventory={gameState.inventory} onSelectEgg={selectActiveEgg} onUseHatchItem={useHatchItem} onHatchEgg={hatchEgg} />}
+        {activeTab === 'shop' && <ShopView feedback={shopFeedback} inventory={gameState.inventory} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />}
         {activeTab === 'pokedex' && <PokedexView ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} />}
         {activeTab === 'adventure' && <AdventureView />}
         {activeTab === 'settings' && (
@@ -925,7 +1193,7 @@ function TrainingView({
           onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
         />
         <RewardCard icon={Coins} title="정답 코인" value={`+${rewardConfig.correctAnswer.coins}`} tone="from-amber-200 to-yellow-300 text-amber-900" />
-        <RewardCard icon={Egg} title="정답 부화 게이지" value={`+${rewardConfig.correctAnswer.hatchProgress}%`} tone="from-orange-200 to-amber-300 text-orange-900" />
+        <RewardCard icon={Egg} title="세트 완료 보너스" value="부화 아이템" tone="from-orange-200 to-amber-300 text-orange-900" />
         <RewardCard icon={Heart} title="정답 공룡 기분" value={`+${rewardConfig.correctAnswer.dinosaurMood}`} tone="from-pink-200 to-rose-300 text-rose-900" />
         <RewardCard icon={Sparkles} title="함께 훈련" value={activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} tone="from-cyan-200 to-sky-300 text-cyan-900" />
         <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
@@ -1004,6 +1272,7 @@ function TrainingDinosaurCard({
       <p className="mt-3 rounded-full bg-amber-100 px-4 py-2 text-center text-sm font-black text-amber-800">
         {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
       </p>
+      <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-sm font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
       <div className="mt-4 grid gap-3">
         <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
         <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
@@ -1102,12 +1371,38 @@ function AdventureView() {
   );
 }
 
-function HatcheryView({ egg, ownedDinosaurs, onHatchEgg }: { egg: EggState; ownedDinosaurs: OwnedDinosaur[]; onHatchEgg: () => void }) {
+function HatcheryView({
+  egg,
+  ownedEggs,
+  activeEggId,
+  ownedDinosaurs,
+  inventory,
+  onSelectEgg,
+  onUseHatchItem,
+  onHatchEgg,
+}: {
+  egg: EggState;
+  ownedEggs: OwnedEgg[];
+  activeEggId: string | null;
+  ownedDinosaurs: OwnedDinosaur[];
+  inventory: InventoryItemState[];
+  onSelectEgg: (eggId: string) => void;
+  onUseHatchItem: (itemId: string) => void;
+  onHatchEgg: () => void;
+}) {
   const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
   const hasAvailableHatchSpecies = getAvailableHatchSpecies(uniqueOwnedDinosaurs).length > 0;
-  const isProgressReady = egg.hatchProgress >= 100;
+  const activeEgg = getSelectedOwnedEgg(ownedEggs, activeEggId);
+  const hatchItems = inventory
+    .map((entry) => ({ inventoryItem: entry, config: getHatchItemConfig(entry.itemId) }))
+    .filter((entry): entry is { inventoryItem: InventoryItemState; config: NonNullable<ReturnType<typeof getHatchItemConfig>> } => Boolean(entry.config) && entry.inventoryItem.quantity > 0);
+  const isProgressReady = activeEgg ? activeEgg.hatchProgress >= 100 : false;
   const canHatch = isProgressReady && hasAvailableHatchSpecies;
-  const hatchGuideText = !hasAvailableHatchSpecies
+  const hatchGuideText = ownedEggs.length === 0
+    ? '상점에서 알을 구매해보세요!'
+    : !activeEgg
+      ? '부화시킬 알을 선택해주세요.'
+      : !hasAvailableHatchSpecies
     ? '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.'
     : isProgressReady
       ? '부화 준비 완료! 새 공룡을 만나볼까요?'
@@ -1116,48 +1411,102 @@ function HatcheryView({ egg, ownedDinosaurs, onHatchEgg }: { egg: EggState; owne
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
       <section className="game-panel p-4 md:p-6">
-        <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[36px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-6 text-center shadow-inner">
-          <div className="relative mb-8">
-            <div className="absolute inset-x-8 bottom-0 h-10 rounded-full bg-orange-900/10 blur-md" />
-            <div className="relative flex h-64 w-48 items-center justify-center rounded-[50%] border-[12px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-xl">
-              <Egg className="h-24 w-24 text-orange-400" />
-            </div>
-            <div className="absolute -right-8 top-10 rounded-full border-4 border-white bg-cyan-400 px-4 py-2 text-lg font-black text-white shadow-lg">+{rewardConfig.correctAnswer.hatchProgress}%</div>
+        <div className="mb-4 rounded-[28px] border-4 border-white bg-white/76 p-4 shadow-sm">
+          <h4 className="text-lg font-black text-emerald-950">보유 알</h4>
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {ownedEggs.length === 0 ? (
+              <p className="rounded-[20px] bg-orange-50 px-4 py-3 text-sm font-black text-orange-800">상점에서 알을 구매해보세요!</p>
+            ) : (
+              ownedEggs.map((ownedEgg) => {
+                const isActive = ownedEgg.id === activeEgg?.id;
+                return (
+                  <button
+                    key={ownedEgg.id}
+                    onClick={() => onSelectEgg(ownedEgg.id)}
+                    className={`min-w-44 rounded-[20px] border-4 px-4 py-3 text-left shadow-sm transition active:translate-y-1 ${
+                      isActive ? 'border-amber-300 bg-amber-100 text-amber-950' : 'border-white bg-white/90 text-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black">{ownedEgg.name}</span>
+                      <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black">{isActive ? '부화 중' : ownedEgg.rarity}</span>
+                    </div>
+                    <p className="mt-1 text-xs font-black opacity-75">게이지 {ownedEgg.hatchProgress}%</p>
+                  </button>
+                );
+              })
+            )}
           </div>
-          <h3 className="text-4xl font-black text-emerald-950">{egg.name}</h3>
-          <p className="mt-2 max-w-md font-black leading-relaxed text-emerald-700/75">
-            {hatchGuideText}
-          </p>
-          <div className="mt-8 w-full max-w-lg rounded-[26px] border-4 border-white bg-white/80 p-4 shadow-sm">
-            <div className="mb-2 flex justify-between text-sm font-black text-emerald-800">
-              <span>부화 진행률</span>
-              <span>{egg.hatchProgress}%</span>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[36px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-6 text-center shadow-inner">
+            <div className="relative mb-6">
+              <div className="absolute inset-x-8 bottom-0 h-10 rounded-full bg-orange-900/10 blur-md" />
+              <div className="relative flex h-64 w-48 items-center justify-center rounded-[50%] border-[12px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-xl">
+                <Egg className="h-24 w-24 text-orange-400" />
+              </div>
+              <div className="absolute -right-8 top-10 rounded-full border-4 border-white bg-cyan-400 px-4 py-2 text-lg font-black text-white shadow-lg">아이템 사용</div>
             </div>
-            <div className="h-7 overflow-hidden rounded-full bg-orange-100 shadow-inner">
-              <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-cyan-400" style={{ width: `${egg.hatchProgress}%` }} />
-            </div>
-          </div>
-          <button
-            disabled={!canHatch}
-            onClick={onHatchEgg}
-            className="mt-6 inline-flex min-h-16 items-center justify-center gap-2 rounded-[24px] border-4 border-white bg-gradient-to-b from-orange-400 to-amber-500 px-8 text-lg font-black text-white shadow-[0_7px_0_#d97706] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Egg className="h-6 w-6" />
-            부화하기
-          </button>
-          {egg.lastHatchedDinosaurName && (
-            <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">
-              {egg.lastHatchMessage ?? `${egg.lastHatchedDinosaurName}가 태어났어요! 도감에 새 공룡이 등록되었어요.`}
+            <h3 className="text-4xl font-black text-emerald-950">{activeEgg?.name ?? '선택된 알 없음'}</h3>
+            <p className="mt-2 max-w-md font-black leading-relaxed text-emerald-700/75">
+              {hatchGuideText}
             </p>
-          )}
-          {!egg.lastHatchedDinosaurName && egg.lastHatchMessage && (
-            <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">{egg.lastHatchMessage}</p>
-          )}
+            <div className="mt-6 w-full max-w-lg rounded-[26px] border-4 border-white bg-white/80 p-4 shadow-sm">
+              <div className="mb-2 flex justify-between text-sm font-black text-emerald-800">
+                <span>부화 진행률</span>
+                <span>{activeEgg?.hatchProgress ?? 0}%</span>
+              </div>
+              <div className="h-7 overflow-hidden rounded-full bg-orange-100 shadow-inner">
+                <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-cyan-400" style={{ width: `${activeEgg?.hatchProgress ?? 0}%` }} />
+              </div>
+            </div>
+            <button
+              disabled={!canHatch}
+              onClick={onHatchEgg}
+              className="mt-5 inline-flex min-h-16 items-center justify-center gap-2 rounded-[24px] border-4 border-white bg-gradient-to-b from-orange-400 to-amber-500 px-8 text-lg font-black text-white shadow-[0_7px_0_#d97706] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Egg className="h-6 w-6" />
+              부화하기
+            </button>
+            {egg.lastHatchedDinosaurName && (
+              <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">
+                {egg.lastHatchMessage ?? `${egg.lastHatchedDinosaurName}가 태어났어요! 도감에 새 공룡이 등록되었어요.`}
+              </p>
+            )}
+            {!egg.lastHatchedDinosaurName && egg.lastHatchMessage && (
+              <p className="mt-4 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black text-emerald-900 shadow-sm">{egg.lastHatchMessage}</p>
+            )}
+          </div>
+
+          <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
+            <h4 className="text-xl font-black text-emerald-950">부화 아이템</h4>
+            <div className="mt-3 grid gap-2">
+              {hatchItems.length === 0 ? (
+                <p className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">상점에서 부화 아이템을 구매하거나 훈련 세트를 완료해보세요.</p>
+              ) : (
+                hatchItems.map(({ inventoryItem, config }) => (
+                  <button
+                    key={inventoryItem.itemId}
+                    disabled={!activeEgg || inventoryItem.quantity <= 0}
+                    onClick={() => onUseHatchItem(inventoryItem.itemId)}
+                    className="rounded-[22px] border-4 border-white bg-gradient-to-b from-amber-100 to-orange-100 px-4 py-3 text-left text-amber-950 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black">{config.name}</span>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black">x{inventoryItem.quantity}</span>
+                    </div>
+                    <p className="mt-2 text-xs font-black text-amber-700">알 부화 게이지 +{config.effect.hatchProgress}%</p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </section>
       <aside className="grid content-start gap-3">
         <RewardCard icon={Play} title="다음 행동" value="훈련 1세트" tone="from-cyan-200 to-sky-300 text-cyan-900" />
-        <RewardCard icon={Sparkles} title="부화 상태" value={!hasAvailableHatchSpecies ? '전체 발견' : canHatch ? '준비 완료' : `${100 - egg.hatchProgress}% 남음`} tone="from-amber-200 to-yellow-300 text-amber-900" />
+        <RewardCard icon={Sparkles} title="부화 상태" value={ownedEggs.length === 0 ? '알 없음' : !activeEgg ? '선택 필요' : !hasAvailableHatchSpecies ? '전체 발견' : canHatch ? '준비 완료' : `${100 - activeEgg.hatchProgress}% 남음`} tone="from-amber-200 to-yellow-300 text-amber-900" />
         <RewardCard icon={Baby} title="보유 공룡" value={`${uniqueOwnedDinosaurs.length}마리`} tone="from-orange-200 to-amber-300 text-orange-900" />
         <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
           <h4 className="text-xl font-black text-emerald-950">최근 획득</h4>
@@ -1173,12 +1522,14 @@ function DinoViewPanel({
   dinosaur,
   activeOwnedDinosaur,
   ownedDinosaurs,
+  ownedCostumeIds,
   feedback,
   inventory,
   selectedFoodItemId,
   onView,
   onSelectFood,
   onSelectAdjacentDinosaur,
+  onEquipCostume,
   onDinosaurInteraction,
   onFeed,
 }: {
@@ -1186,17 +1537,22 @@ function DinoViewPanel({
   dinosaur: DinosaurState;
   activeOwnedDinosaur: OwnedDinosaur;
   ownedDinosaurs: OwnedDinosaur[];
+  ownedCostumeIds: string[];
   feedback: string;
   inventory: InventoryItemState[];
   selectedFoodItemId: string | null;
   onView: (view: DinoView) => void;
   onSelectFood: (itemId: string) => void;
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
+  onEquipCostume: (itemId: string) => void;
   onDinosaurInteraction: (changes: DinosaurInteractionChange, message: string) => void;
   onFeed: () => void;
 }) {
   const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
   const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
+  const ownedCostumes = ownedCostumeIds
+    .map((itemId) => getItemConfig(itemId))
+    .filter((item): item is NonNullable<ReturnType<typeof getItemConfig>> & { category: 'costume' } => item?.category === 'costume');
 
   if (view === 'playground') {
     return (
@@ -1218,6 +1574,7 @@ function DinoViewPanel({
               <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-800">
                 {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
               </p>
+              <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-sm font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
               <div className="mt-4 grid gap-3">
                 <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
                 <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
@@ -1271,6 +1628,7 @@ function DinoViewPanel({
             <p className="mt-2 rounded-full bg-amber-100 px-4 py-2 text-base font-black text-amber-800">
               {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
             </p>
+            <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-base font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
             <p className="mt-3 rounded-[20px] border-4 border-white bg-white/80 px-4 py-3 text-sm font-black text-slate-500">
               {activeSpecies?.description ?? '보유한 공룡을 돌볼 수 있어요.'}
             </p>
@@ -1324,17 +1682,46 @@ function DinoViewPanel({
             );
           })}
         </div>
+        <div className="mt-6 border-t-4 border-white pt-5">
+          <h4 className="mb-3 text-2xl font-black text-emerald-950">코스튬 옷장</h4>
+          <p className="mb-3 rounded-[20px] bg-violet-50 px-4 py-2 text-sm font-black text-violet-800">착용 중: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
+          <div className="grid gap-3">
+            {ownedCostumes.length === 0 ? (
+              <p className="rounded-[20px] bg-slate-100 px-4 py-3 text-sm font-black text-slate-500">상점에서 코스튬을 구매하면 여기에 표시돼요.</p>
+            ) : (
+              ownedCostumes.map((costume) => {
+                const isEquipped = activeOwnedDinosaur.equippedCostumes?.[costume.slot] === costume.id;
+                return (
+                  <button
+                    key={costume.id}
+                    onClick={() => onEquipCostume(costume.id)}
+                    className={`rounded-[24px] border-4 px-4 py-3 text-left shadow-sm transition active:translate-y-1 ${
+                      isEquipped ? 'border-violet-300 bg-violet-100 text-violet-950' : 'border-white bg-white/90 text-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black">{costume.name}</span>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black">{getCostumeSlotLabel(costume.slot)}</span>
+                    </div>
+                    <p className="mt-1 text-xs font-black text-slate-500">{isEquipped ? '착용 중' : '눌러서 착용'}</p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
       </aside>
     </div>
   );
 }
 
-function ShopView({ feedback, inventory, onPurchase }: { feedback: string; inventory: InventoryItemState[]; onPurchase: (itemId: string) => void }) {
+function ShopView({ feedback, inventory, ownedEggs, ownedCostumeIds, onPurchase }: { feedback: string; inventory: InventoryItemState[]; ownedEggs: OwnedEgg[]; ownedCostumeIds: string[]; onPurchase: (itemId: string) => void }) {
   const categoryTone: Record<ItemCategory, { icon: typeof Utensils; tone: string }> = {
     food: { icon: Utensils, tone: 'from-amber-100 to-orange-100 border-amber-200 text-amber-800' },
     costume: { icon: Shirt, tone: 'from-violet-100 to-fuchsia-100 border-violet-200 text-violet-800' },
     dinosaur: { icon: Egg, tone: 'from-cyan-100 to-emerald-100 border-cyan-200 text-cyan-800' },
     egg: { icon: Egg, tone: 'from-orange-100 to-yellow-100 border-orange-200 text-orange-800' },
+    hatchItem: { icon: Sparkles, tone: 'from-amber-100 to-orange-100 border-amber-200 text-amber-800' },
     toy: { icon: Sparkles, tone: 'from-lime-100 to-emerald-100 border-lime-200 text-lime-800' },
     misc: { icon: ShoppingBag, tone: 'from-slate-100 to-slate-200 border-slate-200 text-slate-800' },
   };
@@ -1359,7 +1746,8 @@ function ShopView({ feedback, inventory, onPurchase }: { feedback: string; inven
             </div>
             <div className="grid gap-3 md:grid-cols-4">
               {items.map((item) => {
-                const ownedQuantity = inventory.find((inventoryItem) => inventoryItem.itemId === item.id)?.quantity ?? 0;
+                const isOwnedCostume = item.category === 'costume' && ownedCostumeIds.includes(item.id);
+                const ownedQuantity = item.category === 'egg' ? ownedEggs.filter((egg) => egg.eggItemId === item.id).length : item.category === 'costume' ? (isOwnedCostume ? 1 : 0) : inventory.find((inventoryItem) => inventoryItem.itemId === item.id)?.quantity ?? 0;
                 const extraLabel =
                   item.category === 'food'
                     ? formatDinosaurStatChanges(item.effect)
@@ -1367,6 +1755,10 @@ function ShopView({ feedback, inventory, onPurchase }: { feedback: string; inven
                       ? item.cosmeticOnly ? '외형 전용' : formatDinosaurStatChanges(item.effect ?? {})
                       : item.category === 'dinosaur'
                         ? `${item.rarity} · ${item.unlockType}`
+                        : item.category === 'egg'
+                          ? `${item.rarity} · 부화 알`
+                          : item.category === 'hatchItem'
+                            ? `알 부화 게이지 +${item.effect.hatchProgress}%`
                         : '';
 
                 return (
@@ -1379,9 +1771,9 @@ function ShopView({ feedback, inventory, onPurchase }: { feedback: string; inven
                       <Coins className="h-4 w-4 text-amber-600" />
                       {item.price}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600">보유 {ownedQuantity}</span>
-                    <button onClick={() => onPurchase(item.id)} className="rounded-full bg-violet-500 px-4 py-2 text-sm font-black text-white shadow-[0_4px_0_#7c3aed] transition active:translate-y-1 active:shadow-none">
-                      구매
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600">{item.category === 'costume' ? (isOwnedCostume ? '보유 중' : '미보유') : `보유 ${ownedQuantity}`}</span>
+                    <button disabled={isOwnedCostume} onClick={() => onPurchase(item.id)} className="rounded-full bg-violet-500 px-4 py-2 text-sm font-black text-white shadow-[0_4px_0_#7c3aed] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">
+                      {isOwnedCostume ? '보유 중' : '구매'}
                     </button>
                   </div>
                 </article>

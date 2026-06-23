@@ -75,6 +75,10 @@ export interface DinosaurState {
   stamina: number;
 }
 
+export type CostumeSlot = 'head' | 'neck' | 'body' | 'accessory';
+
+export type EquippedCostumes = Partial<Record<CostumeSlot, Id>>;
+
 export interface OwnedDinosaur {
   id: Id;
   speciesId: Id;
@@ -86,6 +90,7 @@ export interface OwnedDinosaur {
   hunger: number;
   stamina: number;
   obtainedAt: UnixTimeMs;
+  equippedCostumes?: EquippedCostumes;
 }
 
 export interface EggState {
@@ -97,6 +102,15 @@ export interface EggState {
   lastHatchedDinosaurName?: string;
   lastHatchedDinosaurRarity?: OwnedDinosaur['rarity'];
   lastHatchMessage?: string;
-  // TODO: When egg purchases are added, move toward ownedEggs + activeEggId.
-  // Flow: shop egg purchase -> choose owned egg -> train active egg -> hatch at 100%.
+  // Legacy single-egg view retained while the runtime source of truth moves to ownedEggs + activeEggId.
+}
+
+export interface OwnedEgg {
+  id: Id;
+  eggItemId: Id;
+  name: string;
+  rarity: EggState['rarity'];
+  eggType: string;
+  hatchProgress: number;
+  createdAt: UnixTimeMs;
 }

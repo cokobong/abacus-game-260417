@@ -1,6 +1,6 @@
-import type { DinosaurState } from '../types/game';
+import type { CostumeSlot, DinosaurState } from '../types/game';
 
-export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'toy' | 'misc';
+export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'hatchItem' | 'toy' | 'misc';
 export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
 
 interface BaseItemConfig {
@@ -19,6 +19,7 @@ export interface FoodItemConfig extends BaseItemConfig {
 
 export interface CostumeItemConfig extends BaseItemConfig {
   category: 'costume';
+  slot: CostumeSlot;
   cosmeticOnly: boolean;
   effect?: DinosaurStatEffect;
 }
@@ -29,12 +30,25 @@ export interface DinosaurItemConfig extends BaseItemConfig {
   unlockType: 'egg_fragment' | 'egg' | 'event' | 'shop_unlock';
 }
 
+export interface EggItemConfig extends BaseItemConfig {
+  category: 'egg';
+  rarity: 'normal' | 'rare' | 'special';
+  eggType: string;
+}
+
+export interface HatchItemConfig extends BaseItemConfig {
+  category: 'hatchItem';
+  effect: {
+    hatchProgress: number;
+  };
+}
+
 export interface BasicItemConfig extends BaseItemConfig {
-  category: 'egg' | 'toy' | 'misc';
+  category: 'toy' | 'misc';
   effect?: DinosaurStatEffect;
 }
 
-export type ItemConfig = FoodItemConfig | CostumeItemConfig | DinosaurItemConfig | BasicItemConfig;
+export type ItemConfig = FoodItemConfig | CostumeItemConfig | DinosaurItemConfig | EggItemConfig | HatchItemConfig | BasicItemConfig;
 
 export interface ShopCategoryConfig {
   id: ItemCategory;
@@ -53,9 +67,10 @@ export const shopCategoryConfigs: ShopCategoryConfig[] = [
   { id: 'food', label: '음식', sortOrder: 1, visible: true },
   { id: 'costume', label: '코스튬', sortOrder: 2, visible: true },
   { id: 'dinosaur', label: '새로운 공룡', sortOrder: 3, visible: true },
-  { id: 'egg', label: '알', sortOrder: 4, visible: false },
-  { id: 'toy', label: '장난감', sortOrder: 5, visible: false },
-  { id: 'misc', label: '기타', sortOrder: 6, visible: false },
+  { id: 'egg', label: '알', sortOrder: 4, visible: true },
+  { id: 'hatchItem', label: '부화 아이템', sortOrder: 5, visible: true },
+  { id: 'toy', label: '장난감', sortOrder: 6, visible: false },
+  { id: 'misc', label: '기타', sortOrder: 7, visible: false },
 ];
 
 export const itemConfigs: ItemConfig[] = [
@@ -110,6 +125,7 @@ export const itemConfigs: ItemConfig[] = [
     id: 'small-hat',
     name: '작은 모자',
     category: 'costume',
+    slot: 'head',
     price: 150,
     description: '첫 꾸미기에 좋은 작은 모자예요.',
     sortOrder: 10,
@@ -119,6 +135,7 @@ export const itemConfigs: ItemConfig[] = [
     id: 'red-ribbon',
     name: '빨간 리본',
     category: 'costume',
+    slot: 'neck',
     price: 180,
     description: '가볍게 꾸밀 수 있는 리본이에요.',
     sortOrder: 11,
@@ -128,6 +145,7 @@ export const itemConfigs: ItemConfig[] = [
     id: 'explorer-bag',
     name: '탐험가 가방',
     category: 'costume',
+    slot: 'body',
     price: 250,
     description: '모험 분위기를 내는 가방이에요.',
     sortOrder: 12,
@@ -135,13 +153,13 @@ export const itemConfigs: ItemConfig[] = [
   },
   {
     id: 'green-starter-egg',
-    name: '초록 꼬마 알',
-    category: 'dinosaur',
+    name: '초록 알',
+    category: 'egg',
     price: 500,
-    description: '일반 공룡을 만날 수 있는 알 목표예요.',
+    description: '일반 공룡을 만날 수 있는 기본 알이에요.',
     sortOrder: 20,
-    rarity: 'common',
-    unlockType: 'egg',
+    rarity: 'normal',
+    eggType: 'starter-normal',
   },
   {
     id: 'rare-tricera-fragment',
@@ -154,12 +172,47 @@ export const itemConfigs: ItemConfig[] = [
     unlockType: 'egg_fragment',
   },
   {
-    id: 'warm-nest',
-    name: '따뜻한 둥지',
+    id: 'rare-spark-egg',
+    name: '반짝 알',
     category: 'egg',
-    price: 120,
-    description: '부화 진행 보조 아이템으로 사용할 예정이에요.',
+    price: 900,
+    description: '조금 더 특별한 공룡을 기대하게 만드는 알이에요.',
     sortOrder: 30,
+    rarity: 'rare',
+    eggType: 'rare-spark',
+  },
+  {
+    id: 'hatch-warm-stone',
+    name: '따뜻한 돌멩이',
+    category: 'hatchItem',
+    price: 120,
+    description: '알을 조금 따뜻하게 해서 부화 게이지를 올려요.',
+    sortOrder: 40,
+    effect: {
+      hatchProgress: 10,
+    },
+  },
+  {
+    id: 'hatch-warm-blanket',
+    name: '따뜻한 담요',
+    category: 'hatchItem',
+    price: 220,
+    description: '알을 포근하게 감싸 부화 게이지를 더 올려요.',
+    sortOrder: 41,
+    effect: {
+      hatchProgress: 20,
+    },
+  },
+  {
+    id: 'hatch-spark-energy',
+    name: '반짝 부화 에너지',
+    category: 'hatchItem',
+    price: 320,
+    description: '반짝이는 기운으로 부화 게이지를 크게 올려요.',
+    sortOrder: 42,
+    effect: {
+      hatchProgress: 30,
+    },
   },
 ];
 
@@ -170,6 +223,16 @@ export function getItemConfig(itemId: string) {
 export function getFoodItemConfig(itemId: string) {
   const item = getItemConfig(itemId);
   return item?.category === 'food' ? item : null;
+}
+
+export function getEggItemConfig(itemId: string) {
+  const item = getItemConfig(itemId);
+  return item?.category === 'egg' ? item : null;
+}
+
+export function getHatchItemConfig(itemId: string) {
+  const item = getItemConfig(itemId);
+  return item?.category === 'hatchItem' ? item : null;
 }
 
 export function getItemsByCategory(category: ItemCategory) {
