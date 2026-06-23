@@ -5,6 +5,13 @@ const NEXT_PROBLEM_DELAY_MS = 900;
 const INITIAL_FEEDBACK = '정답을 입력하고 확인해보세요.';
 const RESET_TRAINING_FEEDBACK = '주판알을 새 답에 맞게 움직인 뒤 리턴 버튼을 눌러주세요.';
 
+interface UseTrainingSessionOptions {
+  onCorrectAnswer?: (answer: TrainingAnswer) => void;
+  onSetComplete?: () => void;
+  formatCorrectRewardFeedback?: () => string;
+  formatSetCompleteFeedback?: () => string;
+}
+
 function createSession(problems: TrainingProblem[]): TrainingSession {
   return {
     id: `training-${Date.now()}`,
@@ -25,7 +32,7 @@ function parseSubmittedValue(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function useTrainingSession(problems: TrainingProblem[]) {
+export function useTrainingSession(problems: TrainingProblem[], options: UseTrainingSessionOptions = {}) {
   const [session, setSession] = useState<TrainingSession>(() => createSession(problems));
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(INITIAL_FEEDBACK);
@@ -34,6 +41,7 @@ export function useTrainingSession(problems: TrainingProblem[]) {
   const nextProblemTimerRef = useRef<number | null>(null);
   const answerRef = useRef('');
   const sessionRef = useRef(session);
+  const setCompleteRewardGrantedRef = useRef(false);
 
   sessionRef.current = session;
   answerRef.current = answer;
@@ -108,7 +116,11 @@ export function useTrainingSession(problems: TrainingProblem[]) {
         status: 'completed',
         completedAt: Date.now(),
       }));
-      setFeedback('세트 완료! 더미 보상은 화면에만 표시하고, 저장과 성장 정산은 아직 연결하지 않습니다.');
+      if (!setCompleteRewardGrantedRef.current) {
+        setCompleteRewardGrantedRef.current = true;
+        options.onSetComplete?.();
+      }
+      setFeedback(options.formatSetCompleteFeedback?.() ?? '세트 완료! 보상이 더미 상태에 반영되었습니다.');
       return;
     }
 
@@ -141,6 +153,7 @@ export function useTrainingSession(problems: TrainingProblem[]) {
     }
 
     const isCorrect = submittedValue === activeProblem.correctAnswer;
+    const wasAlreadyCorrect = currentSession.answers.some((item) => item.problemId === activeProblem.id && item.isCorrect);
     const submittedAt = Date.now();
     const answerRecord: TrainingAnswer = {
       id: `answer-${submittedAt}-${currentSession.answers.length}`,
@@ -169,9 +182,12 @@ export function useTrainingSession(problems: TrainingProblem[]) {
     }
 
     setSubmissionResult('correct');
+    if (!wasAlreadyCorrect) {
+      options.onCorrectAnswer?.(answerRecord);
+    }
 
     const isLastProblem = currentSession.currentProblemIndex >= currentSession.problems.length - 1;
-    setFeedback(isLastProblem ? '정답! 세트 완료! 보상은 결과 화면에서 정산할 예정입니다.' : '정답! 코인 +10, 알 부화 게이지 +3%, 공룡 기분 +1');
+    setFeedback(isLastProblem ? '정답! 세트 완료 보상까지 곧 반영됩니다.' : options.formatCorrectRewardFeedback?.() ?? '정답! 보상이 더미 상태에 반영되었습니다.');
     clearNextProblemTimer();
     nextProblemTimerRef.current = window.setTimeout(moveToNextProblem, NEXT_PROBLEM_DELAY_MS);
   }

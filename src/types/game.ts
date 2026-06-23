@@ -6,6 +6,8 @@ export type ProblemOperator = '+' | '-';
 export type ProblemStatus = 'ready' | 'answering' | 'correct' | 'retry';
 export type TrainingSessionStatus = 'running' | 'showing_feedback' | 'completed';
 export type SubmissionResult = 'correct' | 'wrong' | null;
+export type RewardReason = 'problem_correct' | 'set_complete';
+export type RewardType = 'coin' | 'exp' | 'hatch_progress' | 'dinosaur_mood';
 
 export interface TrainingProblem {
   id: Id;
@@ -37,4 +39,44 @@ export interface TrainingSession {
   answers: TrainingAnswer[];
   startedAt: UnixTimeMs;
   completedAt: UnixTimeMs | null;
+}
+
+export interface Reward {
+  id: Id;
+  reason: RewardReason;
+  type: RewardType;
+  amount: number;
+  targetId: Id | null;
+  label: string;
+  grantedAt: UnixTimeMs | null;
+}
+
+export interface PlayerState {
+  coins: number;
+}
+
+export interface UserProfile {
+  id: Id;
+  childName: string;
+  ageOrGrade: string;
+  createdAt: UnixTimeMs;
+  selectedDinosaurId: Id;
+  dinosaurName: string;
+  parentModeEnabled?: boolean;
+}
+
+export interface DinosaurState {
+  id: Id;
+  name: string;
+  level: number;
+  exp: number;
+  mood: number;
+  hunger: number;
+  stamina: number;
+}
+
+export interface EggState {
+  id: Id;
+  name: string;
+  hatchProgress: number;
 }
