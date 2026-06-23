@@ -12,6 +12,16 @@ export type AbacusOperation = 'add' | 'subtract';
 export type AbacusComplementType = 'none' | 'five' | 'ten' | 'mixed';
 export type AbacusStageStatus = 'mvp' | 'planned' | 'later';
 
+export interface AbacusLevelConfig {
+  level: number;
+  title: string;
+  summary: string;
+  stageIds: Id[];
+  status: AbacusStageStatus;
+  defaultStageId?: Id;
+  recommendedProblemCount?: number;
+}
+
 export interface AbacusStageConfig {
   id: Id;
   title: string;

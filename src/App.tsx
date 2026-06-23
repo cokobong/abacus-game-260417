@@ -22,10 +22,12 @@ import { BluetoothTestPanel, type BluetoothNotificationPayload } from './compone
 import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
 import { rewardConfig } from './config/rewardConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
+import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
+import { getStageById } from './data/abacusStages';
 import { dinosaurSpecies } from './data/dinosaurSpecies';
 import { trainingProblems } from './data/trainingProblems';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { CostumeSlot, DinosaurState, EggState, EquippedCostumes, OwnedDinosaur, OwnedEgg, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
+import type { AbacusLevelConfig, AbacusStageConfig, CostumeSlot, DinosaurState, EggState, EquippedCostumes, OwnedDinosaur, OwnedEgg, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
 import { applyRewardsToDummyState, createRewardsFromBundle, formatRewardBundleSummary } from './utils/rewardCalculator';
 
@@ -33,9 +35,17 @@ type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventur
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
+type ProblemCountOverride = 5 | 10 | 15 | 20;
+type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6;
+type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
 type GameState = {
   userProfile: UserProfile | null;
   player: { coins: number };
+  selectedLevel: number;
+  selectedStageId: string;
+  problemCountOverride?: ProblemCountOverride;
+  numberCountOverride: NumberCountOverride;
+  operationsOverride: OperationsOverride;
   dinosaur: DinosaurState;
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
@@ -61,6 +71,9 @@ const mapCards = [
   { name: '반짝 강가', state: '훈련 1세트 후 입장', reward: '코인 보너스' },
   { name: '구름 언덕', state: '추후 공개', reward: '희귀 단서' },
 ];
+
+const defaultSelectedLevel = 1;
+const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'S1-01';
 
 const initialDinosaurState: DinosaurState = {
   id: 'dino-green-little',
@@ -116,6 +129,11 @@ const hatchableDinosaurPool = dinosaurSpecies;
 const defaultGameState: GameState = {
   userProfile: null,
   player: { coins: 1240 },
+  selectedLevel: defaultSelectedLevel,
+  selectedStageId: defaultSelectedStageId,
+  problemCountOverride: undefined,
+  numberCountOverride: 'stage-default',
+  operationsOverride: 'stage-default',
   dinosaur: initialDinosaurState,
   ownedDinosaurs: [initialOwnedDinosaur],
   discoveredSpeciesIds: [initialOwnedDinosaur.speciesId],
@@ -130,6 +148,15 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const ownedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs ?? defaultGameState.ownedDinosaurs);
   const discoveredSpeciesIds = getUniqueSpeciesIds([...(state.discoveredSpeciesIds ?? defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
   const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, state.userProfile?.selectedDinosaurId);
+  const selectedLevel = getAbacusLevel(state.selectedLevel ?? defaultSelectedLevel)?.level ?? defaultSelectedLevel;
+  const selectedLevelStages = getStagesForLevel(selectedLevel);
+  const selectedStageId =
+    state.selectedStageId && selectedLevelStages.some((stage) => stage.id === state.selectedStageId)
+      ? state.selectedStageId
+      : getDefaultStageIdForLevel(selectedLevel) ?? defaultSelectedStageId;
+  const problemCountOverride = normalizeProblemCountOverride(state.problemCountOverride);
+  const numberCountOverride = normalizeNumberCountOverride(state.numberCountOverride);
+  const operationsOverride = normalizeOperationsOverride(state.operationsOverride);
   const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
   const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
   const activeEggId = activeEgg?.id ?? null;
@@ -149,6 +176,11 @@ function normalizeGameState(state: Partial<GameState>): GameState {
       ...defaultGameState.player,
       ...state.player,
     },
+    selectedLevel,
+    selectedStageId,
+    problemCountOverride,
+    numberCountOverride,
+    operationsOverride,
     dinosaur: {
       ...defaultGameState.dinosaur,
       ...state.dinosaur,
@@ -240,6 +272,22 @@ function activeEggToEggState(egg: OwnedEgg | null): EggState | null {
     eggType: egg.eggType,
     hatchProgress: egg.hatchProgress,
   };
+}
+
+function normalizeProblemCountOverride(value: unknown): ProblemCountOverride | undefined {
+  const numericValue = typeof value === 'string' ? Number(value) : value;
+  return numericValue === 5 || numericValue === 10 || numericValue === 15 || numericValue === 20 ? numericValue : undefined;
+}
+
+function normalizeNumberCountOverride(value: unknown): NumberCountOverride {
+  if (value === 'stage-default') return value;
+
+  const numericValue = typeof value === 'string' ? Number(value) : value;
+  return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 ? numericValue : 'stage-default';
+}
+
+function normalizeOperationsOverride(value: unknown): OperationsOverride {
+  return value === 'stage-default' || value === 'add' || value === 'subtract' || value === 'mixed' ? value : 'stage-default';
 }
 
 function createOwnedEggFromItem(itemId: string, createdAt = Date.now()): OwnedEgg | null {
@@ -373,6 +421,108 @@ function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
   return changes.join(', ');
 }
 
+function formatStageOperations(operations: AbacusStageConfig['operations']) {
+  const labels: Record<AbacusStageConfig['operations'][number], string> = {
+    add: '덧셈',
+    subtract: '뺄셈',
+  };
+
+  return operations.map((operation) => labels[operation]).join('·');
+}
+
+function formatComplementType(complementType: AbacusStageConfig['complementType']) {
+  const labels: Record<AbacusStageConfig['complementType'], string> = {
+    none: '보수 없음',
+    five: '5의 보수',
+    ten: '10의 보수',
+    mixed: '보수 혼합',
+  };
+
+  return labels[complementType];
+}
+
+function getLevelSettingSummary(stages: AbacusStageConfig[]) {
+  if (stages.length === 0) {
+    return {
+      numberCount: '준비 중',
+      numberSize: '준비 중',
+      problemCount: '준비 중',
+      operations: '준비 중',
+    };
+  }
+
+  const minNumberCount = Math.min(...stages.map((stage) => stage.numberCount));
+  const maxNumberCount = Math.max(...stages.map((stage) => stage.numberCount));
+  const minProblemCount = Math.min(...stages.map((stage) => stage.problemCountPerSet));
+  const maxProblemCount = Math.max(...stages.map((stage) => stage.problemCountPerSet));
+  const maxDigitCount = Math.max(...stages.map((stage) => stage.digitCount));
+  const operations = Array.from(new Set(stages.flatMap((stage) => stage.operations)));
+
+  return {
+    numberCount: minNumberCount === maxNumberCount ? `${minNumberCount}개` : `${minNumberCount}~${maxNumberCount}개`,
+    numberSize: maxDigitCount <= 1 ? '한 자리' : maxDigitCount === 2 ? '한 자리/두 자리' : '한 자리~세 자리',
+    problemCount: minProblemCount === maxProblemCount ? `${minProblemCount}문제` : `${minProblemCount}~${maxProblemCount}문제`,
+    operations: formatStageOperations(operations),
+  };
+}
+
+function getRecommendedProblemCount(levelConfig: AbacusLevelConfig | null, selectedStage: AbacusStageConfig | null) {
+  return levelConfig?.recommendedProblemCount ?? selectedStage?.problemCountPerSet ?? 10;
+}
+
+function getEffectiveProblemCount(levelConfig: AbacusLevelConfig | null, selectedStage: AbacusStageConfig | null, override?: ProblemCountOverride) {
+  return override ?? getRecommendedProblemCount(levelConfig, selectedStage);
+}
+
+function formatNumberCountOverride(value: NumberCountOverride, stages: AbacusStageConfig[]) {
+  if (value !== 'stage-default') return `${value}개`;
+  return `단계 기본값 (${getLevelSettingSummary(stages).numberCount})`;
+}
+
+function formatOperationsOverride(value: OperationsOverride, stages: AbacusStageConfig[]) {
+  const labels: Record<Exclude<OperationsOverride, 'stage-default'>, string> = {
+    add: '덧셈만',
+    subtract: '뺄셈만',
+    mixed: '덧셈 + 뺄셈',
+  };
+
+  if (value !== 'stage-default') return labels[value];
+  return `단계 기본값 (${getLevelSettingSummary(stages).operations})`;
+}
+
+function getEffectiveOperationsLabel(value: OperationsOverride, stages: AbacusStageConfig[]) {
+  if (value === 'add') return '덧셈만';
+  if (value === 'subtract') return '뺄셈만';
+  if (value === 'mixed') return '덧셈 + 뺄셈';
+
+  return getLevelSettingSummary(stages).operations;
+}
+
+function isOperationsOverrideRecommended(value: OperationsOverride, stages: AbacusStageConfig[]) {
+  if (value === 'stage-default') return true;
+
+  const supportedOperations = new Set(stages.flatMap((stage) => stage.operations));
+  if (value === 'add') return supportedOperations.has('add');
+  if (value === 'subtract') return supportedOperations.has('subtract');
+
+  return supportedOperations.has('add') && supportedOperations.has('subtract');
+}
+
+function buildTrainingProblemSet(baseProblems: TrainingProblem[], problemCount: number) {
+  if (baseProblems.length === 0) return [];
+
+  // TODO: apply numberCountOverride and operationsOverride in generateProblemsFromStage.
+  return Array.from({ length: problemCount }, (_, index) => {
+    const source = baseProblems[index % baseProblems.length];
+
+    return {
+      ...source,
+      id: `${source.id}-set-${index + 1}`,
+      index,
+    };
+  });
+}
+
 export default function App() {
   const [initialLoadResult] = useState(() => {
     const loaded = loadGameState(defaultGameState);
@@ -389,10 +539,24 @@ export default function App() {
   const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
+  const selectedLevelConfig = getAbacusLevel(gameState.selectedLevel) ?? getAbacusLevel(defaultSelectedLevel);
+  const selectedLevelStages = getStagesForLevel(gameState.selectedLevel);
+  const selectedStage = getStageById(gameState.selectedStageId) ?? getStageById(defaultSelectedStageId) ?? null;
+  const effectiveProblemCount = getEffectiveProblemCount(selectedLevelConfig, selectedStage, gameState.problemCountOverride);
+  const trainingProblemSet = useMemo(() => buildTrainingProblemSet(trainingProblems, effectiveProblemCount), [effectiveProblemCount]);
+  const effectiveNumberCountLabel = gameState.numberCountOverride === 'stage-default' ? getLevelSettingSummary(selectedLevelStages).numberCount : `${gameState.numberCountOverride}개`;
+  const effectiveOperationsLabel = getEffectiveOperationsLabel(gameState.operationsOverride, selectedLevelStages);
+  const trainingSettingsKey = [
+    gameState.selectedLevel,
+    gameState.selectedStageId,
+    effectiveProblemCount,
+    gameState.numberCountOverride,
+    gameState.operationsOverride,
+  ].join(':');
   const [lastRewards, setLastRewards] = useState<Reward[]>([]);
   const [setCompleteRewards, setSetCompleteRewards] = useState<Reward[]>([]);
   const [lastTrainingEffects, setLastTrainingEffects] = useState<string[]>([]);
-  const training = useTrainingSession(trainingProblems, {
+  const training = useTrainingSession(trainingProblemSet, {
     onCorrectAnswer: () => applyRewardBundle('problem_correct'),
     onSetComplete: () => applyRewardBundle('set_complete'),
     formatCorrectRewardFeedback: () => `정답! ${formatTrainingRewardFeedback(activeOwnedDinosaur)}`,
@@ -400,6 +564,7 @@ export default function App() {
       const hatchItem = getHatchItemConfig(rewardConfig.hatchItemRewardOnSetComplete);
       return `세트 완료! ${formatRewardBundleSummary(rewardConfig.setComplete)}, ${hatchItem?.name ?? rewardConfig.hatchItemRewardOnSetComplete} ${rewardConfig.hatchItemQuantityOnSetComplete}개를 얻었어요.`;
     },
+    resetKey: trainingSettingsKey,
   });
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
@@ -474,6 +639,50 @@ export default function App() {
     });
     setDinoFeedback(`${dinosaurName}와 함께 모험을 시작해요.`);
     setPhase('app');
+  }
+
+  function selectTrainingLevel(level: number) {
+    const levelConfig = getAbacusLevel(level);
+    if (!levelConfig) return;
+
+    setGameState((current) => ({
+      ...current,
+      selectedLevel: levelConfig.level,
+      selectedStageId: getDefaultStageIdForLevel(levelConfig.level) ?? current.selectedStageId,
+    }));
+  }
+
+  function selectTrainingStage(stageId: string) {
+    const stage = getStageById(stageId);
+    if (!stage) return;
+    const levelConfig = getLevelForStageId(stage.id);
+
+    setGameState((current) => ({
+      ...current,
+      selectedLevel: levelConfig?.level ?? current.selectedLevel,
+      selectedStageId: stage.id,
+    }));
+  }
+
+  function updateProblemCountOverride(value: ProblemCountOverride | 'stage-default') {
+    setGameState((current) => ({
+      ...current,
+      problemCountOverride: value === 'stage-default' ? undefined : value,
+    }));
+  }
+
+  function updateNumberCountOverride(value: NumberCountOverride) {
+    setGameState((current) => ({
+      ...current,
+      numberCountOverride: value,
+    }));
+  }
+
+  function updateOperationsOverride(value: OperationsOverride) {
+    setGameState((current) => ({
+      ...current,
+      operationsOverride: value,
+    }));
   }
 
   function applyRewardBundle(reason: RewardReason) {
@@ -972,7 +1181,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <HeaderPill icon={Coins} label={gameState.player.coins.toLocaleString()} tone="coin" />
             <HeaderPill icon={Star} label={`Lv. ${activeDinosaur.level}`} tone="level" />
-            <HeaderPill icon={BookOpen} label="2/5" tone="book" />
+            <HeaderPill icon={BookOpen} label={`${gameState.selectedLevel}단계`} tone="book" />
           </div>
         </div>
       </header>
@@ -990,7 +1199,7 @@ export default function App() {
 
         {activeTab === 'training' && (
           <TrainingView
-            problems={trainingProblems}
+            problems={trainingProblemSet}
             currentProblem={training.currentProblem}
             currentProblemIndex={training.currentProblemIndex}
             totalProblems={training.totalProblems}
@@ -1002,6 +1211,10 @@ export default function App() {
             setCompleteRewards={setCompleteRewards}
             isSetComplete={training.isSetComplete}
             bluetoothInput={lastBluetoothInput}
+            selectedLevelConfig={selectedLevelConfig}
+            effectiveProblemCount={effectiveProblemCount}
+            effectiveNumberCountLabel={effectiveNumberCountLabel}
+            effectiveOperationsLabel={effectiveOperationsLabel}
             activeOwnedDinosaur={activeOwnedDinosaur}
             ownedDinosaurs={gameState.ownedDinosaurs}
             onSelectAdjacentDinosaur={selectAdjacentDinosaur}
@@ -1035,7 +1248,21 @@ export default function App() {
         {activeTab === 'settings' && (
           <SettingsView
             userProfile={gameState.userProfile}
+            levels={abacusLevels}
+            selectedLevel={gameState.selectedLevel}
+            selectedLevelConfig={selectedLevelConfig}
+            selectedStage={selectedStage}
+            selectedStageId={gameState.selectedStageId}
+            selectedLevelStages={selectedLevelStages}
+            problemCountOverride={gameState.problemCountOverride}
+            numberCountOverride={gameState.numberCountOverride}
+            operationsOverride={gameState.operationsOverride}
             storageFeedback={storageFeedback}
+            onSelectLevel={selectTrainingLevel}
+            onSelectStage={selectTrainingStage}
+            onProblemCountOverride={updateProblemCountOverride}
+            onNumberCountOverride={updateNumberCountOverride}
+            onOperationsOverride={updateOperationsOverride}
             onResetSavedGameState={resetSavedGameState}
             onBluetoothNotification={handleBluetoothNotification}
           />
@@ -1081,6 +1308,10 @@ function TrainingView({
   setCompleteRewards,
   isSetComplete,
   bluetoothInput,
+  selectedLevelConfig,
+  effectiveProblemCount,
+  effectiveNumberCountLabel,
+  effectiveOperationsLabel,
   activeOwnedDinosaur,
   ownedDinosaurs,
   onSelectAdjacentDinosaur,
@@ -1100,6 +1331,10 @@ function TrainingView({
   setCompleteRewards: Reward[];
   isSetComplete: boolean;
   bluetoothInput: BluetoothNotificationPayload | null;
+  selectedLevelConfig: AbacusLevelConfig | null;
+  effectiveProblemCount: number;
+  effectiveNumberCountLabel: string;
+  effectiveOperationsLabel: string;
   activeOwnedDinosaur: OwnedDinosaur;
   ownedDinosaurs: OwnedDinosaur[];
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
@@ -1126,6 +1361,22 @@ function TrainingView({
             <Bluetooth className="h-4 w-4" />
             {bluetoothStatus}
           </div>
+        </div>
+
+        <div className="mb-5 rounded-[28px] border-4 border-white bg-white/82 p-4 shadow-sm">
+          {selectedLevelConfig ? (
+            <>
+              <p className="text-sm font-black text-cyan-700">
+                현재 훈련: {selectedLevelConfig.title} · {selectedLevelConfig.summary}
+              </p>
+              <p className="mt-1 text-xs font-black text-slate-500">
+                {effectiveProblemCount}문제 · {effectiveNumberCountLabel} 수 · {effectiveOperationsLabel}
+              </p>
+              <p className="mt-1 text-xs font-black text-slate-500">세부 문제 설정은 설정 탭에서 관리합니다.</p>
+            </>
+          ) : (
+            <p className="text-sm font-black text-slate-500">선택된 교재 단계 정보를 찾지 못했어요.</p>
+          )}
         </div>
 
         <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -1853,26 +2104,162 @@ function PokedexView({ ownedDinosaurs, discoveredSpeciesIds }: { ownedDinosaurs:
 
 function SettingsView({
   userProfile,
+  levels,
+  selectedLevel,
+  selectedLevelConfig,
+  selectedStage,
+  selectedStageId,
+  selectedLevelStages,
+  problemCountOverride,
+  numberCountOverride,
+  operationsOverride,
   storageFeedback,
+  onSelectLevel,
+  onSelectStage,
+  onProblemCountOverride,
+  onNumberCountOverride,
+  onOperationsOverride,
   onResetSavedGameState,
   onBluetoothNotification,
 }: {
   userProfile: UserProfile | null;
+  levels: AbacusLevelConfig[];
+  selectedLevel: number;
+  selectedLevelConfig: AbacusLevelConfig | null;
+  selectedStage: AbacusStageConfig | null;
+  selectedStageId: string;
+  selectedLevelStages: AbacusStageConfig[];
+  problemCountOverride?: ProblemCountOverride;
+  numberCountOverride: NumberCountOverride;
+  operationsOverride: OperationsOverride;
   storageFeedback: string;
+  onSelectLevel: (level: number) => void;
+  onSelectStage: (stageId: string) => void;
+  onProblemCountOverride: (value: ProblemCountOverride | 'stage-default') => void;
+  onNumberCountOverride: (value: NumberCountOverride) => void;
+  onOperationsOverride: (value: OperationsOverride) => void;
   onResetSavedGameState: () => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
 }) {
+  const settingSummary = getLevelSettingSummary(selectedLevelStages);
+  const effectiveProblemCount = getEffectiveProblemCount(selectedLevelConfig, selectedStage, problemCountOverride);
+  const effectiveNumberCountLabel = numberCountOverride === 'stage-default' ? settingSummary.numberCount : `${numberCountOverride}개`;
+  const effectiveOperationsLabel = getEffectiveOperationsLabel(operationsOverride, selectedLevelStages);
+  const isSelectedOperationsRecommended = isOperationsOverrideRecommended(operationsOverride, selectedLevelStages);
+
   return (
     <div className="grid gap-5">
       <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
         <h3 className="text-3xl font-black text-slate-950">설정</h3>
-        <p className="mt-2 font-black text-slate-500">문제 설정은 추후 연결 예정입니다.</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <SettingChip label="숫자 개수" value="3개" />
-          <SettingChip label="숫자 크기" value="한 자리/두 자리 예시" />
-          <SettingChip label="세트 문제 수" value="20문제 예정" />
-          <SettingChip label="연산 방식" value="덧셈 + 뺄셈" />
+        <p className="mt-2 font-black text-slate-500">아이의 실제 교재 진도에 맞춰 복습할 단계를 고릅니다.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-[260px_1fr]">
+          <label className="grid gap-2 text-sm font-black text-emerald-800">
+            교재 단계
+            <select
+              value={String(selectedLevel)}
+              onChange={(event) => onSelectLevel(Number(event.target.value))}
+              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              {levels.map((level) => (
+                <option key={level.level} value={level.level}>
+                  {level.title} · {level.summary}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="rounded-[24px] bg-cyan-50 px-4 py-3">
+            <p className="text-sm font-black text-cyan-700">
+              선택됨: {selectedLevelConfig?.title ?? `${selectedLevel}단계`} · {selectedLevelConfig?.summary ?? '단계 정보 없음'}
+            </p>
+            <p className="mt-1 text-xs font-black text-slate-500">
+              {selectedLevelConfig?.status === 'mvp' ? '현재 앱에서 우선 연결할 단계입니다.' : '문제 생성 연동은 추후 단계입니다.'}
+            </p>
+          </div>
         </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="grid gap-2 text-sm font-black text-emerald-800">
+            한 세트 문제 수
+            <select
+              value={problemCountOverride ? String(problemCountOverride) : 'stage-default'}
+              onChange={(event) => {
+                const value = event.target.value;
+                onProblemCountOverride(value === 'stage-default' ? 'stage-default' : (Number(value) as ProblemCountOverride));
+              }}
+              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              <option value="stage-default">단계 기본값 ({getRecommendedProblemCount(selectedLevelConfig, selectedStage)}문제)</option>
+              <option value="5">5문제</option>
+              <option value="10">10문제</option>
+              <option value="15">15문제</option>
+              <option value="20">20문제</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-black text-emerald-800">
+            숫자 개수 / 행 수
+            <select
+              value={String(numberCountOverride)}
+              onChange={(event) => onNumberCountOverride(normalizeNumberCountOverride(event.target.value))}
+              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              <option value="stage-default">{formatNumberCountOverride('stage-default', selectedLevelStages)}</option>
+              <option value="3">3개</option>
+              <option value="4">4개</option>
+              <option value="5">5개</option>
+              <option value="6">6개</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-black text-emerald-800">
+            연산 방식
+            <select
+              value={operationsOverride}
+              onChange={(event) => onOperationsOverride(normalizeOperationsOverride(event.target.value))}
+              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              <option value="stage-default">{formatOperationsOverride('stage-default', selectedLevelStages)}</option>
+              <option value="add">덧셈만</option>
+              <option value="subtract">뺄셈만</option>
+              <option value="mixed">덧셈 + 뺄셈</option>
+            </select>
+          </label>
+        </div>
+        <p className="mt-3 rounded-[20px] bg-slate-50 px-4 py-3 text-xs font-black text-slate-500">
+          한 세트 문제 수는 현재 훈련 세트에 반영됩니다. 숫자 개수와 연산 방식은 문제 생성기 연결 후 완전 반영됩니다.
+        </p>
+        {!isSelectedOperationsRecommended && (
+          <p className="mt-2 rounded-[20px] bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">
+            선택한 연산 방식은 현재 교재 단계에서는 권장하지 않거나 준비 중입니다.
+          </p>
+        )}
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <SettingChip label="숫자 개수" value={effectiveNumberCountLabel} />
+          <SettingChip label="숫자 크기" value={settingSummary.numberSize} />
+          <SettingChip label="세트 문제 수" value={`${effectiveProblemCount}문제`} />
+          <SettingChip label="연산 방식" value={effectiveOperationsLabel} />
+        </div>
+        <details className="mt-4 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용 세부 단계 설정</summary>
+          <p className="mt-2 text-xs font-black text-slate-500">세부 stage id는 내부 문제 생성과 개발자 모드용입니다. 기본 부모 설정 화면에서는 교재 단계만 사용합니다.</p>
+          <label className="mt-3 grid gap-2 text-xs font-black text-emerald-800">
+            내부 stage
+            <select
+              value={selectedStageId}
+              onChange={(event) => onSelectStage(event.target.value)}
+              className="min-h-11 rounded-[16px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              {(selectedLevelConfig?.stageIds.length ? selectedLevelConfig.stageIds : [selectedStageId]).map((stageId) => {
+                const stage = getStageById(stageId);
+                return (
+                  <option key={stageId} value={stageId} disabled={!stage}>
+                    {stageId} · {stage?.title ?? '데이터 준비 중'}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <p className="mt-2 text-xs font-black text-slate-500">
+            현재 내부 단계: {selectedStage ? `${selectedStage.id} · ${selectedStage.title} · ${selectedStage.objective}` : '연결된 stage 데이터 없음'}
+          </p>
+        </details>
       </section>
       <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
         <h3 className="text-2xl font-black text-emerald-950">프로필</h3>

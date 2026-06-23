@@ -10,6 +10,7 @@ interface UseTrainingSessionOptions {
   onSetComplete?: () => void;
   formatCorrectRewardFeedback?: () => string;
   formatSetCompleteFeedback?: () => string;
+  resetKey?: string;
 }
 
 function createSession(problems: TrainingProblem[]): TrainingSession {
@@ -61,6 +62,19 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
       }
     };
   }, []);
+
+  useEffect(() => {
+    clearNextProblemTimer();
+    const nextSession = createSession(problems);
+    setSession(nextSession);
+    sessionRef.current = nextSession;
+    setAnswer('');
+    answerRef.current = '';
+    setFeedback(INITIAL_FEEDBACK);
+    setSubmissionResult(null);
+    problemStartedAtRef.current = Date.now();
+    setCompleteRewardGrantedRef.current = false;
+  }, [problems, options.resetKey]);
 
   function clearNextProblemTimer() {
     if (nextProblemTimerRef.current !== null) {
