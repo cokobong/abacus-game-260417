@@ -1,10 +1,10 @@
 import { Coins, Egg, Package, Shirt, ShoppingBag, Sparkles, Utensils, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { itemConfigs, type ItemConfig } from '../../config/itemConfig';
+import { itemConfigs, type EggCategory, type ItemConfig } from '../../config/itemConfig';
 import type { OwnedEgg } from '../../types/game';
 
 type InventoryItemState = { itemId: string; quantity: number };
-type ShopCategoryId = 'all' | 'food' | 'costume' | 'egg' | 'hatchItem' | 'comingSoon';
+type ShopCategoryId = 'all' | 'food' | 'costume' | 'egg' | 'hatchItem';
 
 export interface ShopScreenProps {
   coins: number;
@@ -21,7 +21,6 @@ const shopCategories: Array<{ id: ShopCategoryId; label: string }> = [
   { id: 'costume', label: '코스튬' },
   { id: 'egg', label: '알' },
   { id: 'hatchItem', label: '부화 아이템' },
-  { id: 'comingSoon', label: '준비 중' },
 ];
 
 export function ShopScreen({ coins, feedback, inventory, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
@@ -47,7 +46,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedEggs, ownedCostume
       </section>
 
       <ShopCategoryTabs activeCategory={activeCategory} onCategory={setActiveCategory} />
-      <ShopItemGrid items={visibleItems} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelectItem={setSelectedItemId} />
+      <ShopItemGrid activeCategory={activeCategory} items={visibleItems} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelectItem={setSelectedItemId} />
       <DeveloperShopDebugPanel inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} />
 
       {selectedItem && <ShopItemDetailModal item={selectedItem} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onClose={() => setSelectedItemId(null)} onPurchase={onPurchase} />}
@@ -77,6 +76,7 @@ function ShopCategoryTabs({ activeCategory, onCategory }: { activeCategory: Shop
 }
 
 function ShopItemGrid({
+  activeCategory,
   items,
   coins,
   inventory,
@@ -84,6 +84,7 @@ function ShopItemGrid({
   ownedCostumeIds,
   onSelectItem,
 }: {
+  activeCategory: ShopCategoryId;
   items: ItemConfig[];
   coins: number;
   inventory: InventoryItemState[];
@@ -91,12 +92,69 @@ function ShopItemGrid({
   ownedCostumeIds: string[];
   onSelectItem: (itemId: string) => void;
 }) {
+  if (activeCategory === 'egg') {
+    const eggItems = items.filter((item) => item.category === 'egg');
+
+    return (
+      <section className="grid gap-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-[24px] border-4 border-white bg-white/72 px-4 py-3 shadow-sm">
+          <p className="text-sm font-black text-violet-900">알은 일반알, 특수알, 희귀알 3종류로 정리돼요.</p>
+          {eggCategoryOrder.map((eggCategory) => (
+            <span key={eggCategory} className={`rounded-full px-3 py-1 text-xs font-black ${getEggCategoryBadgeTone(eggCategory)}`}>{getEggCategoryLabel(eggCategory)}</span>
+          ))}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {eggItems.map((item) => (
+            <ShopEggCompactCard key={item.id} item={item} coins={coins} inventory={inventory} ownedEggs={ownedEggs} onSelect={() => onSelectItem(item.id)} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
         <ShopItemCard key={item.id} item={item} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelect={() => onSelectItem(item.id)} />
       ))}
     </section>
+  );
+}
+
+function ShopEggCompactCard({ item, coins, inventory, ownedEggs, onSelect }: { item: Extract<ItemConfig, { category: 'egg' }>; coins: number; inventory: InventoryItemState[]; ownedEggs: OwnedEgg[]; onSelect: () => void }) {
+  const isRareEgg = isRareEggItem(item);
+  const hasEnoughCoins = coins >= item.price;
+  const ownedQuantity = ownedEggs.filter((egg) => egg.eggItemId === item.id).length;
+  const fragmentQuantity = getFragmentQuantity(inventory, item.requiredFragmentId);
+  const requiredFragmentAmount = item.requiredFragmentAmount ?? 0;
+  const hasEnoughFragments = isRareEgg && requiredFragmentAmount > 0 && fragmentQuantity >= requiredFragmentAmount;
+  const statusLabel = isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족';
+
+  return (
+    <button
+      onClick={onSelect}
+      className={`grid min-h-32 grid-cols-[64px_1fr] gap-3 rounded-[24px] border-4 p-3 text-left shadow-md transition hover:brightness-105 active:translate-y-1 ${
+        isRareEgg ? 'border-violet-200 bg-violet-50/90 text-violet-900' : 'border-white bg-white/90 text-slate-800'
+      }`}
+    >
+      <div className={`flex h-16 w-16 items-center justify-center rounded-[22px] border-4 border-white shadow-inner ${isRareEgg ? 'bg-gradient-to-b from-violet-100 to-fuchsia-100 text-violet-600' : getItemTone(item)}`}>
+        <Egg className="h-9 w-9" />
+      </div>
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="truncate text-lg font-black text-slate-950">{item.name}</h4>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${getEggCategoryBadgeTone(item.eggCategory)}`}>{getEggCategoryLabel(item.eggCategory)}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${isRareEgg ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-900'}`}>
+            {isRareEgg ? <Package className="h-3.5 w-3.5" /> : <Coins className="h-3.5 w-3.5" />}
+            {isRareEgg ? `희귀알 조각 ${fragmentQuantity}/${requiredFragmentAmount}` : `${item.price}코인`}
+          </span>
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-500">보유 x{ownedQuantity}</span>
+        </div>
+        <p className={`mt-2 rounded-full px-3 py-1 text-center text-xs font-black ${isRareEgg ? (hasEnoughFragments ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800') : hasEnoughCoins ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{statusLabel}</p>
+      </div>
+    </button>
   );
 }
 
@@ -160,6 +218,9 @@ function ShopItemDetailModal({
   const status = getItemStatus(item, coins, inventory, ownedEggs, ownedCostumeIds);
   const Icon = getItemIcon(item);
   const missingCoins = Math.max(0, item.price - coins);
+  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
+  const fragmentQuantity = isRareEgg ? getFragmentQuantity(inventory, item.requiredFragmentId) : 0;
+  const requiredFragmentAmount = isRareEgg ? item.requiredFragmentAmount ?? 0 : 0;
 
   function handlePurchase() {
     if (status.isComingSoon) return;
@@ -169,7 +230,12 @@ function ShopItemDetailModal({
       return;
     }
 
-    if (!status.hasEnoughCoins) {
+    if (isRareEgg && !status.hasEnoughFragments) {
+      setPurchaseMessage(`희귀알 조각이 부족해요. ${requiredFragmentAmount}개를 모으면 열 수 있어요.`);
+      return;
+    }
+
+    if (!isRareEgg && !status.hasEnoughCoins) {
       setPurchaseMessage(`코인이 부족해요. ${missingCoins.toLocaleString()}코인이 더 필요해요.`);
       return;
     }
@@ -196,18 +262,18 @@ function ShopItemDetailModal({
           </div>
           <p className="rounded-[20px] border-4 border-white bg-white/90 px-4 py-2 text-sm font-black leading-relaxed text-emerald-900 shadow-sm sm:text-base">{getFriendlyDescription(item)}</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[20px] bg-amber-100 px-4 py-2 text-amber-950 shadow-sm">
-              <p className="text-xs font-black text-amber-700">가격</p>
+            <div className={`${isRareEgg ? 'bg-violet-100 text-violet-950' : 'bg-amber-100 text-amber-950'} rounded-[20px] px-4 py-2 shadow-sm`}>
+              <p className={`text-xs font-black ${isRareEgg ? 'text-violet-700' : 'text-amber-700'}`}>{isRareEgg ? '필요 재료' : '가격'}</p>
               <p className="mt-1 inline-flex items-center justify-center gap-1 text-lg font-black sm:text-xl">
-                <Coins className="h-5 w-5 text-amber-600" />
-                {status.isComingSoon ? '준비 중' : `${item.price}코인`}
+                {isRareEgg ? <Package className="h-5 w-5 text-violet-600" /> : <Coins className="h-5 w-5 text-amber-600" />}
+                {isRareEgg ? `희귀알 조각 ${requiredFragmentAmount}개` : `${item.price}코인`}
               </p>
             </div>
             <div className="rounded-[20px] bg-white/90 px-4 py-2 text-slate-900 shadow-sm">
-              <p className="text-xs font-black text-slate-500">내 코인</p>
+              <p className="text-xs font-black text-slate-500">{isRareEgg ? '보유 조각' : '내 코인'}</p>
               <p className="mt-1 inline-flex items-center justify-center gap-1 text-lg font-black sm:text-xl">
-                <Coins className="h-5 w-5 text-amber-600" />
-                {coins.toLocaleString()}코인
+                {isRareEgg ? <Package className="h-5 w-5 text-violet-600" /> : <Coins className="h-5 w-5 text-amber-600" />}
+                {isRareEgg ? `${fragmentQuantity}/${requiredFragmentAmount}` : `${coins.toLocaleString()}코인`}
               </p>
             </div>
           </div>
@@ -218,16 +284,16 @@ function ShopItemDetailModal({
             <p className="rounded-[18px] bg-slate-100 px-4 py-3 text-sm font-black text-slate-600">추후 모험에서 사용할 수 있어요. 아직 구매할 수 없는 아이템이에요.</p>
           ) : (
             <>
-              <p className={`rounded-[18px] px-4 py-2 text-sm font-black ${status.hasEnoughCoins || status.isOwnedCostume ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                {purchaseMessage || (status.hasEnoughCoins ? '구매할 수 있어요.' : `코인이 부족해요. ${missingCoins.toLocaleString()}코인이 더 필요해요.`)}
+              <p className={`rounded-[18px] px-4 py-2 text-sm font-black ${status.hasEnoughCoins || status.hasEnoughFragments || status.isOwnedCostume ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                {purchaseMessage || (isRareEgg ? (status.hasEnoughFragments ? '특별한 알을 열 수 있어요!' : `희귀알 조각 ${requiredFragmentAmount}개가 필요해요.`) : status.hasEnoughCoins ? '구매할 수 있어요.' : `코인이 부족해요. ${missingCoins.toLocaleString()}코인이 더 필요해요.`)}
               </p>
               <button
-                disabled={status.isOwnedCostume}
+                disabled={status.isOwnedCostume || (isRareEgg && !status.hasEnoughFragments)}
                 onClick={handlePurchase}
                 className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-violet-400 to-violet-600 px-8 text-base font-black text-white shadow-[0_6px_0_#7c3aed] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-16 sm:text-lg"
               >
                 <ShoppingBag className="h-6 w-6" />
-                {status.hasEnoughCoins && !status.isOwnedCostume ? `${item.price}코인으로 구매` : status.buttonLabel}
+                {isRareEgg ? (status.hasEnoughFragments ? '조각으로 열기' : '조각 부족') : status.hasEnoughCoins && !status.isOwnedCostume ? `${item.price}코인으로 구매` : status.buttonLabel}
               </button>
             </>
           )}
@@ -252,27 +318,37 @@ function DeveloperShopDebugPanel({ inventory, ownedEggs, ownedCostumeIds }: { in
 }
 
 function isItemInCategory(item: ItemConfig, category: ShopCategoryId) {
+  if (!isVisibleShopItem(item)) return false;
   if (category === 'all') return true;
-  if (category === 'comingSoon') return isComingSoonItem(item);
-  return item.category === category && !isComingSoonItem(item);
+  if (category === 'egg') return item.category === 'egg';
+  return item.category === category;
 }
 
 function isComingSoonItem(item: ItemConfig) {
   return item.category === 'dinosaur' || item.category === 'toy' || item.category === 'misc';
 }
 
+function isVisibleShopItem(item: ItemConfig) {
+  return item.category === 'food' || item.category === 'costume' || item.category === 'egg' || item.category === 'hatchItem';
+}
+
 function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
   const ownedQuantity = getOwnedQuantity(item, inventory, ownedEggs, ownedCostumeIds);
   const isOwnedCostume = item.category === 'costume' && ownedCostumeIds.includes(item.id);
   const isComingSoon = isComingSoonItem(item);
+  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
+  const requiredFragmentAmount = isRareEgg ? item.requiredFragmentAmount ?? 0 : 0;
+  const fragmentQuantity = isRareEgg ? getFragmentQuantity(inventory, item.requiredFragmentId) : 0;
+  const hasEnoughFragments = isRareEgg && requiredFragmentAmount > 0 && fragmentQuantity >= requiredFragmentAmount;
   const hasEnoughCoins = coins >= item.price;
-  const canBuy = !isComingSoon && !isOwnedCostume && hasEnoughCoins;
+  const canBuy = !isComingSoon && !isOwnedCostume && (isRareEgg ? hasEnoughFragments : hasEnoughCoins);
 
   return {
     ownedLabel: item.category === 'costume' ? (isOwnedCostume ? '보유 중' : '아직 없음') : `보유 x${ownedQuantity}`,
-    actionLabel: isComingSoon ? '추후 사용 예정' : isOwnedCostume ? '이미 보유 중' : hasEnoughCoins ? '구매 가능' : '코인 부족',
-    buttonLabel: isOwnedCostume ? '이미 보유 중' : hasEnoughCoins ? '구매하기' : '코인 부족',
+    actionLabel: isComingSoon ? '추후 사용 예정' : isOwnedCostume ? '이미 보유 중' : isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족',
+    buttonLabel: isOwnedCostume ? '이미 보유 중' : isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매하기' : '코인 부족',
     canBuy,
+    hasEnoughFragments,
     hasEnoughCoins,
     isComingSoon,
     isOwnedCostume,
@@ -303,6 +379,7 @@ function getItemTone(item: ItemConfig) {
 }
 
 function getCategoryLabel(item: ItemConfig) {
+  if (item.category === 'egg') return getEggCategoryLabel(item.eggCategory);
   if (isComingSoonItem(item)) return '준비 중';
   const labels: Record<string, string> = {
     food: '먹이',
@@ -316,16 +393,47 @@ function getCategoryLabel(item: ItemConfig) {
 function getFriendlyDescription(item: ItemConfig) {
   if (item.category === 'food') return `${item.name}은 공룡이 좋아하는 간식이에요. 먹으면 배도 든든해지고 기분도 조금 좋아질 수 있어요.`;
   if (item.category === 'costume') return `${item.name}은 공룡을 꾸며주는 아이템이에요. 우리 공룡 탭에서 입혀볼 수 있어요.`;
+  if (item.category === 'egg' && item.eggCategory === 'rare') return `${item.name}은 모험에서 얻은 희귀알 조각 5개로 열 수 있는 장기 목표 알이에요. 코인으로 바로 구매하지 않아요.`;
   if (item.category === 'egg') return `${item.name}은 어떤 공룡이 태어날지 모르는 신비한 알이에요. 부화장에서 따뜻하게 돌봐주세요.`;
   if (item.category === 'hatchItem') return `${item.name}은 알에게 힘을 주는 부화 아이템이에요. 사용하면 안쪽의 아기 공룡이 조금 더 힘을 낼 수 있어요.`;
-  if (item.category === 'dinosaur') return '희귀 공룡을 만나기 위한 조각이에요. 추후 모험에서 사용할 수 있어요.';
+  if (item.category === 'dinosaur') return '모험에서 얻는 희귀 조각이에요. 공룡을 바로 얻는 아이템이 아니라, 나중에 특별한 알을 여는 재료로 사용할 예정이에요.';
   return item.description;
 }
 
 function getPurchaseSuccessMessage(item: ItemConfig) {
   if (item.category === 'food') return '구매했어요! 우리 공룡 먹이 가방에 넣었어요.';
   if (item.category === 'hatchItem') return '구매했어요! 알 부화장에서 사용할 수 있어요.';
+  if (item.category === 'egg' && item.eggCategory === 'rare') return '희귀알을 얻었어요! 알 부화장에서 확인해보세요.';
   if (item.category === 'egg') return '구매했어요! 알 부화장에서 돌볼 수 있어요.';
   if (item.category === 'costume') return '구매했어요! 우리 공룡 탭에서 입혀볼 수 있어요.';
   return '구매했어요!';
+}
+
+function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
+  return item.eggCategory === 'rare' && Boolean(item.requiredFragmentId) && Boolean(item.requiredFragmentAmount);
+}
+
+function getFragmentQuantity(inventory: InventoryItemState[], itemId?: string) {
+  if (!itemId) return 0;
+  return inventory.find((item) => item.itemId === itemId)?.quantity ?? 0;
+}
+
+const eggCategoryOrder: EggCategory[] = ['normal', 'special', 'rare'];
+
+function getEggCategoryLabel(category: EggCategory) {
+  const labels: Record<EggCategory, string> = {
+    normal: '일반알',
+    special: '특수알',
+    rare: '희귀알',
+  };
+  return labels[category];
+}
+
+function getEggCategoryBadgeTone(category: EggCategory) {
+  const tones: Record<EggCategory, string> = {
+    normal: 'bg-orange-100 text-orange-800',
+    special: 'bg-sky-100 text-sky-800',
+    rare: 'bg-violet-100 text-violet-800',
+  };
+  return tones[category];
 }

@@ -2,6 +2,7 @@ import type { CostumeSlot, DinosaurState } from '../types/game';
 
 export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'hatchItem' | 'toy' | 'misc';
 export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
+export type EggCategory = 'normal' | 'special' | 'rare';
 
 interface BaseItemConfig {
   id: string;
@@ -34,6 +35,9 @@ export interface EggItemConfig extends BaseItemConfig {
   category: 'egg';
   rarity: 'normal' | 'rare' | 'special';
   eggType: string;
+  eggCategory: EggCategory;
+  requiredFragmentId?: string;
+  requiredFragmentAmount?: number;
 }
 
 export interface HatchItemConfig extends BaseItemConfig {
@@ -159,14 +163,15 @@ export const itemConfigs: ItemConfig[] = [
     description: '일반 공룡을 만날 수 있는 기본 알이에요.',
     sortOrder: 20,
     rarity: 'normal',
-    eggType: 'starter-normal',
+    eggType: 'normal',
+    eggCategory: 'normal',
   },
   {
-    id: 'rare-tricera-fragment',
-    name: '희귀 트리케라 조각',
+    id: 'rare-egg-fragment',
+    name: '희귀알 조각',
     category: 'dinosaur',
-    price: 900,
-    description: '희귀 공룡 해금을 위한 장기 목표예요.',
+    price: 0,
+    description: '모험에서 발견한 반짝이는 조각이에요. 5개를 모으면 희귀알을 열 수 있어요.',
     sortOrder: 21,
     rarity: 'rare',
     unlockType: 'egg_fragment',
@@ -178,8 +183,22 @@ export const itemConfigs: ItemConfig[] = [
     price: 900,
     description: '조금 더 특별한 공룡을 기대하게 만드는 알이에요.',
     sortOrder: 30,
+    rarity: 'special',
+    eggType: 'special',
+    eggCategory: 'special',
+  },
+  {
+    id: 'rare-adventure-egg',
+    name: '희귀알',
+    category: 'egg',
+    price: 0,
+    description: '모험에서 얻은 조각과 단서로 열 수 있는 특별한 알이에요.',
+    sortOrder: 31,
     rarity: 'rare',
-    eggType: 'rare-spark',
+    eggType: 'rare',
+    eggCategory: 'rare',
+    requiredFragmentId: 'rare-egg-fragment',
+    requiredFragmentAmount: 5,
   },
   {
     id: 'hatch-warm-stone',

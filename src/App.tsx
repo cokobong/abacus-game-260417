@@ -23,12 +23,14 @@ import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemCo
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
+import { adventureAreas } from './data/adventures';
 import { dinosaurSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
 import type { AbacusLevelConfig, AbacusStageConfig, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
 import { generateTrainingProblems } from './utils/generateTrainingProblems';
 import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
+import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
@@ -79,12 +81,6 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
   { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
 ];
 
-const mapCards = [
-  { name: '숲길 산책', state: '준비 중', reward: '알 조각 후보' },
-  { name: '반짝 강가', state: '훈련 1세트 후 입장', reward: '코인 보너스' },
-  { name: '구름 언덕', state: '추후 공개', reward: '희귀 단서' },
-];
-
 const defaultSelectedLevel = 1;
 const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
 
@@ -102,7 +98,8 @@ const initialEggState: EggState = {
   id: 'egg-normal-mystery',
   name: '미확인 일반 알',
   rarity: 'normal',
-  eggType: 'starter-normal',
+  eggType: 'normal',
+  eggCategory: 'normal',
   hatchProgress: 62,
 };
 
@@ -112,6 +109,7 @@ const initialOwnedEgg: OwnedEgg = {
   name: '초록 알',
   rarity: initialEggState.rarity,
   eggType: initialEggState.eggType,
+  eggCategory: initialEggState.eggCategory,
   hatchProgress: initialEggState.hatchProgress,
   createdAt: 0,
 };
@@ -182,7 +180,8 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
   const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
   const activeEggId = activeEgg?.id ?? null;
-  const ownedCostumeIds = getUniqueSpeciesIds([...(state.ownedCostumeIds ?? []), ...getOwnedCostumeIdsFromInventory(state.inventory ?? defaultGameState.inventory)]);
+  const inventory = normalizeInventoryItems(state.inventory ?? defaultGameState.inventory);
+  const ownedCostumeIds = getUniqueSpeciesIds([...(state.ownedCostumeIds ?? []), ...getOwnedCostumeIdsFromInventory(inventory)]);
   const userProfile = state.userProfile
     ? {
         ...state.userProfile,
@@ -223,7 +222,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     ownedEggs,
     activeEggId,
     ownedCostumeIds,
-    inventory: state.inventory ?? defaultGameState.inventory,
+    inventory,
     trainingHistory,
     progressByLevel,
     progressByStage,
@@ -257,7 +256,7 @@ function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
 
 function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
   const ownedSpeciesIds = new Set(getUniqueOwnedDinosaurs(ownedDinosaurs).map((dinosaur) => dinosaur.speciesId));
-  return hatchableDinosaurPool.filter((species) => !ownedSpeciesIds.has(species.speciesId));
+  return hatchableDinosaurPool.filter((species) => !species.isPlaceholder && !ownedSpeciesIds.has(species.speciesId));
 }
 
 function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
@@ -268,10 +267,11 @@ function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
         ? [
             {
               id: legacyEgg.id,
-              eggItemId: legacyEgg.eggType === 'rare-spark' ? 'rare-spark-egg' : 'green-starter-egg',
+              eggItemId: legacyEgg.eggType === 'rare-spark' || legacyEgg.eggType === 'special' ? 'rare-spark-egg' : 'green-starter-egg',
               name: legacyEgg.name,
               rarity: legacyEgg.rarity,
               eggType: legacyEgg.eggType,
+              eggCategory: legacyEgg.eggCategory,
               hatchProgress: legacyEgg.hatchProgress,
               createdAt: 0,
             },
@@ -282,6 +282,19 @@ function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
     ...egg,
     hatchProgress: clampPercent(egg.hatchProgress),
   }));
+}
+
+function normalizeInventoryItems(inventory: InventoryItemState[]) {
+  const itemIdAliases: Record<string, string> = {
+    'rare-tricera-fragment': 'rare-egg-fragment',
+  };
+  const quantityByItemId = inventory.reduce<Record<string, number>>((quantities, item) => {
+    const itemId = itemIdAliases[item.itemId] ?? item.itemId;
+    quantities[itemId] = (quantities[itemId] ?? 0) + item.quantity;
+    return quantities;
+  }, {});
+
+  return Object.entries(quantityByItemId).map(([itemId, quantity]) => ({ itemId, quantity }));
 }
 
 function getSelectedOwnedEgg(ownedEggs: OwnedEgg[], activeEggId?: string | null) {
@@ -296,6 +309,7 @@ function activeEggToEggState(egg: OwnedEgg | null): EggState | null {
     name: egg.name,
     rarity: egg.rarity,
     eggType: egg.eggType,
+    eggCategory: egg.eggCategory,
     hatchProgress: egg.hatchProgress,
   };
 }
@@ -342,6 +356,7 @@ function createOwnedEggFromItem(itemId: string, createdAt = Date.now()): OwnedEg
     name: item.name,
     rarity: item.rarity,
     eggType: item.eggType,
+    eggCategory: item.eggCategory,
     hatchProgress: 0,
     createdAt,
   };
@@ -352,6 +367,10 @@ function addInventoryQuantity(inventory: InventoryItemState[], itemId: string, q
   if (!existingItem) return [...inventory, { itemId, quantity }];
 
   return inventory.map((item) => (item.itemId === itemId ? { ...item, quantity: item.quantity + quantity } : item));
+}
+
+function subtractInventoryQuantity(inventory: InventoryItemState[], itemId: string, quantity: number) {
+  return inventory.map((item) => (item.itemId === itemId ? { ...item, quantity: Math.max(0, item.quantity - quantity) } : item));
 }
 
 function createDisplayReward(label: string, amount = 0): Reward {
@@ -765,6 +784,8 @@ export default function App() {
   const [hatchResult, setHatchResult] = useState<HatchResult | null>(null);
   const [selectedFoodItemId, setSelectedFoodItemId] = useState<string | null>('soft-berry');
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
+  const [adventureFeedback, setAdventureFeedback] = useState('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
+  const [adventureResult, setAdventureResult] = useState<AdventureRunResult | null>(null);
   const [storageFeedback, setStorageFeedback] = useState(initialLoadResult.message);
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set());
@@ -816,6 +837,8 @@ export default function App() {
     setLastTrainingEffects([]);
     setDinoFeedback('저장 데이터를 초기화했어요.');
     setShopFeedback('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
+    setAdventureFeedback('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
+    setAdventureResult(null);
     setStorageFeedback('저장 데이터를 초기화하고 기본 상태로 되돌렸어요.');
     setPhase('onboarding');
     console.log('Cleared local game state.');
@@ -1092,6 +1115,38 @@ export default function App() {
       return;
     }
 
+    if (item.category === 'egg' && item.eggCategory === 'rare') {
+      const requiredFragmentId = item.requiredFragmentId;
+      const requiredFragmentAmount = item.requiredFragmentAmount ?? 0;
+      const ownedFragmentQuantity = requiredFragmentId ? gameState.inventory.find((entry) => entry.itemId === requiredFragmentId)?.quantity ?? 0 : 0;
+
+      if (!requiredFragmentId || requiredFragmentAmount <= 0) {
+        setShopFeedback('희귀알 교환 조건이 아직 준비되지 않았어요.');
+        return;
+      }
+
+      if (ownedFragmentQuantity < requiredFragmentAmount) {
+        setShopFeedback(`희귀알 조각이 부족해요. ${requiredFragmentAmount}개가 필요해요.`);
+        return;
+      }
+
+      const newEgg = createOwnedEggFromItem(item.id);
+      if (!newEgg) {
+        setShopFeedback(`알 정보를 찾지 못했어요. itemId: ${item.id}`);
+        return;
+      }
+
+      setGameState((current) => ({
+        ...current,
+        inventory: subtractInventoryQuantity(current.inventory, requiredFragmentId, requiredFragmentAmount),
+        ownedEggs: [...current.ownedEggs, newEgg],
+        activeEggId: current.activeEggId ?? newEgg.id,
+        egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
+      }));
+      setShopFeedback('희귀알을 얻었어요! 알 부화장에서 확인해보세요.');
+      return;
+    }
+
     if (!Number.isFinite(item.price) || item.price <= 0) {
       setShopFeedback('이 아이템은 아직 구매할 수 없어요.');
       return;
@@ -1160,6 +1215,57 @@ export default function App() {
     });
 
     setShopFeedback(`${item.name}를 구매했어요! 코인 -${item.price}`);
+  }
+
+  function runAdventure(areaId: string) {
+    const area = adventureAreas.find((adventureArea) => adventureArea.id === areaId);
+    if (!area) {
+      setAdventureFeedback('모험 지역 정보를 찾지 못했어요.');
+      return;
+    }
+
+    if (area.status !== 'ready') {
+      setAdventureFeedback('아직 떠날 수 없는 모험이에요.');
+      return;
+    }
+
+    if (area.entryCost.type === 'ticket') {
+      setAdventureFeedback('모험 티켓은 다음 단계에서 훈련 1세트 완료 보상과 연결할 예정이에요.');
+      return;
+    }
+
+    if (area.entryCost.type === 'coin' && gameState.player.coins < area.entryCost.amount) {
+      setAdventureFeedback('코인이 부족해요. 훈련을 하면 코인을 더 모을 수 있어요.');
+      return;
+    }
+
+    const result = createAdventureResult(area, activeDinosaur.name);
+    setGameState((current) => {
+      let nextCoins = current.player.coins - (area.entryCost.type === 'coin' ? area.entryCost.amount : 0);
+      let nextInventory = current.inventory;
+
+      result.rewards.forEach((reward) => {
+        if (reward.type === 'coin') {
+          nextCoins += reward.amount;
+          return;
+        }
+
+        if ((reward.type === 'food' || reward.type === 'hatchItem' || reward.type === 'fragment') && reward.itemId) {
+          nextInventory = addInventoryQuantity(nextInventory, reward.itemId, reward.amount);
+        }
+      });
+
+      return {
+        ...current,
+        player: {
+          ...current.player,
+          coins: nextCoins,
+        },
+        inventory: nextInventory,
+      };
+    });
+    setAdventureResult(result);
+    setAdventureFeedback(result.hasDexHint ? '도감 힌트를 발견했어요!' : `${area.title}을 다녀왔어요.`);
   }
 
   function hatchEgg() {
@@ -1245,6 +1351,7 @@ export default function App() {
             name: '선택된 알 없음',
             rarity: 'normal' as const,
             eggType: 'none',
+            eggCategory: 'normal' as const,
             hatchProgress: 0,
           }),
           lastHatchedDinosaurName: undefined,
@@ -1596,9 +1703,23 @@ export default function App() {
         )}
         {activeTab === 'pokedex' && <DexScreen ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} onViewOwnedDinosaur={viewOwnedDinosaurFromDex} />}
         {activeTab === 'adventure' && (
-          <PlaygroundScreen>
-            <AdventureView />
-          </PlaygroundScreen>
+          <PlaygroundScreen
+            activeDinosaur={activeDinosaur}
+            coins={gameState.player.coins}
+            inventory={gameState.inventory}
+            result={adventureResult}
+            feedback={adventureFeedback}
+            onExplore={runAdventure}
+            onCloseResult={() => setAdventureResult(null)}
+            onGoToDex={() => {
+              setAdventureResult(null);
+              setActiveTab('pokedex');
+            }}
+            onGoToHatchery={() => {
+              setAdventureResult(null);
+              setActiveTab('hatchery');
+            }}
+          />
         )}
         {activeTab === 'settings' && (
           <SettingsScreen>
@@ -2198,29 +2319,6 @@ function ProfileInput({ label, value, placeholder, onChange }: { label: string; 
         className="mt-2 min-h-12 w-full rounded-[18px] bg-slate-50 px-4 text-lg font-black text-slate-900 outline-none focus:bg-cyan-50"
       />
     </label>
-  );
-}
-
-function AdventureView() {
-  return (
-    <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-      <section className="rounded-[34px] border-4 border-white bg-gradient-to-b from-emerald-100 to-lime-100 p-6 shadow-lg">
-        <h3 className="text-3xl font-black text-emerald-950">모험 준비</h3>
-        <p className="mt-3 font-black leading-relaxed text-emerald-700/80">추후 주산훈련 결과와 연결되어 알 조각과 단서를 얻는 탐험 콘텐츠입니다.</p>
-      </section>
-      <section className="grid gap-4 md:grid-cols-3">
-        {mapCards.map((card) => (
-          <article key={card.name} className="rounded-[32px] border-4 border-white bg-white/86 p-5 shadow-lg">
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-b from-emerald-200 to-lime-300 text-emerald-800 shadow-inner">
-              <Map className="h-12 w-12" />
-            </div>
-            <h4 className="text-2xl font-black text-emerald-950">{card.name}</h4>
-            <p className="mt-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-black text-emerald-800">{card.state}</p>
-            <p className="mt-3 font-black text-slate-500">{card.reward}</p>
-          </article>
-        ))}
-      </section>
-    </div>
   );
 }
 

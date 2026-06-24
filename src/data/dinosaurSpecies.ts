@@ -1,6 +1,9 @@
 import type { Id, OwnedDinosaur } from '../types/game';
 
 export type DinosaurSpeciesRarity = OwnedDinosaur['rarity'];
+export type DinosaurUnlockSource = 'normal-egg' | 'special-egg' | 'rare-egg' | 'adventure-fragment' | 'planned';
+export type DinosaurEggCategory = 'normal' | 'special' | 'rare';
+export type DinosaurSpeciesStatus = 'available' | 'planned' | 'locked';
 
 export interface DinosaurSpecies {
   speciesId: Id;
@@ -8,20 +11,31 @@ export interface DinosaurSpecies {
   defaultName: string;
   displayName: string;
   rarity: DinosaurSpeciesRarity;
+  plannedRarity?: DinosaurSpeciesRarity;
   description: string;
   dexDescription: string;
   personality: string;
   favoriteFoodName: string;
   habitat: DinosaurHabitatId;
+  eggCategory: DinosaurEggCategory;
+  unlockSource: DinosaurUnlockSource;
+  requiredFragmentId?: Id;
   discoveryHint: string;
   foundMethodLabel: string;
   silhouette: string;
   unlockHint: string;
+  isPlaceholder?: boolean;
+  status?: DinosaurSpeciesStatus;
+  lockedLabel?: string;
 }
 
 export type DinosaurHabitatId = 'green-forest' | 'sparkle-cave' | 'volcano-island' | 'secret-land';
 
-export const dinosaurSpecies: DinosaurSpecies[] = [
+export const dexHabitats: DinosaurHabitatId[] = ['green-forest', 'sparkle-cave', 'volcano-island', 'secret-land'];
+export const dexSpeciesSlotsPerHabitat = 6;
+export const dexTargetSpeciesCount = dexHabitats.length * dexSpeciesSlotsPerHabitat;
+
+const actualDinosaurSpecies: DinosaurSpecies[] = [
   {
     speciesId: 'green-little',
     name: '초록 꼬마',
@@ -33,6 +47,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '호기심 많음',
     favoriteFoodName: '말랑 열매',
     habitat: 'green-forest',
+    eggCategory: 'normal',
+    unlockSource: 'normal-egg',
     discoveryHint: '초록 잎사귀 사이에서 반짝이는 눈을 가진 친구예요.',
     foundMethodLabel: '처음 대표 공룡으로 만남',
     silhouette: '●',
@@ -49,6 +65,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '든든함',
     favoriteFoodName: '바삭 잎사귀',
     habitat: 'green-forest',
+    eggCategory: 'normal',
+    unlockSource: 'normal-egg',
     discoveryHint: '둥근 프릴과 작은 뿔이 보이는 친구 같아요.',
     foundMethodLabel: '알에서 태어남',
     silhouette: '▲',
@@ -65,6 +83,9 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '용감함',
     favoriteFoodName: '톡톡 고기볼',
     habitat: 'sparkle-cave',
+    eggCategory: 'rare',
+    unlockSource: 'rare-egg',
+    requiredFragmentId: 'rare-egg-fragment',
     discoveryHint: '작은 이빨과 씩씩한 꼬리가 보이는 친구예요.',
     foundMethodLabel: '희귀 알에서 태어남',
     silhouette: '◆',
@@ -81,6 +102,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '느긋함',
     favoriteFoodName: '높은 나뭇잎',
     habitat: 'green-forest',
+    eggCategory: 'special',
+    unlockSource: 'special-egg',
     discoveryHint: '아주 긴 목이 나무 위로 빼꼼 보일지도 몰라요.',
     foundMethodLabel: '알 부화 보상으로 만남',
     silhouette: '│',
@@ -97,6 +120,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '차분함',
     favoriteFoodName: '말랑 열매',
     habitat: 'green-forest',
+    eggCategory: 'normal',
+    unlockSource: 'normal-egg',
     discoveryHint: '등에 반짝이는 무늬가 있는 공룡 같아요.',
     foundMethodLabel: '초록 알에서 태어남',
     silhouette: '★',
@@ -113,6 +138,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '자유로움',
     favoriteFoodName: '구름 젤리',
     habitat: 'sparkle-cave',
+    eggCategory: 'rare',
+    unlockSource: 'rare-egg',
     discoveryHint: '날개 그림자가 머리 위를 지나간 것 같아요.',
     foundMethodLabel: '희귀한 알에서 태어남',
     silhouette: '⌁',
@@ -129,6 +156,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '꾸준함',
     favoriteFoodName: '단단 견과',
     habitat: 'volcano-island',
+    eggCategory: 'special',
+    unlockSource: 'special-egg',
     discoveryHint: '등이 울퉁불퉁하고 꼬리가 묵직한 친구예요.',
     foundMethodLabel: '알 부화로 만남',
     silhouette: '■',
@@ -145,6 +174,9 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
     personality: '재빠름',
     favoriteFoodName: '번개 사탕',
     habitat: 'secret-land',
+    eggCategory: 'rare',
+    unlockSource: 'adventure-fragment',
+    requiredFragmentId: 'rare-egg-fragment',
     discoveryHint: '발자국이 너무 빨라서 반짝 선만 남았어요.',
     foundMethodLabel: '특별한 알에서 태어남',
     silhouette: '!',
@@ -152,6 +184,51 @@ export const dinosaurSpecies: DinosaurSpecies[] = [
   },
 ];
 
+export const dinosaurSpecies: DinosaurSpecies[] = dexHabitats.flatMap((habitat) => {
+  const actualSpeciesInHabitat = actualDinosaurSpecies.filter((species) => species.habitat === habitat);
+  const placeholderCount = Math.max(0, dexSpeciesSlotsPerHabitat - actualSpeciesInHabitat.length);
+  const placeholders = Array.from({ length: placeholderCount }, (_, index) => createPlaceholderSpecies(habitat, index + 1));
+
+  return [...actualSpeciesInHabitat, ...placeholders];
+});
+
 export function getDinosaurSpecies(speciesId: Id) {
   return dinosaurSpecies.find((species) => species.speciesId === speciesId) ?? null;
+}
+
+function createPlaceholderSpecies(habitat: DinosaurHabitatId, index: number): DinosaurSpecies {
+  const slotLabel = `${getHabitatPlaceholderLabel(habitat)} ${index}`;
+
+  return {
+    speciesId: `placeholder-${habitat}-${index}`,
+    name: '???',
+    defaultName: '???',
+    displayName: '???',
+    rarity: 'rare',
+    plannedRarity: index >= 5 ? 'epic' : index >= 3 ? 'rare' : 'common',
+    description: '아직 도감에 자세한 기록이 없는 공룡이에요.',
+    dexDescription: '아직 만나지 못한 공룡이에요.',
+    personality: '???',
+    favoriteFoodName: '???',
+    habitat,
+    eggCategory: index >= 5 ? 'rare' : index >= 3 ? 'special' : 'normal',
+    unlockSource: 'planned',
+    discoveryHint: `${slotLabel}에 새로운 발자국이 남아 있어요.`,
+    foundMethodLabel: '추후 공개',
+    silhouette: '?',
+    unlockHint: '새로운 알과 모험 보상으로 나중에 만날 수 있어요.',
+    isPlaceholder: true,
+    status: 'planned',
+    lockedLabel: '준비 중',
+  };
+}
+
+function getHabitatPlaceholderLabel(habitat: DinosaurHabitatId) {
+  const labels: Record<DinosaurHabitatId, string> = {
+    'green-forest': '초록 숲',
+    'sparkle-cave': '반짝 동굴',
+    'volcano-island': '화산섬',
+    'secret-land': '비밀의 땅',
+  };
+  return labels[habitat];
 }

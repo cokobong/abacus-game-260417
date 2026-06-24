@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Egg, PackageOpen, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { getHatchItemConfig } from '../../config/itemConfig';
+import { getEggItemConfig, getHatchItemConfig, type EggCategory } from '../../config/itemConfig';
 import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
 
@@ -141,7 +141,7 @@ function EggInventoryPanel({ ownedEggs, activeEgg, onSelectEgg }: { ownedEggs: O
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-black">{egg.name}</span>
-                  <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black">{isActive ? '부화 중' : egg.rarity}</span>
+                  <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black">{isActive ? '부화 중' : getEggCategoryLabel(getOwnedEggCategory(egg))}</span>
                 </div>
                 <p className="mt-1 text-xs font-black opacity-75">부화 준비 {clampProgress(egg.hatchProgress)}%</p>
               </button>
@@ -199,7 +199,7 @@ function EggMainCard({
       <div className="relative z-10 flex min-h-[570px] flex-col items-center justify-center pt-10">
         {activeEgg ? (
           <>
-            <p className="mb-3 rounded-full border-4 border-white bg-white/90 px-5 py-2 text-sm font-black text-orange-800 shadow-sm">{activeEgg.rarity} · {activeEgg.eggType}</p>
+            <p className={`mb-3 rounded-full border-4 border-white px-5 py-2 text-sm font-black shadow-sm ${getEggCategoryBadgeTone(getOwnedEggCategory(activeEgg))}`}>{getEggCategoryLabel(getOwnedEggCategory(activeEgg))}</p>
             <div className="relative mb-6">
               <div className="absolute inset-x-10 bottom-0 h-12 rounded-full bg-orange-900/10 blur-md" />
               <div className="relative flex h-80 w-60 items-center justify-center rounded-[50%] border-[14px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-2xl">
@@ -404,9 +404,34 @@ function getSelectedOwnedEgg(ownedEggs: OwnedEgg[], activeEggId?: string | null)
   return ownedEggs.find((egg) => egg.id === activeEggId) ?? ownedEggs[0] ?? null;
 }
 
+function getOwnedEggCategory(egg: OwnedEgg): EggCategory {
+  if (egg.eggCategory) return egg.eggCategory;
+
+  const itemConfig = getEggItemConfig(egg.eggItemId);
+  if (itemConfig) return itemConfig.eggCategory;
+  if (egg.eggType === 'rare-spark' || egg.eggType === 'special') return 'special';
+  if (egg.eggType === 'rare') return 'rare';
+  return 'normal';
+}
+
+function getEggCategoryLabel(category: EggCategory) {
+  const labels: Record<EggCategory, string> = {
+    normal: '일반알',
+    special: '특수알',
+    rare: '희귀알',
+  };
+  return labels[category];
+}
+
+function getEggCategoryBadgeTone(category: EggCategory) {
+  if (category === 'rare') return 'bg-violet-100 text-violet-800';
+  if (category === 'special') return 'bg-sky-100 text-sky-800';
+  return 'bg-white/90 text-orange-800';
+}
+
 function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
   const ownedSpeciesIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));
-  return dinosaurSpecies.filter((species) => !ownedSpeciesIds.has(species.speciesId));
+  return dinosaurSpecies.filter((species) => !species.isPlaceholder && !ownedSpeciesIds.has(species.speciesId));
 }
 
 function clampProgress(value: number) {

@@ -220,6 +220,7 @@ export interface EggState {
   name: string;
   rarity: 'normal' | 'rare' | 'special';
   eggType: string;
+  eggCategory?: 'normal' | 'special' | 'rare';
   hatchProgress: number;
   lastHatchedDinosaurName?: string;
   lastHatchedDinosaurRarity?: OwnedDinosaur['rarity'];
@@ -233,6 +234,7 @@ export interface OwnedEgg {
   name: string;
   rarity: EggState['rarity'];
   eggType: string;
+  eggCategory?: EggState['eggCategory'];
   hatchProgress: number;
   createdAt: UnixTimeMs;
 }

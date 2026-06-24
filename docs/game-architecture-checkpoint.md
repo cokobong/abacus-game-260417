@@ -215,7 +215,7 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 
 ### dinosaur / egg
 
-현재 `green-starter-egg`, `rare-tricera-fragment`는 category가 `dinosaur`로 되어 있다. `warm-nest`는 category가 `egg`지만 구매 UI에서는 숨겨져 있다.
+현재 `green-starter-egg`는 구매 가능한 알이고, `rare-egg-fragment`는 모험 보상용 재료로 분리되어 있다.
 
 위험 지점:
 
