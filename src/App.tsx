@@ -11,7 +11,6 @@ import {
   Map,
   Play,
   Settings,
-  Shirt,
   ShoppingBag,
   Sparkles,
   Star,
@@ -20,7 +19,7 @@ import {
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
-import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
+import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
@@ -1289,6 +1288,28 @@ export default function App() {
     });
   }
 
+  function viewOwnedDinosaurFromDex(speciesId: string) {
+    setGameState((current) => {
+      const ownedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
+      const nextDinosaur = ownedDinosaurs.find((dinosaur) => dinosaur.speciesId === speciesId);
+      if (!nextDinosaur) return current;
+
+      return {
+        ...current,
+        dinosaur: ownedDinosaurToDinosaurState(nextDinosaur),
+        ownedDinosaurs,
+        userProfile: current.userProfile
+          ? {
+              ...current.userProfile,
+              selectedDinosaurId: nextDinosaur.id,
+              dinosaurName: nextDinosaur.name,
+            }
+          : current.userProfile,
+      };
+    });
+    setActiveTab('dino');
+  }
+
   function selectActiveEgg(eggId: string) {
     setGameState((current) => {
       const nextActiveEgg = current.ownedEggs.find((egg) => egg.id === eggId) ?? null;
@@ -1571,15 +1592,9 @@ export default function App() {
           />
         )}
         {activeTab === 'shop' && (
-          <ShopScreen>
-            <ShopView feedback={shopFeedback} inventory={gameState.inventory} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />
-          </ShopScreen>
+          <ShopScreen coins={gameState.player.coins} feedback={shopFeedback} inventory={gameState.inventory} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />
         )}
-        {activeTab === 'pokedex' && (
-          <DexScreen>
-            <PokedexView ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} />
-          </DexScreen>
-        )}
+        {activeTab === 'pokedex' && <DexScreen ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} onViewOwnedDinosaur={viewOwnedDinosaurFromDex} />}
         {activeTab === 'adventure' && (
           <PlaygroundScreen>
             <AdventureView />
@@ -2209,78 +2224,6 @@ function AdventureView() {
   );
 }
 
-function ShopView({ feedback, inventory, ownedEggs, ownedCostumeIds, onPurchase }: { feedback: string; inventory: InventoryItemState[]; ownedEggs: OwnedEgg[]; ownedCostumeIds: string[]; onPurchase: (itemId: string) => void }) {
-  const categoryTone: Record<ItemCategory, { icon: typeof Utensils; tone: string }> = {
-    food: { icon: Utensils, tone: 'from-amber-100 to-orange-100 border-amber-200 text-amber-800' },
-    costume: { icon: Shirt, tone: 'from-violet-100 to-fuchsia-100 border-violet-200 text-violet-800' },
-    dinosaur: { icon: Egg, tone: 'from-cyan-100 to-emerald-100 border-cyan-200 text-cyan-800' },
-    egg: { icon: Egg, tone: 'from-orange-100 to-yellow-100 border-orange-200 text-orange-800' },
-    hatchItem: { icon: Sparkles, tone: 'from-amber-100 to-orange-100 border-amber-200 text-amber-800' },
-    toy: { icon: Sparkles, tone: 'from-lime-100 to-emerald-100 border-lime-200 text-lime-800' },
-    misc: { icon: ShoppingBag, tone: 'from-slate-100 to-slate-200 border-slate-200 text-slate-800' },
-  };
-
-  return (
-    <div className="grid gap-5">
-      <section className="rounded-[34px] border-4 border-white bg-gradient-to-r from-violet-100 to-fuchsia-100 p-5 shadow-lg">
-        <h3 className="text-3xl font-black text-violet-950">상점 목업</h3>
-        <p className="mt-2 font-black text-violet-800/75">아이템 config를 기준으로 음식, 코스튬, 새로운 공룡 목표를 표시합니다.</p>
-        <p className="mt-4 rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 font-black text-violet-800 shadow-sm">{feedback}</p>
-      </section>
-      {shopCategoryConfigs.filter((category) => category.visible).sort((a, b) => a.sortOrder - b.sortOrder).map((category) => {
-        const items = getItemsByCategory(category.id);
-        const Icon = categoryTone[category.id].icon;
-        return (
-          <section key={category.id} className={`rounded-[34px] border-4 bg-gradient-to-b p-5 shadow-lg ${categoryTone[category.id].tone}`}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[22px] border-4 border-white bg-white/90 shadow-sm">
-                <Icon className="h-8 w-8" />
-              </div>
-              <h4 className="text-3xl font-black">{category.label}</h4>
-            </div>
-            <div className="grid gap-3 md:grid-cols-4">
-              {items.map((item) => {
-                const isOwnedCostume = item.category === 'costume' && ownedCostumeIds.includes(item.id);
-                const ownedQuantity = item.category === 'egg' ? ownedEggs.filter((egg) => egg.eggItemId === item.id).length : item.category === 'costume' ? (isOwnedCostume ? 1 : 0) : inventory.find((inventoryItem) => inventoryItem.itemId === item.id)?.quantity ?? 0;
-                const extraLabel =
-                  item.category === 'food'
-                    ? formatDinosaurStatChanges(item.effect)
-                    : item.category === 'costume'
-                      ? item.cosmeticOnly ? '외형 전용' : formatDinosaurStatChanges(item.effect ?? {})
-                      : item.category === 'dinosaur'
-                        ? `${item.rarity} · ${item.unlockType}`
-                        : item.category === 'egg'
-                          ? `${item.rarity} · 부화 알`
-                          : item.category === 'hatchItem'
-                            ? `알 부화 게이지 +${item.effect.hatchProgress}%`
-                        : '';
-
-                return (
-                <article key={item.name} className="rounded-[28px] border-4 border-white bg-white/86 p-4 shadow-sm">
-                  <h5 className="text-xl font-black text-slate-950">{item.name}</h5>
-                  <p className="mt-2 min-h-12 text-sm font-black text-slate-500">{item.description}</p>
-                  {extraLabel && <p className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-black opacity-80">{extraLabel}</p>}
-                  <div className="mt-4 flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 px-3 py-1 text-sm font-black text-amber-950">
-                      <Coins className="h-4 w-4 text-amber-600" />
-                      {item.price}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600">{item.category === 'costume' ? (isOwnedCostume ? '보유 중' : '미보유') : `보유 ${ownedQuantity}`}</span>
-                    <button disabled={isOwnedCostume} onClick={() => onPurchase(item.id)} className="rounded-full bg-violet-500 px-4 py-2 text-sm font-black text-white shadow-[0_4px_0_#7c3aed] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">
-                      {isOwnedCostume ? '보유 중' : '구매'}
-                    </button>
-                  </div>
-                </article>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
 const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
   common: '일반',
   rare: '희귀',
@@ -2288,62 +2231,6 @@ const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
   special: '특별',
   legendary: '전설',
 };
-
-function PokedexView({ ownedDinosaurs, discoveredSpeciesIds }: { ownedDinosaurs: OwnedDinosaur[]; discoveredSpeciesIds: string[] }) {
-  const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
-  const ownedCountBySpecies = uniqueOwnedDinosaurs.reduce<Record<string, number>>((counts, dinosaur) => {
-    counts[dinosaur.speciesId] = (counts[dinosaur.speciesId] ?? 0) + 1;
-    return counts;
-  }, {});
-  const discoveredSpeciesSet = new Set([...discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
-  const discoveredCount = dinosaurSpecies.filter((species) => discoveredSpeciesSet.has(species.speciesId)).length;
-
-  return (
-    <div className="grid gap-5">
-      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-3xl font-black text-emerald-950">공룡 도감</h3>
-            <p className="mt-2 font-black text-slate-500">부화로 만난 공룡 종이 여기에 등록돼요.</p>
-          </div>
-          <div className="rounded-[24px] bg-sky-100 px-5 py-3 text-lg font-black text-sky-900">
-            발견한 공룡 {discoveredCount} / {dinosaurSpecies.length}
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {dinosaurSpecies.map((species) => {
-          const isDiscovered = discoveredSpeciesSet.has(species.speciesId);
-          const ownedCount = ownedCountBySpecies[species.speciesId] ?? 0;
-
-          return (
-            <article key={species.speciesId} className={`rounded-[32px] border-4 border-white p-4 shadow-lg ${isDiscovered ? 'bg-white/86' : 'bg-slate-100/86'}`}>
-              <div className={`mb-4 flex h-44 items-center justify-center rounded-[28px] ${isDiscovered ? 'bg-gradient-to-b from-sky-100 to-lime-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
-                {isDiscovered ? (
-                  <DinoAvatar size="small" />
-                ) : (
-                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-slate-400 text-5xl font-black text-white">{species.silhouette}</div>
-                )}
-              </div>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className={`text-xl font-black ${isDiscovered ? 'text-emerald-950' : 'text-slate-500'}`}>{isDiscovered ? species.displayName : '???'}</h3>
-                {isDiscovered && <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-black text-lime-800">보유 {ownedCount}마리</span>}
-              </div>
-              <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-black ${isDiscovered ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-500'}`}>
-                {rarityLabels[species.rarity]}
-              </p>
-              <p className="mt-3 min-h-16 text-sm font-black leading-relaxed text-slate-500">{isDiscovered ? species.description : species.unlockHint}</p>
-              <p className={`mt-3 rounded-full px-3 py-1 text-center text-xs font-black ${isDiscovered ? 'bg-emerald-100 text-emerald-800' : 'bg-white/80 text-slate-500'}`}>
-                {isDiscovered ? '우리 공룡에서 키울 수 있어요' : '미발견'}
-              </p>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function SettingsView({
   userProfile,
