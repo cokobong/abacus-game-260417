@@ -404,6 +404,8 @@ interface PlayerTrainingStats {
 
 ## 8. Dinosaur
 
+성장/경험치/레벨업 정책의 기준 문서는 `docs/dinosaur-growth-system.md`다. 이 문서는 저장 데이터 구조와 필드 역할만 요약한다.
+
 ### 역할
 
 보유한 공룡 한 마리를 나타낸다.
@@ -419,10 +421,10 @@ interface Dinosaur {
   level: number;
   exp: number;
   expToNextLevel: number;
-  hunger: number;
+  growthStage: "baby" | "child" | "teen" | "adult";
   happiness: number;
   stamina: number;
-  friendship: number;
+  maxStamina: number;
   equippedCostumeIds: Id[];
   obtainedAt: UnixTimeMs;
   sourceEggId: Id | null;
@@ -439,13 +441,15 @@ interface Dinosaur {
 | `level` | 성장 레벨 |
 | `exp` | 현재 EXP |
 | `expToNextLevel` | 다음 레벨 필요 EXP |
-| `hunger` | 배고픔 상태 |
+| `growthStage` | 성장 단계 |
 | `happiness` | 기분 상태 |
 | `stamina` | 체력 상태 |
-| `friendship` | 친밀도 |
+| `maxStamina` | 최대 체력 |
 | `equippedCostumeIds` | 착용 중인 코스튬 ID |
 | `obtainedAt` | 획득 시각 |
 | `sourceEggId` | 부화로 얻은 경우 원본 알 ID |
+
+현재 코드에서는 행복이 `mood`, 공룡 이름/별명이 `name`으로 저장될 수 있다. 문서상 의도와 코드 필드명이 다를 때는 `docs/dinosaur-growth-system.md`의 매핑 표를 기준으로 해석한다.
 
 ### 연결 화면/기능
 
@@ -463,10 +467,10 @@ interface Dinosaur {
 - `level`
 - `exp`
 - `expToNextLevel`
-- `hunger`
+- `growthStage`
 - `happiness`
 - `stamina`
-- `friendship`
+- `maxStamina`
 - `equippedCostumeIds`
 - `obtainedAt`
 
@@ -475,7 +479,6 @@ interface Dinosaur {
 - `nickname`
 - `sourceEggId`
 - 성격/personality
-- 진화 단계
 - 좋아하는 음식/장난감
 - 모험 특성
 

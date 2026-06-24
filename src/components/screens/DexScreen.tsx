@@ -158,6 +158,7 @@ function DexHabitatSection({
   ownedBySpecies,
   onSelectSpecies,
 }: {
+  key?: string;
   habitat: DinosaurHabitatId;
   discoveredSpeciesSet: Set<string>;
   ownedBySpecies: Record<string, OwnedDinosaur | undefined>;
@@ -205,7 +206,7 @@ function DexStickerGrid({
   );
 }
 
-function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
+function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
   const isPlaceholder = Boolean(species.isPlaceholder);
 
   return (

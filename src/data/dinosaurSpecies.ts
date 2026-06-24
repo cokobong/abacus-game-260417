@@ -20,6 +20,9 @@ export interface DinosaurSpecies {
   eggCategory: DinosaurEggCategory;
   unlockSource: DinosaurUnlockSource;
   requiredFragmentId?: Id;
+  starterSelectable?: boolean;
+  collectionOrder: number;
+  habitatOrder: number;
   discoveryHint: string;
   foundMethodLabel: string;
   silhouette: string;
@@ -35,200 +38,82 @@ export const dexHabitats: DinosaurHabitatId[] = ['green-forest', 'sparkle-cave',
 export const dexSpeciesSlotsPerHabitat = 6;
 export const dexTargetSpeciesCount = dexHabitats.length * dexSpeciesSlotsPerHabitat;
 
-const actualDinosaurSpecies: DinosaurSpecies[] = [
-  {
-    speciesId: 'green-little',
-    name: '초록 꼬마',
-    defaultName: '초록 꼬마',
-    displayName: '초록 꼬마',
-    rarity: 'common',
-    description: '처음 모험을 함께 시작하는 밝고 호기심 많은 공룡이에요.',
-    dexDescription: '작은 발걸음으로도 씩씩하게 앞으로 나아가는 밝은 공룡이에요.',
-    personality: '호기심 많음',
-    favoriteFoodName: '말랑 열매',
-    habitat: 'green-forest',
-    eggCategory: 'normal',
-    unlockSource: 'normal-egg',
-    discoveryHint: '초록 잎사귀 사이에서 반짝이는 눈을 가진 친구예요.',
-    foundMethodLabel: '처음 대표 공룡으로 만남',
-    silhouette: '●',
-    unlockHint: '처음 대표 공룡으로 만날 수 있어요.',
-  },
-  {
-    speciesId: 'baby-tricera',
-    name: '아기 트리케라',
-    defaultName: '아기 트리케라',
-    displayName: '트리케라',
-    rarity: 'common',
-    description: '단단한 뿔과 큰 프릴을 가진 든든한 친구예요.',
-    dexDescription: '작은 뿔로 길을 살피며 친구들을 지켜주는 든든한 공룡이에요.',
-    personality: '든든함',
-    favoriteFoodName: '바삭 잎사귀',
-    habitat: 'green-forest',
-    eggCategory: 'normal',
-    unlockSource: 'normal-egg',
-    discoveryHint: '둥근 프릴과 작은 뿔이 보이는 친구 같아요.',
-    foundMethodLabel: '알에서 태어남',
-    silhouette: '▲',
-    unlockHint: '알을 부화시키면 만날 수 있어요.',
-  },
-  {
-    speciesId: 'tiny-tyranno',
-    name: '꼬마 티라노',
-    defaultName: '꼬마 티라노',
-    displayName: '티라노',
-    rarity: 'rare',
-    description: '용감한 성격으로 어려운 문제 앞에서도 씩씩해요.',
-    dexDescription: '어려운 문제 앞에서도 꼬리를 번쩍 들고 도전하는 용감한 공룡이에요.',
-    personality: '용감함',
-    favoriteFoodName: '톡톡 고기볼',
-    habitat: 'sparkle-cave',
-    eggCategory: 'rare',
-    unlockSource: 'rare-egg',
-    requiredFragmentId: 'rare-egg-fragment',
-    discoveryHint: '작은 이빨과 씩씩한 꼬리가 보이는 친구예요.',
-    foundMethodLabel: '희귀 알에서 태어남',
-    silhouette: '◆',
-    unlockHint: '훈련으로 알 게이지를 모아 부화시켜 보세요.',
-  },
-  {
-    speciesId: 'long-brachio',
-    name: '롱롱 브라키오',
-    defaultName: '롱롱 브라키오',
-    displayName: '브라키오',
-    rarity: 'rare',
-    description: '긴 목으로 멀리 있는 반짝 보상도 잘 찾아내요.',
-    dexDescription: '긴 목으로 숲 너머를 바라보며 새로운 길을 찾아주는 공룡이에요.',
-    personality: '느긋함',
-    favoriteFoodName: '높은 나뭇잎',
-    habitat: 'green-forest',
-    eggCategory: 'special',
-    unlockSource: 'special-egg',
-    discoveryHint: '아주 긴 목이 나무 위로 빼꼼 보일지도 몰라요.',
-    foundMethodLabel: '알 부화 보상으로 만남',
-    silhouette: '│',
-    unlockHint: '새 알 부화 보상으로 등장할 예정이에요.',
-  },
-  {
-    speciesId: 'plate-stego',
-    name: '반짝 스테고',
-    defaultName: '반짝 스테고',
-    displayName: '스테고',
-    rarity: 'common',
-    description: '등의 골판이 기분에 따라 반짝이는 차분한 공룡이에요.',
-    dexDescription: '등의 골판이 기분에 따라 살짝 반짝이는 차분한 공룡이에요.',
-    personality: '차분함',
-    favoriteFoodName: '말랑 열매',
-    habitat: 'green-forest',
-    eggCategory: 'normal',
-    unlockSource: 'normal-egg',
-    discoveryHint: '등에 반짝이는 무늬가 있는 공룡 같아요.',
-    foundMethodLabel: '초록 알에서 태어남',
-    silhouette: '★',
-    unlockHint: '알을 부화시키면 만날 수 있어요.',
-  },
-  {
-    speciesId: 'sky-ptera',
-    name: '하늘 프테라',
-    defaultName: '하늘 프테라',
-    displayName: '프테라',
-    rarity: 'epic',
-    description: '하늘을 가르는 빠른 날갯짓으로 모험 소식을 가져와요.',
-    dexDescription: '반짝이는 바람을 타고 날아와 새로운 소식을 전해주는 공룡이에요.',
-    personality: '자유로움',
-    favoriteFoodName: '구름 젤리',
-    habitat: 'sparkle-cave',
-    eggCategory: 'rare',
-    unlockSource: 'rare-egg',
-    discoveryHint: '날개 그림자가 머리 위를 지나간 것 같아요.',
-    foundMethodLabel: '희귀한 알에서 태어남',
-    silhouette: '⌁',
-    unlockHint: '희귀한 알에서 만날 수 있을지도 몰라요.',
-  },
-  {
-    speciesId: 'armor-ankylo',
-    name: '철갑 안킬로',
-    defaultName: '철갑 안킬로',
-    displayName: '안킬로',
-    rarity: 'rare',
-    description: '단단한 갑옷처럼 꾸준함을 좋아하는 믿음직한 공룡이에요.',
-    dexDescription: '단단한 갑옷을 입은 것처럼 천천히, 끝까지 해내는 공룡이에요.',
-    personality: '꾸준함',
-    favoriteFoodName: '단단 견과',
-    habitat: 'volcano-island',
-    eggCategory: 'special',
-    unlockSource: 'special-egg',
-    discoveryHint: '등이 울퉁불퉁하고 꼬리가 묵직한 친구예요.',
-    foundMethodLabel: '알 부화로 만남',
-    silhouette: '■',
-    unlockHint: '훈련과 부화를 계속 이어가면 발견할 수 있어요.',
-  },
-  {
-    speciesId: 'swift-raptor',
-    name: '번개 랩터',
-    defaultName: '번개 랩터',
-    displayName: '랩터',
-    rarity: 'epic',
-    description: '빠른 발과 날카로운 집중력으로 콤보 훈련을 좋아해요.',
-    dexDescription: '번개처럼 빠르게 달리며 반짝이는 집중력을 보여주는 공룡이에요.',
-    personality: '재빠름',
-    favoriteFoodName: '번개 사탕',
-    habitat: 'secret-land',
-    eggCategory: 'rare',
-    unlockSource: 'adventure-fragment',
-    requiredFragmentId: 'rare-egg-fragment',
-    discoveryHint: '발자국이 너무 빨라서 반짝 선만 남았어요.',
-    foundMethodLabel: '특별한 알에서 태어남',
-    silhouette: '!',
-    unlockHint: '특별한 알 부화 보상으로 준비 중이에요.',
-  },
+const habitatOrderById: Record<DinosaurHabitatId, number> = {
+  'green-forest': 1,
+  'sparkle-cave': 2,
+  'volcano-island': 3,
+  'secret-land': 4,
+};
+
+const eggCategoryFoundMethod: Record<DinosaurEggCategory, string> = {
+  normal: '일반 알에서 태어남',
+  special: '특수 알에서 태어남',
+  rare: '희귀 알에서 태어남',
+};
+
+const eggCategoryUnlockHint: Record<DinosaurEggCategory, string> = {
+  normal: '일반알을 부화시키면 만날 수 있어요.',
+  special: '특수알을 부화시키면 만날 수 있어요.',
+  rare: '희귀알을 부화시키면 만날 수 있어요.',
+};
+
+const speciesDrafts: Array<{
+  speciesId: Id;
+  displayName: string;
+  defaultName: string;
+  rarity: DinosaurSpeciesRarity;
+  habitat: DinosaurHabitatId;
+  eggCategory: DinosaurEggCategory;
+  unlockSource: DinosaurUnlockSource;
+  starterSelectable?: boolean;
+  collectionOrder: number;
+  personality: string;
+  favoriteFoodName: string;
+  silhouette: string;
+}> = [
+  { speciesId: 'tiny-tyranno', displayName: '티라노사우르스', defaultName: '용감한 티라노', rarity: 'common', habitat: 'green-forest', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 1, personality: '용감함', favoriteFoodName: '톡톡 고기볼', silhouette: '◆' },
+  { speciesId: 'baby-tricera', displayName: '트리케라', defaultName: '튼튼한 트리케라', rarity: 'common', habitat: 'green-forest', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 2, personality: '든든함', favoriteFoodName: '바삭 잎사귀', silhouette: '▲' },
+  { speciesId: 'plate-stego', displayName: '스테고', defaultName: '반짝 스테고', rarity: 'common', habitat: 'green-forest', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 3, personality: '차분함', favoriteFoodName: '말랑 열매', silhouette: '★' },
+  { speciesId: 'parasaurolophus', displayName: '파라사우롤로푸스', defaultName: '노래 파라사우', rarity: 'special', habitat: 'green-forest', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 4, personality: '다정함', favoriteFoodName: '숲 열매', silhouette: '♪' },
+  { speciesId: 'armor-ankylo', displayName: '안킬로', defaultName: '철갑 안킬로', rarity: 'special', habitat: 'green-forest', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 5, personality: '꾸준함', favoriteFoodName: '단단 견과', silhouette: '■' },
+  { speciesId: 'green-forest-rare', displayName: '초록 숲 희귀 공룡', defaultName: '초록 숲 수호자', rarity: 'rare', habitat: 'green-forest', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 6, personality: '신비로움', favoriteFoodName: '빛나는 잎', silhouette: '◇' },
+  { speciesId: 'long-brachio', displayName: '브라키오', defaultName: '느긋한 브라키오', rarity: 'common', habitat: 'sparkle-cave', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 7, personality: '느긋함', favoriteFoodName: '높은 나뭇잎', silhouette: '│' },
+  { speciesId: 'allosaurus', displayName: '알로사우루스', defaultName: '날쌘 알로', rarity: 'common', habitat: 'sparkle-cave', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 8, personality: '날쌤', favoriteFoodName: '알록 고기볼', silhouette: 'A' },
+  { speciesId: 'pachycephalosaurus', displayName: '파키케팔로', defaultName: '단단 파키', rarity: 'common', habitat: 'sparkle-cave', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 9, personality: '씩씩함', favoriteFoodName: '둥근 열매', silhouette: '●' },
+  { speciesId: 'dilophosaurus', displayName: '딜로포사우루스', defaultName: '반짝 딜로포', rarity: 'special', habitat: 'sparkle-cave', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 10, personality: '호기심 많음', favoriteFoodName: '동굴 젤리', silhouette: 'D' },
+  { speciesId: 'iguanodon', displayName: '이구아노돈', defaultName: '차분한 이구아노돈', rarity: 'special', habitat: 'sparkle-cave', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 11, personality: '차분함', favoriteFoodName: '반짝 잎', silhouette: 'I' },
+  { speciesId: 'sparkle-cave-rare', displayName: '반짝 동굴 희귀 공룡', defaultName: '동굴 별빛이', rarity: 'rare', habitat: 'sparkle-cave', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 12, personality: '영리함', favoriteFoodName: '별빛 사탕', silhouette: '✦' },
+  { speciesId: 'carnotaurus', displayName: '카르노타우루스', defaultName: '씩씩 카르노', rarity: 'common', habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 13, personality: '당당함', favoriteFoodName: '뜨끈 고기볼', silhouette: 'C' },
+  { speciesId: 'kentrosaurus', displayName: '켄트로사우루스', defaultName: '뾰족 켄트로', rarity: 'common', habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 14, personality: '꼼꼼함', favoriteFoodName: '화산 잎', silhouette: 'K' },
+  { speciesId: 'dimetrodon', displayName: '디메트로돈', defaultName: '돛단 디메트로', rarity: 'common', habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 15, personality: '느긋함', favoriteFoodName: '따뜻한 열매', silhouette: 'M' },
+  { speciesId: 'spinosaurus', displayName: '스피노사우루스', defaultName: '물결 스피노', rarity: 'special', habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 16, personality: '집중함', favoriteFoodName: '물결 젤리', silhouette: 'S' },
+  { speciesId: 'therizinosaurus', displayName: '테리지노사우루스', defaultName: '긴손 테리지노', rarity: 'special', habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 17, personality: '섬세함', favoriteFoodName: '긴 잎사귀', silhouette: 'T' },
+  { speciesId: 'volcano-island-rare', displayName: '화산섬 희귀 공룡', defaultName: '화산 불꽃이', rarity: 'rare', habitat: 'volcano-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 18, personality: '열정적', favoriteFoodName: '불꽃 사탕', silhouette: '△' },
+  { speciesId: 'pteranodon', displayName: '프테라노돈', defaultName: '하늘 프테라', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 19, personality: '자유로움', favoriteFoodName: '구름 젤리', silhouette: '⌁' },
+  { speciesId: 'diplodocus', displayName: '디플로도쿠스', defaultName: '길쭉 디플로', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 20, personality: '온화함', favoriteFoodName: '부드러운 잎', silhouette: 'L' },
+  { speciesId: 'swift-raptor', displayName: '벨로시랩터', defaultName: '번개 벨로시랩터', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 21, personality: '재빠름', favoriteFoodName: '번개 사탕', silhouette: '!' },
+  { speciesId: 'plesiosaurus', displayName: '플레시오사우루스', defaultName: '물빛 플레시오', rarity: 'special', habitat: 'secret-land', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 22, personality: '우아함', favoriteFoodName: '물방울 젤리', silhouette: 'P' },
+  { speciesId: 'mosasaurus', displayName: '모사사우루스', defaultName: '깊은 바다 모사', rarity: 'special', habitat: 'secret-land', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 23, personality: '대담함', favoriteFoodName: '바다 고기볼', silhouette: 'W' },
+  { speciesId: 'secret-land-rare', displayName: '비밀의 땅 희귀 공룡', defaultName: '비밀 별지기', rarity: 'rare', habitat: 'secret-land', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 24, personality: '신중함', favoriteFoodName: '비밀 열매', silhouette: '?' },
 ];
 
-export const dinosaurSpecies: DinosaurSpecies[] = dexHabitats.flatMap((habitat) => {
-  const actualSpeciesInHabitat = actualDinosaurSpecies.filter((species) => species.habitat === habitat);
-  const placeholderCount = Math.max(0, dexSpeciesSlotsPerHabitat - actualSpeciesInHabitat.length);
-  const placeholders = Array.from({ length: placeholderCount }, (_, index) => createPlaceholderSpecies(habitat, index + 1));
-
-  return [...actualSpeciesInHabitat, ...placeholders];
-});
+export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) => ({
+  ...species,
+  name: species.defaultName,
+  habitatOrder: habitatOrderById[species.habitat],
+  starterSelectable: species.starterSelectable ?? false,
+  description: `${species.displayName}은 주산훈련 모험에서 만날 수 있는 공룡이에요.`,
+  dexDescription: `${species.displayName}은 도감 ${species.collectionOrder}번째 슬롯의 공룡이에요.`,
+  discoveryHint: `${species.displayName}의 발자국이 도감에 남아 있어요.`,
+  foundMethodLabel: species.starterSelectable ? '첫 공룡으로 선택 가능' : eggCategoryFoundMethod[species.eggCategory],
+  unlockHint: species.starterSelectable ? '첫 공룡으로 고르거나 일반알에서 만날 수 있어요.' : eggCategoryUnlockHint[species.eggCategory],
+  status: 'available',
+}));
 
 export function getDinosaurSpecies(speciesId: Id) {
   return dinosaurSpecies.find((species) => species.speciesId === speciesId) ?? null;
 }
 
-function createPlaceholderSpecies(habitat: DinosaurHabitatId, index: number): DinosaurSpecies {
-  const slotLabel = `${getHabitatPlaceholderLabel(habitat)} ${index}`;
-
-  return {
-    speciesId: `placeholder-${habitat}-${index}`,
-    name: '???',
-    defaultName: '???',
-    displayName: '???',
-    rarity: 'rare',
-    plannedRarity: index >= 5 ? 'epic' : index >= 3 ? 'rare' : 'common',
-    description: '아직 도감에 자세한 기록이 없는 공룡이에요.',
-    dexDescription: '아직 만나지 못한 공룡이에요.',
-    personality: '???',
-    favoriteFoodName: '???',
-    habitat,
-    eggCategory: index >= 5 ? 'rare' : index >= 3 ? 'special' : 'normal',
-    unlockSource: 'planned',
-    discoveryHint: `${slotLabel}에 새로운 발자국이 남아 있어요.`,
-    foundMethodLabel: '추후 공개',
-    silhouette: '?',
-    unlockHint: '새로운 알과 모험 보상으로 나중에 만날 수 있어요.',
-    isPlaceholder: true,
-    status: 'planned',
-    lockedLabel: '준비 중',
-  };
-}
-
-function getHabitatPlaceholderLabel(habitat: DinosaurHabitatId) {
-  const labels: Record<DinosaurHabitatId, string> = {
-    'green-forest': '초록 숲',
-    'sparkle-cave': '반짝 동굴',
-    'volcano-island': '화산섬',
-    'secret-land': '비밀의 땅',
-  };
-  return labels[habitat];
+export function getStarterSelectableSpecies() {
+  return dinosaurSpecies.filter((species) => species.starterSelectable === true && !species.isPlaceholder && species.status !== 'planned' && species.status !== 'locked' && species.eggCategory === 'normal');
 }

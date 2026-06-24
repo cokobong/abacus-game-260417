@@ -1,7 +1,8 @@
 import type { CostumeSlot, DinosaurState } from '../types/game';
+import type { DinosaurHabitatId } from '../data/dinosaurSpecies';
 
 export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'hatchItem' | 'toy' | 'misc';
-export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
+export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 export type EggCategory = 'normal' | 'special' | 'rare';
 
 interface BaseItemConfig {
@@ -31,13 +32,20 @@ export interface DinosaurItemConfig extends BaseItemConfig {
   unlockType: 'egg_fragment' | 'egg' | 'event' | 'shop_unlock';
 }
 
+export interface EggRequiredFragmentConfig {
+  itemId: string;
+  amount: number;
+}
+
 export interface EggItemConfig extends BaseItemConfig {
   category: 'egg';
   rarity: 'normal' | 'rare' | 'special';
   eggType: string;
   eggCategory: EggCategory;
+  eggHabitatId?: DinosaurHabitatId;
   requiredFragmentId?: string;
   requiredFragmentAmount?: number;
+  requiredFragments?: EggRequiredFragmentConfig[];
 }
 
 export interface HatchItemConfig extends BaseItemConfig {
@@ -62,9 +70,7 @@ export interface ShopCategoryConfig {
 }
 
 export const fallbackFoodEffect: DinosaurStatEffect = {
-  hunger: 15,
-  mood: 1,
-  exp: 3,
+  stamina: 10,
 };
 
 export const shopCategoryConfigs: ShopCategoryConfig[] = [
@@ -83,11 +89,10 @@ export const itemConfigs: ItemConfig[] = [
     name: '고기',
     category: 'food',
     price: 50,
-    description: '든든한 기본 사료예요.',
+    description: '체력을 회복하는 든든한 기본 사료예요.',
     sortOrder: 1,
     effect: {
-      hunger: 20,
-      exp: 3,
+      stamina: 20,
     },
   },
   {
@@ -95,11 +100,10 @@ export const itemConfigs: ItemConfig[] = [
     name: '말랑 열매',
     category: 'food',
     price: 80,
-    description: '포만감과 행복을 조금 채워줘요.',
+    description: '체력을 조금 회복하는 말랑한 열매예요.',
     sortOrder: 2,
     effect: {
-      hunger: 12,
-      mood: 2,
+      stamina: 10,
     },
   },
   {
@@ -107,10 +111,10 @@ export const itemConfigs: ItemConfig[] = [
     name: '나뭇잎',
     category: 'food',
     price: 30,
-    description: '가벼운 기본 사료예요.',
+    description: '가볍게 체력을 회복하는 기본 사료예요.',
     sortOrder: 3,
     effect: {
-      hunger: 8,
+      stamina: 10,
     },
   },
   {
@@ -118,11 +122,10 @@ export const itemConfigs: ItemConfig[] = [
     name: '공룡 쿠키',
     category: 'food',
     price: 150,
-    description: '행복을 더 채워주는 간식이에요.',
+    description: '체력을 많이 회복하는 특별 간식이에요.',
     sortOrder: 4,
     effect: {
-      mood: 3,
-      exp: 2,
+      stamina: 30,
     },
   },
   {
@@ -171,7 +174,7 @@ export const itemConfigs: ItemConfig[] = [
     name: '희귀알 조각',
     category: 'dinosaur',
     price: 0,
-    description: '모험에서 발견한 반짝이는 조각이에요. 5개를 모으면 희귀알을 열 수 있어요.',
+    description: '모험에서 발견한 반짝이는 조각이에요. 희귀알마다 필요한 개수가 달라요.',
     sortOrder: 21,
     rarity: 'rare',
     unlockType: 'egg_fragment',
@@ -188,17 +191,64 @@ export const itemConfigs: ItemConfig[] = [
     eggCategory: 'special',
   },
   {
-    id: 'rare-adventure-egg',
-    name: '희귀알',
+    id: 'green-forest-rare-egg',
+    name: '초록 숲 희귀알',
     category: 'egg',
     price: 0,
-    description: '모험에서 얻은 조각과 단서로 열 수 있는 특별한 알이에요.',
+    description: '초록 숲에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
     sortOrder: 31,
     rarity: 'rare',
     eggType: 'rare',
     eggCategory: 'rare',
+    eggHabitatId: 'green-forest',
     requiredFragmentId: 'rare-egg-fragment',
     requiredFragmentAmount: 5,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 5 }],
+  },
+  {
+    id: 'sparkle-cave-rare-egg',
+    name: '반짝 동굴 희귀알',
+    category: 'egg',
+    price: 0,
+    description: '반짝 동굴에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
+    sortOrder: 32,
+    rarity: 'rare',
+    eggType: 'rare',
+    eggCategory: 'rare',
+    eggHabitatId: 'sparkle-cave',
+    requiredFragmentId: 'rare-egg-fragment',
+    requiredFragmentAmount: 10,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
+  },
+  {
+    id: 'volcano-island-rare-egg',
+    name: '화산섬 희귀알',
+    category: 'egg',
+    price: 0,
+    description: '화산섬에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
+    sortOrder: 33,
+    rarity: 'rare',
+    eggType: 'rare',
+    eggCategory: 'rare',
+    eggHabitatId: 'volcano-island',
+    requiredFragmentId: 'rare-egg-fragment',
+    requiredFragmentAmount: 15,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 15 }],
+  },
+  {
+    id: 'secret-land-rare-egg',
+    name: '비밀의 땅 희귀알',
+    category: 'egg',
+    price: 0,
+    description: '비밀의 땅에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
+    sortOrder: 34,
+    rarity: 'rare',
+    eggType: 'rare',
+    eggCategory: 'rare',
+    eggHabitatId: 'secret-land',
+    requiredFragmentId: 'rare-egg-fragment',
+    requiredFragmentAmount: 20,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 20 }],
   },
   {
     id: 'hatch-warm-stone',
@@ -256,4 +306,10 @@ export function getHatchItemConfig(itemId: string) {
 
 export function getItemsByCategory(category: ItemCategory) {
   return itemConfigs.filter((item) => item.category === category).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function getEggRequiredFragments(item: EggItemConfig): EggRequiredFragmentConfig[] {
+  if (item.requiredFragments?.length) return item.requiredFragments;
+  if (item.requiredFragmentId && item.requiredFragmentAmount) return [{ itemId: item.requiredFragmentId, amount: item.requiredFragmentAmount }];
+  return [];
 }

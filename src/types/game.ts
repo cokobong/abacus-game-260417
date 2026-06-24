@@ -193,8 +193,9 @@ export interface DinosaurState {
   level: number;
   exp: number;
   mood: number;
-  hunger: number;
   stamina: number;
+  /** @deprecated 포만감은 MVP 주요 수치에서 제외한다. 기존 localStorage 호환용으로만 유지한다. */
+  hunger?: number;
 }
 
 export type CostumeSlot = 'head' | 'neck' | 'body' | 'accessory';
@@ -209,8 +210,9 @@ export interface OwnedDinosaur {
   level: number;
   exp: number;
   mood: number;
-  hunger: number;
   stamina: number;
+  /** @deprecated 포만감은 MVP 주요 수치에서 제외한다. 기존 localStorage 호환용으로만 유지한다. */
+  hunger?: number;
   obtainedAt: UnixTimeMs;
   equippedCostumes?: EquippedCostumes;
 }
@@ -235,6 +237,7 @@ export interface OwnedEgg {
   rarity: EggState['rarity'];
   eggType: string;
   eggCategory?: EggState['eggCategory'];
+  eggHabitatId?: Id;
   hatchProgress: number;
   createdAt: UnixTimeMs;
 }

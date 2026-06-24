@@ -4,7 +4,7 @@ import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { CostumeSlot, DinosaurState, EquippedCostumes, OwnedDinosaur } from '../../types/game';
 
 type DinoView = 'care' | 'playground';
-type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
+type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
 
 export interface DinosaurRoomScreenProps {
@@ -65,9 +65,9 @@ export function DinosaurRoomScreen({
               <p className="text-sm font-black text-emerald-700">최근 변화</p>
               <p className="mt-1 text-lg font-black text-emerald-950">{feedback}</p>
             </div>
-            <PlayButton label="쓰다듬기" onClick={() => onDinosaurInteraction({ mood: 1 }, '행복 +1')} />
-            <PlayButton label="공 던지기" onClick={() => onDinosaurInteraction({ mood: 2, stamina: -1 }, '행복 +2, 체력 -1')} />
-            <PlayButton label="쉬게 하기" onClick={() => onDinosaurInteraction({ stamina: 2 }, '체력 +2')} />
+            <PlayButton label="쓰다듬기" onClick={() => onDinosaurInteraction({ mood: 5 }, '행복 +5')} />
+            <PlayButton label="공 던지기" onClick={() => onDinosaurInteraction({ mood: 10, stamina: -5 }, '행복 +10, 체력 -5')} />
+            <PlayButton label="쉬게 하기" onClick={() => onDinosaurInteraction({ stamina: 10, mood: 3 }, '체력 +10, 행복 +3')} />
           </div>
         </div>
       </section>
@@ -176,8 +176,7 @@ function DinosaurStateMiniPanel({ dinosaur }: { dinosaur: DinosaurState }) {
       <div className="grid gap-1.5">
         <MiniMeter icon={Zap} label="경험치" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
         <MiniMeter icon={Sparkles} label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
-        <MiniMeter icon={Heart} label="행복감" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
-        <MiniMeter icon={Utensils} label="포만감" value={dinosaur.hunger} tone="from-amber-400 to-orange-500" />
+        <MiniMeter icon={Heart} label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
       </div>
     </section>
   );
@@ -211,6 +210,7 @@ function FoodInventoryPanel({
       <div className="mb-3 rounded-[20px] bg-amber-50 px-4 py-3">
         <p className="text-xs font-black text-amber-700">선택한 먹이</p>
         <p className="mt-1 text-base font-black text-amber-950">{selectedFood ? selectedFood.name : '먹이를 선택해주세요.'}</p>
+        <p className="mt-1 text-xs font-black text-amber-700">행복할수록 체력이 더 잘 회복돼요.</p>
       </div>
       <button onClick={onFeed} className="mb-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1">
         <Utensils className="h-5 w-5" />
@@ -392,7 +392,7 @@ function getDinosaurMoodText(dinosaur: DinosaurState, fallback: string) {
   if (fallback) return fallback;
   if (dinosaur.mood >= 70) return `${dinosaur.name}가 기분 좋아 보여요.`;
   if (dinosaur.stamina < 30) return `${dinosaur.name}가 조금 쉬고 싶어해요.`;
-  if (dinosaur.hunger < 30) return `${dinosaur.name}가 배고픈 것 같아요.`;
+  if (dinosaur.mood < 40) return `${dinosaur.name}가 조금 심심해요. 놀이터에서 같이 놀아주세요.`;
   return `${dinosaur.name}가 기다리고 있어요!`;
 }
 
@@ -428,7 +428,6 @@ function getCostumeSlotLabel(slot: CostumeSlot) {
 
 function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
   const changes = [
-    effect.hunger ? `포만감 +${effect.hunger}` : null,
     effect.mood ? `행복 +${effect.mood}` : null,
     effect.exp ? `EXP +${effect.exp}` : null,
     effect.stamina ? `체력 +${effect.stamina}` : null,

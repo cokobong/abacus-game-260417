@@ -1,7 +1,8 @@
 import { Coins, Egg, Package, Shirt, ShoppingBag, Sparkles, Utensils, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { itemConfigs, type EggCategory, type ItemConfig } from '../../config/itemConfig';
-import type { OwnedEgg } from '../../types/game';
+import { getEggRequiredFragments, itemConfigs, type EggCategory, type ItemConfig } from '../../config/itemConfig';
+import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
+import { canBuyEggItem } from '../../utils/hatchCandidates';
 
 type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'all' | 'food' | 'costume' | 'egg' | 'hatchItem';
@@ -10,6 +11,7 @@ export interface ShopScreenProps {
   coins: number;
   feedback: string;
   inventory: InventoryItemState[];
+  ownedDinosaurs: OwnedDinosaur[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: (itemId: string) => void;
@@ -23,7 +25,7 @@ const shopCategories: Array<{ id: ShopCategoryId; label: string }> = [
   { id: 'hatchItem', label: '부화 아이템' },
 ];
 
-export function ShopScreen({ coins, feedback, inventory, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
+export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
   const [activeCategory, setActiveCategory] = useState<ShopCategoryId>('all');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const selectedItem = selectedItemId ? itemConfigs.find((item) => item.id === selectedItemId) ?? null : null;
@@ -46,10 +48,10 @@ export function ShopScreen({ coins, feedback, inventory, ownedEggs, ownedCostume
       </section>
 
       <ShopCategoryTabs activeCategory={activeCategory} onCategory={setActiveCategory} />
-      <ShopItemGrid activeCategory={activeCategory} items={visibleItems} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelectItem={setSelectedItemId} />
+      <ShopItemGrid activeCategory={activeCategory} items={visibleItems} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelectItem={setSelectedItemId} />
       <DeveloperShopDebugPanel inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} />
 
-      {selectedItem && <ShopItemDetailModal item={selectedItem} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onClose={() => setSelectedItemId(null)} onPurchase={onPurchase} />}
+      {selectedItem && <ShopItemDetailModal item={selectedItem} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onClose={() => setSelectedItemId(null)} onPurchase={onPurchase} />}
     </div>
   );
 }
@@ -80,6 +82,7 @@ function ShopItemGrid({
   items,
   coins,
   inventory,
+  ownedDinosaurs,
   ownedEggs,
   ownedCostumeIds,
   onSelectItem,
@@ -88,24 +91,34 @@ function ShopItemGrid({
   items: ItemConfig[];
   coins: number;
   inventory: InventoryItemState[];
+  ownedDinosaurs: OwnedDinosaur[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onSelectItem: (itemId: string) => void;
 }) {
   if (activeCategory === 'egg') {
     const eggItems = items.filter((item) => item.category === 'egg');
+    const rareFragmentQuantity = getFragmentQuantity(inventory, rareEggFragmentItemId);
+    const totalRareEggFragmentRequirement = getTotalRareEggFragmentRequirement();
 
     return (
       <section className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-[24px] border-4 border-white bg-white/72 px-4 py-3 shadow-sm">
-          <p className="text-sm font-black text-violet-900">알은 일반알, 특수알, 희귀알 3종류로 정리돼요.</p>
-          {eggCategoryOrder.map((eggCategory) => (
-            <span key={eggCategory} className={`rounded-full px-3 py-1 text-xs font-black ${getEggCategoryBadgeTone(eggCategory)}`}>{getEggCategoryLabel(eggCategory)}</span>
-          ))}
+        <div className="grid gap-2 rounded-[24px] border-4 border-white bg-white/72 px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-black text-violet-900">알은 일반알, 특수알, 희귀알 3종류로 정리돼요.</p>
+            {eggCategoryOrder.map((eggCategory) => (
+              <span key={eggCategory} className={`rounded-full px-3 py-1 text-xs font-black ${getEggCategoryBadgeTone(eggCategory)}`}>{getEggCategoryLabel(eggCategory)}</span>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-[18px] bg-violet-50 px-3 py-2 text-xs font-black text-violet-900">
+            <span>보유 희귀알 조각: {rareFragmentQuantity}개</span>
+            <span className="text-violet-500">|</span>
+            <span>희귀알을 모두 열려면 총 {totalRareEggFragmentRequirement}개가 필요해요.</span>
+          </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {eggItems.map((item) => (
-            <ShopEggCompactCard key={item.id} item={item} coins={coins} inventory={inventory} ownedEggs={ownedEggs} onSelect={() => onSelectItem(item.id)} />
+            <ShopEggCompactCard key={item.id} item={item} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} onSelect={() => onSelectItem(item.id)} />
           ))}
         </div>
       </section>
@@ -115,20 +128,23 @@ function ShopItemGrid({
   return (
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <ShopItemCard key={item.id} item={item} coins={coins} inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelect={() => onSelectItem(item.id)} />
+        <ShopItemCard key={item.id} item={item} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelect={() => onSelectItem(item.id)} />
       ))}
     </section>
   );
 }
 
-function ShopEggCompactCard({ item, coins, inventory, ownedEggs, onSelect }: { item: Extract<ItemConfig, { category: 'egg' }>; coins: number; inventory: InventoryItemState[]; ownedEggs: OwnedEgg[]; onSelect: () => void }) {
+function ShopEggCompactCard({ item, coins, inventory, ownedDinosaurs, ownedEggs, onSelect }: { key?: string; item: Extract<ItemConfig, { category: 'egg' }>; coins: number; inventory: InventoryItemState[]; ownedDinosaurs: OwnedDinosaur[]; ownedEggs: OwnedEgg[]; onSelect: () => void }) {
   const isRareEgg = isRareEggItem(item);
   const hasEnoughCoins = coins >= item.price;
   const ownedQuantity = ownedEggs.filter((egg) => egg.eggItemId === item.id).length;
-  const fragmentQuantity = getFragmentQuantity(inventory, item.requiredFragmentId);
-  const requiredFragmentAmount = item.requiredFragmentAmount ?? 0;
-  const hasEnoughFragments = isRareEgg && requiredFragmentAmount > 0 && fragmentQuantity >= requiredFragmentAmount;
-  const statusLabel = isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족';
+  const requiredFragment = getPrimaryRequiredFragment(item);
+  const fragmentQuantity = getFragmentQuantity(inventory, requiredFragment?.itemId);
+  const requiredFragmentAmount = requiredFragment?.amount ?? 0;
+  const missingFragmentAmount = Math.max(0, requiredFragmentAmount - fragmentQuantity);
+  const hasEnoughFragments = isRareEgg && hasEnoughRequiredFragments(inventory, item);
+  const eggAvailability = canBuyEggItem(item, ownedDinosaurs, ownedEggs);
+  const statusLabel = eggAvailability.hasEggInCategory ? '이미 부화장에 있어요' : eggAvailability.remainingCandidateCount === 0 ? '모두 만났어요' : isRareEgg ? (hasEnoughFragments ? '희귀알 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족';
 
   return (
     <button
@@ -148,11 +164,15 @@ function ShopEggCompactCard({ item, coins, inventory, ownedEggs, onSelect }: { i
         <div className="mt-2 flex flex-wrap gap-1.5">
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${isRareEgg ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-900'}`}>
             {isRareEgg ? <Package className="h-3.5 w-3.5" /> : <Coins className="h-3.5 w-3.5" />}
-            {isRareEgg ? `희귀알 조각 ${fragmentQuantity}/${requiredFragmentAmount}` : `${item.price}코인`}
+            {isRareEgg ? `내 조각 ${fragmentQuantity}개` : `${item.price}코인`}
           </span>
-          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-500">보유 x{ownedQuantity}</span>
+          {isRareEgg && <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-violet-700">필요 {requiredFragmentAmount}개</span>}
+          {isRareEgg && missingFragmentAmount > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-black text-amber-800">부족 {missingFragmentAmount}개</span>}
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-500">{eggAvailability.hasEggInCategory ? '부화장에 있음' : `보유 x${ownedQuantity}`}</span>
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-500">남은 공룡 {eggAvailability.remainingCandidateCount}마리</span>
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-500">보유 알 {eggAvailability.ownedEggCountByCategory}개</span>
         </div>
-        <p className={`mt-2 rounded-full px-3 py-1 text-center text-xs font-black ${isRareEgg ? (hasEnoughFragments ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800') : hasEnoughCoins ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{statusLabel}</p>
+        <p className={`mt-2 rounded-full px-3 py-1 text-center text-xs font-black ${eggAvailability.canBuyMore && ((isRareEgg && hasEnoughFragments) || (!isRareEgg && hasEnoughCoins)) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{statusLabel}</p>
       </div>
     </button>
   );
@@ -162,18 +182,21 @@ function ShopItemCard({
   item,
   coins,
   inventory,
+  ownedDinosaurs,
   ownedEggs,
   ownedCostumeIds,
   onSelect,
 }: {
+  key?: string;
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
+  ownedDinosaurs: OwnedDinosaur[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onSelect: () => void;
 }) {
-  const status = getItemStatus(item, coins, inventory, ownedEggs, ownedCostumeIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const Icon = getItemIcon(item);
 
   return (
@@ -201,6 +224,7 @@ function ShopItemDetailModal({
   item,
   coins,
   inventory,
+  ownedDinosaurs,
   ownedEggs,
   ownedCostumeIds,
   onClose,
@@ -209,18 +233,21 @@ function ShopItemDetailModal({
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
+  ownedDinosaurs: OwnedDinosaur[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onClose: () => void;
   onPurchase: (itemId: string) => void;
 }) {
   const [purchaseMessage, setPurchaseMessage] = useState('');
-  const status = getItemStatus(item, coins, inventory, ownedEggs, ownedCostumeIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const Icon = getItemIcon(item);
   const missingCoins = Math.max(0, item.price - coins);
   const isRareEgg = item.category === 'egg' && isRareEggItem(item);
-  const fragmentQuantity = isRareEgg ? getFragmentQuantity(inventory, item.requiredFragmentId) : 0;
-  const requiredFragmentAmount = isRareEgg ? item.requiredFragmentAmount ?? 0 : 0;
+  const requiredFragment = item.category === 'egg' ? getPrimaryRequiredFragment(item) : null;
+  const fragmentQuantity = isRareEgg ? getFragmentQuantity(inventory, requiredFragment?.itemId) : 0;
+  const requiredFragmentAmount = isRareEgg ? requiredFragment?.amount ?? 0 : 0;
+  const missingFragmentAmount = Math.max(0, requiredFragmentAmount - fragmentQuantity);
 
   function handlePurchase() {
     if (status.isComingSoon) return;
@@ -230,8 +257,18 @@ function ShopItemDetailModal({
       return;
     }
 
+    if (item.category === 'egg' && status.eggAvailability?.hasEggInCategory) {
+      setPurchaseMessage(`${getEggCategoryLabel(item.eggCategory)}은 이미 부화장에 있어요. 부화 후 다음 알을 준비할 수 있어요.`);
+      return;
+    }
+
+    if (item.category === 'egg' && !status.canBuyEggMore) {
+      setPurchaseMessage('이 알에서 만날 수 있는 공룡을 모두 만났어요. 다른 알을 선택해보세요.');
+      return;
+    }
+
     if (isRareEgg && !status.hasEnoughFragments) {
-      setPurchaseMessage(`희귀알 조각이 부족해요. ${requiredFragmentAmount}개를 모으면 열 수 있어요.`);
+      setPurchaseMessage(`공통 희귀알 조각이 부족해요. 내 조각 ${fragmentQuantity}개 · 필요 ${requiredFragmentAmount}개 · 부족 ${missingFragmentAmount}개`);
       return;
     }
 
@@ -273,27 +310,37 @@ function ShopItemDetailModal({
               <p className="text-xs font-black text-slate-500">{isRareEgg ? '보유 조각' : '내 코인'}</p>
               <p className="mt-1 inline-flex items-center justify-center gap-1 text-lg font-black sm:text-xl">
                 {isRareEgg ? <Package className="h-5 w-5 text-violet-600" /> : <Coins className="h-5 w-5 text-amber-600" />}
-                {isRareEgg ? `${fragmentQuantity}/${requiredFragmentAmount}` : `${coins.toLocaleString()}코인`}
+                {isRareEgg ? `${fragmentQuantity}개` : `${coins.toLocaleString()}코인`}
               </p>
             </div>
           </div>
+          {isRareEgg && (
+            <p className="mx-auto w-fit rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700">
+              내 조각 {fragmentQuantity}개 · 필요 {requiredFragmentAmount}개 · 부족 {missingFragmentAmount}개
+            </p>
+          )}
           <p className="mx-auto w-fit rounded-full bg-white/90 px-3 py-1.5 text-xs font-black text-slate-500">{status.ownedLabel}</p>
+          {item.category === 'egg' && status.eggAvailability && (
+            <p className="mx-auto w-fit rounded-full bg-white/90 px-3 py-1.5 text-xs font-black text-slate-500">
+              남은 만남 가능 공룡 {status.eggAvailability.remainingCandidateCount}마리 · 보유 알 {status.eggAvailability.ownedEggCountByCategory}개
+            </p>
+          )}
         </div>
         <div className="grid gap-2 border-t-4 border-white bg-white/90 p-3 text-center sm:p-4">
           {status.isComingSoon ? (
             <p className="rounded-[18px] bg-slate-100 px-4 py-3 text-sm font-black text-slate-600">추후 모험에서 사용할 수 있어요. 아직 구매할 수 없는 아이템이에요.</p>
           ) : (
             <>
-              <p className={`rounded-[18px] px-4 py-2 text-sm font-black ${status.hasEnoughCoins || status.hasEnoughFragments || status.isOwnedCostume ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                {purchaseMessage || (isRareEgg ? (status.hasEnoughFragments ? '특별한 알을 열 수 있어요!' : `희귀알 조각 ${requiredFragmentAmount}개가 필요해요.`) : status.hasEnoughCoins ? '구매할 수 있어요.' : `코인이 부족해요. ${missingCoins.toLocaleString()}코인이 더 필요해요.`)}
+              <p className={`rounded-[18px] px-4 py-2 text-sm font-black ${status.canBuy || status.isOwnedCostume ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                {purchaseMessage || getShopDetailMessage(item, status, isRareEgg, fragmentQuantity, requiredFragmentAmount, missingFragmentAmount, missingCoins)}
               </p>
               <button
-                disabled={status.isOwnedCostume || (isRareEgg && !status.hasEnoughFragments)}
+                disabled={status.isOwnedCostume || (item.category === 'egg' && !status.canBuy)}
                 onClick={handlePurchase}
                 className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-violet-400 to-violet-600 px-8 text-base font-black text-white shadow-[0_6px_0_#7c3aed] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-16 sm:text-lg"
               >
                 <ShoppingBag className="h-6 w-6" />
-                {isRareEgg ? (status.hasEnoughFragments ? '조각으로 열기' : '조각 부족') : status.hasEnoughCoins && !status.isOwnedCostume ? `${item.price}코인으로 구매` : status.buttonLabel}
+                {isRareEgg ? status.buttonLabel : status.hasEnoughCoins && !status.isOwnedCostume ? `${item.price}코인으로 구매` : status.buttonLabel}
               </button>
             </>
           )}
@@ -332,22 +379,26 @@ function isVisibleShopItem(item: ItemConfig) {
   return item.category === 'food' || item.category === 'costume' || item.category === 'egg' || item.category === 'hatchItem';
 }
 
-function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
+function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
   const ownedQuantity = getOwnedQuantity(item, inventory, ownedEggs, ownedCostumeIds);
   const isOwnedCostume = item.category === 'costume' && ownedCostumeIds.includes(item.id);
   const isComingSoon = isComingSoonItem(item);
   const isRareEgg = item.category === 'egg' && isRareEggItem(item);
-  const requiredFragmentAmount = isRareEgg ? item.requiredFragmentAmount ?? 0 : 0;
-  const fragmentQuantity = isRareEgg ? getFragmentQuantity(inventory, item.requiredFragmentId) : 0;
-  const hasEnoughFragments = isRareEgg && requiredFragmentAmount > 0 && fragmentQuantity >= requiredFragmentAmount;
+  const eggAvailability = item.category === 'egg' ? canBuyEggItem(item, ownedDinosaurs, ownedEggs) : null;
+  const canBuyEggMore = item.category !== 'egg' || Boolean(eggAvailability?.canBuyMore);
+  const hasEnoughFragments = isRareEgg && item.category === 'egg' && hasEnoughRequiredFragments(inventory, item);
   const hasEnoughCoins = coins >= item.price;
-  const canBuy = !isComingSoon && !isOwnedCostume && (isRareEgg ? hasEnoughFragments : hasEnoughCoins);
+  const canBuy = !isComingSoon && !isOwnedCostume && canBuyEggMore && (isRareEgg ? hasEnoughFragments : hasEnoughCoins);
+  const hasEggInCategory = item.category === 'egg' && Boolean(eggAvailability?.hasEggInCategory);
+  const eggSoldOut = item.category === 'egg' && !hasEggInCategory && eggAvailability?.remainingCandidateCount === 0;
 
   return {
-    ownedLabel: item.category === 'costume' ? (isOwnedCostume ? '보유 중' : '아직 없음') : `보유 x${ownedQuantity}`,
-    actionLabel: isComingSoon ? '추후 사용 예정' : isOwnedCostume ? '이미 보유 중' : isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족',
-    buttonLabel: isOwnedCostume ? '이미 보유 중' : isRareEgg ? (hasEnoughFragments ? '조각으로 열기' : '조각 부족') : hasEnoughCoins ? '구매하기' : '코인 부족',
+    ownedLabel: item.category === 'costume' ? (isOwnedCostume ? '보유 중' : '아직 없음') : item.category === 'egg' && hasEggInCategory ? '이미 부화장에 있어요' : `보유 x${ownedQuantity}`,
+    actionLabel: isComingSoon ? '추후 사용 예정' : isOwnedCostume ? '이미 보유 중' : hasEggInCategory ? '이미 부화장에 있어요' : eggSoldOut ? '모두 만났어요' : isRareEgg ? (hasEnoughFragments ? '희귀알 열기' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족',
+    buttonLabel: isOwnedCostume ? '이미 보유 중' : hasEggInCategory ? '이미 부화장에 있어요' : eggSoldOut ? '모두 만났어요' : isRareEgg ? (hasEnoughFragments ? '희귀알 열기' : '조각 부족') : hasEnoughCoins ? '구매하기' : '코인 부족',
     canBuy,
+    canBuyEggMore,
+    eggAvailability,
     hasEnoughFragments,
     hasEnoughCoins,
     isComingSoon,
@@ -391,9 +442,12 @@ function getCategoryLabel(item: ItemConfig) {
 }
 
 function getFriendlyDescription(item: ItemConfig) {
-  if (item.category === 'food') return `${item.name}은 공룡이 좋아하는 간식이에요. 먹으면 배도 든든해지고 기분도 조금 좋아질 수 있어요.`;
+  if (item.category === 'food') return `${item.name}은 공룡의 체력을 회복하는 먹이예요. 행복할수록 체력이 조금 더 잘 회복돼요.`;
   if (item.category === 'costume') return `${item.name}은 공룡을 꾸며주는 아이템이에요. 우리 공룡 탭에서 입혀볼 수 있어요.`;
-  if (item.category === 'egg' && item.eggCategory === 'rare') return `${item.name}은 모험에서 얻은 희귀알 조각 5개로 열 수 있는 장기 목표 알이에요. 코인으로 바로 구매하지 않아요.`;
+  if (item.category === 'egg' && item.eggCategory === 'rare') {
+    const requiredFragment = getPrimaryRequiredFragment(item);
+    return `${item.name}은 모험에서 얻은 희귀알 조각 ${requiredFragment?.amount ?? 0}개로 열 수 있는 장기 목표 알이에요. 코인으로 바로 구매하지 않아요.`;
+  }
   if (item.category === 'egg') return `${item.name}은 어떤 공룡이 태어날지 모르는 신비한 알이에요. 부화장에서 따뜻하게 돌봐주세요.`;
   if (item.category === 'hatchItem') return `${item.name}은 알에게 힘을 주는 부화 아이템이에요. 사용하면 안쪽의 아기 공룡이 조금 더 힘을 낼 수 있어요.`;
   if (item.category === 'dinosaur') return '모험에서 얻는 희귀 조각이에요. 공룡을 바로 얻는 아이템이 아니라, 나중에 특별한 알을 여는 재료로 사용할 예정이에요.';
@@ -409,13 +463,37 @@ function getPurchaseSuccessMessage(item: ItemConfig) {
   return '구매했어요!';
 }
 
+function getShopDetailMessage(item: ItemConfig, status: ReturnType<typeof getItemStatus>, isRareEgg: boolean, fragmentQuantity: number, requiredFragmentAmount: number, missingFragmentAmount: number, missingCoins: number) {
+  if (item.category === 'egg' && status.eggAvailability?.hasEggInCategory) return `${getEggCategoryLabel(item.eggCategory)}은 이미 부화장에 있어요. 부화 후 다음 알을 준비할 수 있어요.`;
+  if (item.category === 'egg' && !status.canBuyEggMore) return '이 알에서 만날 수 있는 공룡을 모두 만났어요. 다른 알을 선택해보세요.';
+  if (isRareEgg) return status.hasEnoughFragments ? '공통 희귀알 조각을 소비해서 이 희귀알을 열 수 있어요.' : `공통 희귀알 조각이 부족해요. 내 조각 ${fragmentQuantity}개 · 필요 ${requiredFragmentAmount}개 · 부족 ${missingFragmentAmount}개`;
+  return status.hasEnoughCoins ? '구매할 수 있어요.' : `코인이 부족해요. ${missingCoins.toLocaleString()}코인이 더 필요해요.`;
+}
+
 function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
-  return item.eggCategory === 'rare' && Boolean(item.requiredFragmentId) && Boolean(item.requiredFragmentAmount);
+  return item.eggCategory === 'rare' && getEggRequiredFragments(item).length > 0;
+}
+
+function getPrimaryRequiredFragment(item: Extract<ItemConfig, { category: 'egg' }>) {
+  return getEggRequiredFragments(item)[0] ?? null;
+}
+
+function hasEnoughRequiredFragments(inventory: InventoryItemState[], item: Extract<ItemConfig, { category: 'egg' }>) {
+  const requiredFragments = getEggRequiredFragments(item);
+  return requiredFragments.length > 0 && requiredFragments.every((fragment) => getFragmentQuantity(inventory, fragment.itemId) >= fragment.amount);
 }
 
 function getFragmentQuantity(inventory: InventoryItemState[], itemId?: string) {
   if (!itemId) return 0;
   return inventory.find((item) => item.itemId === itemId)?.quantity ?? 0;
+}
+
+const rareEggFragmentItemId = 'rare-egg-fragment';
+
+function getTotalRareEggFragmentRequirement() {
+  return itemConfigs
+    .filter((item): item is Extract<ItemConfig, { category: 'egg' }> => item.category === 'egg' && item.eggCategory === 'rare')
+    .reduce((total, item) => total + getEggRequiredFragments(item).reduce((itemTotal, fragment) => itemTotal + (fragment.itemId === rareEggFragmentItemId ? fragment.amount : 0), 0), 0);
 }
 
 const eggCategoryOrder: EggCategory[] = ['normal', 'special', 'rare'];

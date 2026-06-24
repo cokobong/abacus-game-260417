@@ -240,16 +240,18 @@ interface EggConfig {
 
 ## 7. Growth Config
 
-공룡 성장은 학습 보상과 상점 아이템 효과가 만나는 영역이다.
-EXP와 상태 변화량은 공룡 인스턴스에 직접 하드코딩하지 않고 `growthConfig`와 `shopConfig`의 item effect를 통해 적용한다.
+공룡 성장 정책의 기준 문서는 `docs/dinosaur-growth-system.md`다. 이 문서는 구현에서 조정 가능한 수치와 config 위치만 요약한다.
+
+공룡 성장은 학습 보상과 상점 아이템 효과가 만나는 영역이다. EXP와 상태 변화량은 공룡 인스턴스에 직접 하드코딩하지 않고 `growthConfig`와 `shopConfig`의 item effect를 통해 적용한다.
 
 조정 대상:
 
 - 정답당 EXP
 - 세트 완료 EXP
+- 완벽 완료 또는 높은 정확도 보너스 EXP
 - 레벨별 필요 EXP
 - 먹이 효과
-- 행복/배고픔/체력 변화량
+- 행복/체력 변화량
 - 상태값 최소/최대
 
 타입 초안:
@@ -259,16 +261,19 @@ interface GrowthConfig {
   version: string;
   expPerCorrect: number;
   setCompleteExpByProblemCount: Record<number, number>;
-  expToNextLevel: number[];
+  perfectSetBonusExp: number;
+  expToNextLevelFormula: string;
   statBounds: {
-    hunger: StatBound;
     happiness: StatBound;
     stamina: StatBound;
   };
-  passiveStatChangePerDay: {
-    hunger: number;
-    happiness: number;
-    stamina: number;
+  staminaRecoveryMultiplierByHappiness: Array<{
+    minHappiness: number;
+    multiplier: number;
+  }>;
+  growthStageByLevel: Array<{
+    stage: "baby" | "child" | "teen" | "adult";
+    minLevel: number;
   };
 }
 
@@ -278,8 +283,14 @@ interface StatBound {
 }
 ```
 
-먹이별 효과 수치는 `shopConfig`의 아이템 effect에 둔다.
-레벨 곡선과 기본 성장 규칙은 `growthConfig`에 둔다.
+초기값 예시는 아래를 기준으로 시작한다.
+
+- 정답 1개: EXP +1
+- 세트 완료: EXP +5
+- 완벽 완료 또는 높은 정확도 보너스: EXP +5
+- 레벨업 필요 EXP 초안: `20 + level * 5`
+
+먹이별 효과 수치는 `shopConfig`의 아이템 effect에 둔다. 먹이는 EXP 아이템이 아니라 체력 회복 아이템이며, 행복이 높을수록 회복량이 소폭 증가한다. 레벨 곡선과 기본 성장 규칙은 `growthConfig`에 둔다.
 
 ## 8. Shop Config
 

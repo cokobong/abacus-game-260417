@@ -15,8 +15,8 @@
   - 정답/오답 처리
   - 정답 보상: 코인, 공룡 EXP, 공룡 기분, 알 부화 게이지
   - active dinosaur 표시와 좌우 전환
-  - 정답 시 active dinosaur 체력/포만감 소모
-  - 낮은 체력/포만감일 때 EXP 보상 감소 구조 준비
+  - 정답 시 active dinosaur 체력 소모
+  - 낮은 체력일 때 안내 메시지 표시
 - 우리 공룡
   - 보유 공룡 캐러셀 전환
   - 현재 선택 공룡 상태 표시
@@ -91,6 +91,7 @@ type GameState = {
 ### ownedDinosaurs
 
 보유 공룡 개체 목록이다.
+성장/EXP/레벨업/체력/행복 정책의 기준은 `docs/dinosaur-growth-system.md`를 따른다.
 
 ```ts
 interface OwnedDinosaur {
@@ -101,7 +102,6 @@ interface OwnedDinosaur {
   level: number;
   exp: number;
   mood: number;
-  hunger: number;
   stamina: number;
   obtainedAt: number;
 }
@@ -196,12 +196,12 @@ type InventoryItemState = {
 
 food는 `effect`를 가진다.
 
-- `basic-meat`: 포만감 +20, EXP +3
-- `soft-berry`: 포만감 +12, 행복 +2
-- `leaf-snack`: 포만감 +8
-- `dino-cookie`: 행복 +3, EXP +2
+- `basic-meat`: 체력 +20
+- `soft-berry`: 체력 +10
+- `leaf-snack`: 체력 +10
+- `dino-cookie`: 체력 +30
 
-먹이주기는 선택된 food item id를 기준으로 inventory 수량을 1 줄이고 active dinosaur에 effect를 적용한다.
+먹이주기는 선택된 food item id를 기준으로 inventory 수량을 1 줄이고 active dinosaur의 체력을 회복한다. 행복이 높을수록 체력 회복량이 소폭 증가한다.
 
 ### costume
 
@@ -231,8 +231,8 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 3. reward config에서 코인, 알 게이지, EXP, 기분 보상을 만든다.
 4. 현재 active dinosaur를 찾는다.
 5. active dinosaur에 EXP/기분 보상을 적용한다.
-6. 정답 1개당 체력/포만감을 config 값만큼 소모한다.
-7. 낮은 체력/포만감이면 EXP 보상 감소와 경고 메시지를 준비한다.
+6. 정답 1개당 체력을 config 값만큼 소모한다.
+7. 낮은 체력이면 경고 메시지를 준비한다.
 8. `localStorage` 자동 저장 effect가 변경된 `gameState`를 저장한다.
 
 ### 훈련장 정답 -> 알 게이지 증가
@@ -333,6 +333,6 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 - 훈련장 채점/Bluetooth 입력 로직은 안정화된 영역이므로 건드리지 않는다.
 - Bluetooth Test 패널은 별도 검증 도구로 유지한다.
 - 다음 기능을 붙일 때 디자인 전면 수정은 피한다.
-- `hunger`는 현재 UI 의미상 “포만감”이며 높을수록 좋다.
+- `hunger`는 deprecated 호환 필드이며 주요 UI/로직에서는 사용하지 않는다.
 - 새 보상/소모 숫자는 config로 분리한다.
 - 저장 구조 변경 시 `GAME_STORAGE_VERSION`과 migration 전략을 먼저 정한다.

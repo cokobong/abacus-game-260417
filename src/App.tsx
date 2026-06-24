@@ -3,12 +3,11 @@ import {
   Baby,
   Bluetooth,
   BookOpen,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Coins,
   Egg,
-  Map,
+  Map as MapIcon,
   Play,
   Settings,
   ShoppingBag,
@@ -19,23 +18,24 @@ import {
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
-import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, type DinosaurStatEffect } from './config/itemConfig';
+import { fallbackFoodEffect, getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
 import { adventureAreas } from './data/adventures';
-import { dinosaurSpecies } from './data/dinosaurSpecies';
+import { dinosaurSpecies, getDinosaurSpecies, getStarterSelectableSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
 import type { AbacusLevelConfig, AbacusStageConfig, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
 import { generateTrainingProblems } from './utils/generateTrainingProblems';
 import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
+import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
-type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'hunger' | 'stamina'>>;
+type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
 type ProblemCountOverride = 5 | 10 | 15 | 20;
 type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6;
@@ -77,7 +77,7 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
   { id: 'hatchery', label: '알 부화장', icon: Egg, color: 'text-orange-700', active: 'from-orange-300 to-yellow-300 border-orange-200' },
   { id: 'shop', label: '상점', icon: ShoppingBag, color: 'text-violet-700', active: 'from-violet-300 to-fuchsia-300 border-violet-200' },
   { id: 'pokedex', label: '도감', icon: BookOpen, color: 'text-sky-700', active: 'from-sky-300 to-blue-300 border-sky-200' },
-  { id: 'adventure', label: '모험', icon: Map, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
+  { id: 'adventure', label: '모험', icon: MapIcon, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
   { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
 ];
 
@@ -85,12 +85,11 @@ const defaultSelectedLevel = 1;
 const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
 
 const initialDinosaurState: DinosaurState = {
-  id: 'dino-green-little',
-  name: '초록 꼬마',
+  id: 'dino-tiny-tyranno',
+  name: '용감한 티라노',
   level: 3,
   exp: 44,
   mood: 74,
-  hunger: 68,
   stamina: 81,
 };
 
@@ -115,14 +114,13 @@ const initialOwnedEgg: OwnedEgg = {
 };
 
 const initialOwnedDinosaur: OwnedDinosaur = {
-  id: 'owned-dino-green-little',
-  speciesId: 'green-little',
+  id: 'owned-dino-tiny-tyranno',
+  speciesId: 'tiny-tyranno',
   name: initialDinosaurState.name,
   rarity: 'common',
   level: initialDinosaurState.level,
   exp: initialDinosaurState.exp,
   mood: initialDinosaurState.mood,
-  hunger: initialDinosaurState.hunger,
   stamina: initialDinosaurState.stamina,
   obtainedAt: 0,
 };
@@ -180,7 +178,10 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
   const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
   const activeEggId = activeEgg?.id ?? null;
-  const inventory = normalizeInventoryItems(state.inventory ?? defaultGameState.inventory);
+  const rareEggFragmentsFallback =
+    (state as Partial<GameState> & { rareEggFragments?: unknown }).rareEggFragments ??
+    (state as Partial<GameState> & { resources?: { rareEggFragments?: unknown } }).resources?.rareEggFragments;
+  const inventory = normalizeInventoryItems(state.inventory ?? defaultGameState.inventory, rareEggFragmentsFallback);
   const ownedCostumeIds = getUniqueSpeciesIds([...(state.ownedCostumeIds ?? []), ...getOwnedCostumeIdsFromInventory(inventory)]);
   const userProfile = state.userProfile
     ? {
@@ -242,6 +243,8 @@ function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
   const seenSpeciesIds = new Set<string>();
 
   return ownedDinosaurs
+    .map(normalizeOwnedDinosaurSpecies)
+    .filter((dinosaur): dinosaur is OwnedDinosaur => Boolean(dinosaur))
     .filter((dinosaur) => {
       if (seenSpeciesIds.has(dinosaur.speciesId)) return false;
 
@@ -254,13 +257,27 @@ function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
     }));
 }
 
-function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
-  const ownedSpeciesIds = new Set(getUniqueOwnedDinosaurs(ownedDinosaurs).map((dinosaur) => dinosaur.speciesId));
-  return hatchableDinosaurPool.filter((species) => !species.isPlaceholder && !ownedSpeciesIds.has(species.speciesId));
+function normalizeOwnedDinosaurSpecies(dinosaur: OwnedDinosaur): OwnedDinosaur | null {
+  const speciesIdAliases: Record<string, string> = {
+    'green-little': 'tiny-tyranno',
+  };
+  const speciesId = speciesIdAliases[dinosaur.speciesId] ?? dinosaur.speciesId;
+  const species = getDinosaurSpecies(speciesId);
+  if (!species || species.isPlaceholder || species.status === 'planned' || species.status === 'locked') return null;
+
+  return {
+    ...dinosaur,
+    speciesId,
+    rarity: species.rarity,
+    exp: clampPercent(dinosaur.exp ?? 0),
+    mood: clampPercent(dinosaur.mood ?? 70),
+    stamina: clampPercent(dinosaur.stamina ?? 100),
+    name: dinosaur.name || species.defaultName,
+  };
 }
 
-function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
-  const sourceEggs =
+function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState): OwnedEgg[] {
+  const sourceEggs: OwnedEgg[] =
     ownedEggs !== undefined
       ? ownedEggs
       : legacyEgg
@@ -274,17 +291,53 @@ function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState) {
               eggCategory: legacyEgg.eggCategory,
               hatchProgress: legacyEgg.hatchProgress,
               createdAt: 0,
-            },
+            } as OwnedEgg,
           ]
         : defaultGameState.ownedEggs;
 
-  return sourceEggs.map((egg) => ({
+  const normalizedEggs: OwnedEgg[] = sourceEggs.map((egg) => ({
     ...egg,
-    hatchProgress: clampPercent(egg.hatchProgress),
+    name: egg.name ?? getEggItemConfig(egg.eggItemId)?.name ?? '미확인 알',
+    rarity: egg.rarity ?? getEggItemConfig(egg.eggItemId)?.rarity ?? 'normal',
+    eggType: egg.eggType ?? getEggItemConfig(egg.eggItemId)?.eggType ?? 'normal',
+    eggCategory: egg.eggCategory ?? getEggItemConfig(egg.eggItemId)?.eggCategory ?? getEggCategoryForOwnedEgg(egg),
+    eggHabitatId: egg.eggHabitatId ?? getEggItemConfig(egg.eggItemId)?.eggHabitatId,
+    hatchProgress: clampPercent(egg.hatchProgress ?? 0),
   }));
+
+  return getOneEggPerCategory(normalizedEggs);
 }
 
-function normalizeInventoryItems(inventory: InventoryItemState[]) {
+function getOneEggPerCategory(ownedEggs: OwnedEgg[]): OwnedEgg[] {
+  const selectedEggs = new Map<string, OwnedEgg>();
+
+  ownedEggs.forEach((egg) => {
+    const eggCategory = getEggCategoryForOwnedEgg(egg);
+    const selectedEgg = selectedEggs.get(eggCategory);
+
+    if (!selectedEgg || getEggSlotPriority(egg) > getEggSlotPriority(selectedEgg)) {
+      selectedEggs.set(eggCategory, egg);
+    }
+  });
+
+  const eggCategoryOrder = ['normal', 'special', 'rare'];
+  return Array.from<OwnedEgg>(selectedEggs.values()).sort((a, b) => eggCategoryOrder.indexOf(getEggCategoryForOwnedEgg(a)) - eggCategoryOrder.indexOf(getEggCategoryForOwnedEgg(b)));
+}
+
+function getEggSlotPriority(egg: OwnedEgg) {
+  return clampPercent(egg.hatchProgress ?? 0) * 1_000_000 + (egg.createdAt ?? 0);
+}
+
+function getEggCategoryLabel(category: NonNullable<OwnedEgg['eggCategory']>) {
+  const labels: Record<NonNullable<OwnedEgg['eggCategory']>, string> = {
+    normal: '일반알',
+    special: '특수알',
+    rare: '희귀알',
+  };
+  return labels[category];
+}
+
+function normalizeInventoryItems(inventory: InventoryItemState[], rareEggFragmentsFallback?: unknown) {
   const itemIdAliases: Record<string, string> = {
     'rare-tricera-fragment': 'rare-egg-fragment',
   };
@@ -293,6 +346,11 @@ function normalizeInventoryItems(inventory: InventoryItemState[]) {
     quantities[itemId] = (quantities[itemId] ?? 0) + item.quantity;
     return quantities;
   }, {});
+  const rareEggFragmentFallbackQuantity = typeof rareEggFragmentsFallback === 'string' ? Number(rareEggFragmentsFallback) : rareEggFragmentsFallback;
+
+  if (quantityByItemId['rare-egg-fragment'] === undefined && typeof rareEggFragmentFallbackQuantity === 'number' && Number.isFinite(rareEggFragmentFallbackQuantity) && rareEggFragmentFallbackQuantity > 0) {
+    quantityByItemId['rare-egg-fragment'] = rareEggFragmentFallbackQuantity;
+  }
 
   return Object.entries(quantityByItemId).map(([itemId, quantity]) => ({ itemId, quantity }));
 }
@@ -357,6 +415,7 @@ function createOwnedEggFromItem(itemId: string, createdAt = Date.now()): OwnedEg
     rarity: item.rarity,
     eggType: item.eggType,
     eggCategory: item.eggCategory,
+    eggHabitatId: item.eggHabitatId,
     hatchProgress: 0,
     createdAt,
   };
@@ -468,10 +527,9 @@ function ownedDinosaurToDinosaurState(dinosaur: OwnedDinosaur): DinosaurState {
     id: dinosaur.id,
     name: dinosaur.name,
     level: dinosaur.level,
-    exp: dinosaur.exp,
-    mood: dinosaur.mood,
-    hunger: dinosaur.hunger,
-    stamina: dinosaur.stamina,
+    exp: clampPercent(dinosaur.exp ?? 0),
+    mood: clampPercent(dinosaur.mood ?? 70),
+    stamina: clampPercent(dinosaur.stamina ?? 100),
   };
 }
 
@@ -499,33 +557,30 @@ function updateSelectedOwnedDinosaur(state: GameState, updater: (dinosaur: Owned
 
 function getTrainingConditionEffects(dinosaur: OwnedDinosaur) {
   const isLowEnergy = dinosaur.stamina < trainingFatigueConfig.lowEnergyThreshold;
-  const isLowFullness = dinosaur.hunger < trainingFatigueConfig.lowFullnessThreshold;
-  const rewardMultiplier = isLowEnergy || isLowFullness ? trainingFatigueConfig.lowConditionRewardMultiplier : 1;
+  const rewardMultiplier = isLowEnergy ? trainingFatigueConfig.lowConditionRewardMultiplier : 1;
   const warnings = [
-    isLowEnergy ? '공룡이 조금 지쳤어요. 놀이터에서 쉬게 해주세요!' : null,
-    isLowFullness ? '배가 고파요. 먹이를 주면 더 힘내서 훈련할 수 있어요!' : null,
+    isLowEnergy ? '체력이 조금 낮아요. 먹이를 주면 더 힘내요!' : null,
   ].filter(Boolean) as string[];
 
   return {
     rewardMultiplier,
     staminaCost: trainingFatigueConfig.energyCostPerCorrect,
-    hungerCost: trainingFatigueConfig.fullnessCostPerCorrect,
     warnings,
   };
 }
 
 function formatTrainingRewardFeedback(dinosaur: OwnedDinosaur) {
   const effects = getTrainingConditionEffects(dinosaur);
-  const costParts = [`체력 -${effects.staminaCost}`, `포만감 -${effects.hungerCost}`];
+  const costParts = [`체력 -${effects.staminaCost}`];
   return [...costParts, ...effects.warnings].join(', ');
 }
 
 function getDinoStaminaMessage(stamina: number) {
   if (stamina >= 70) return '훈련할 힘이 충분해요!';
   if (stamina >= 30) return '조금 지쳤지만 아직 괜찮아요.';
-  if (stamina > 0) return '많이 지쳤어요. 조금만 더 하고 쉬어요.';
+  if (stamina > 0) return '체력이 낮아요. 먹이를 주면 더 힘내요.';
 
-  return '지쳐서 지금은 훈련할 수 없어요. 쉬거나 먹이를 주세요.';
+  return '체력이 아주 낮아요. 지금도 훈련할 수 있지만 먹이를 주면 더 좋아요.';
 }
 
 function getTrainingDinoReaction({
@@ -538,7 +593,7 @@ function getTrainingDinoReaction({
   stamina: number;
 }) {
   if (isSetComplete) return '끝까지 해냈어요!';
-  if (stamina <= 0) return '너무 지쳤어요. 잠깐 쉬고 싶어해요.';
+  if (stamina <= 0) return '체력이 낮지만 함께 해볼 수 있어요.';
   if (submissionResult === 'correct') return '좋았어! 공룡이 신나해요!';
   if (submissionResult === 'wrong') return '괜찮아요. 다시 해볼까요?';
   if (stamina < 30) return '조금 지쳤지만 아직 해볼 수 있어요.';
@@ -558,7 +613,7 @@ function getAnswerFeedbackText({
   stamina: number;
 }) {
   if (isSetComplete) return '훈련 완료!';
-  if (stamina <= 0) return '지쳐서 지금은 훈련할 수 없어요. 쉬거나 먹이를 주세요.';
+  if (stamina <= 0) return '체력이 낮아요. 먹이를 주면 더 힘내요.';
   if (submissionResult === 'correct') return '맞았어요!';
   if (submissionResult === 'wrong') return '다시 해볼까요?';
 
@@ -567,13 +622,23 @@ function getAnswerFeedbackText({
 
 function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
   const changes = [
-    effect.hunger ? `포만감 +${effect.hunger}` : null,
     effect.mood ? `행복 +${effect.mood}` : null,
     effect.exp ? `EXP +${effect.exp}` : null,
     effect.stamina ? `체력 +${effect.stamina}` : null,
   ].filter(Boolean);
 
   return changes.join(', ');
+}
+
+function getStaminaRecoveryMultiplier(happiness: number) {
+  if (happiness >= 90) return 1.3;
+  if (happiness >= 70) return 1.2;
+  if (happiness >= 40) return 1.1;
+  return 1;
+}
+
+function getAdjustedStaminaRecovery(baseRecovery: number, happiness: number) {
+  return Math.round(baseRecovery * getStaminaRecoveryMultiplier(happiness));
 }
 
 function getLevelSettingSummary(stages: AbacusStageConfig[]) {
@@ -844,23 +909,31 @@ export default function App() {
     console.log('Cleared local game state.');
   }
 
-  function completeOnboarding(profileInput: { childName: string; ageOrGrade: string; dinosaurName: string }) {
+  function completeOnboarding(profileInput: { childName: string; starterSpeciesId: string; dinosaurName: string }) {
     const childName = profileInput.childName.trim() || '친구';
-    const ageOrGrade = profileInput.ageOrGrade.trim() || '초등';
-    const dinosaurName = profileInput.dinosaurName.trim() || '몽이';
+    const starterSpecies = getStarterSelectableSpecies().find((species) => species.speciesId === profileInput.starterSpeciesId) ?? getStarterSelectableSpecies()[0] ?? getDinosaurSpecies(initialOwnedDinosaur.speciesId);
+    const dinosaurName = profileInput.dinosaurName.trim() || starterSpecies?.defaultName || '몽이';
     const createdAt = Date.now();
+    const starterDinosaur: OwnedDinosaur = {
+      id: `owned-${starterSpecies?.speciesId ?? initialOwnedDinosaur.speciesId}-${createdAt}`,
+      speciesId: starterSpecies?.speciesId ?? initialOwnedDinosaur.speciesId,
+      name: dinosaurName,
+      rarity: starterSpecies?.rarity ?? initialOwnedDinosaur.rarity,
+      level: 1,
+      exp: 0,
+      mood: 74,
+      stamina: 81,
+      obtainedAt: createdAt,
+      equippedCostumes: {},
+    };
     const userProfile: UserProfile = {
       id: `profile-${createdAt}`,
       childName,
-      ageOrGrade,
+      ageOrGrade: '',
       createdAt,
-      selectedDinosaurId: initialOwnedDinosaur.id,
+      selectedDinosaurId: starterDinosaur.id,
       dinosaurName,
       parentModeEnabled: false,
-    };
-    const starterDinosaur: OwnedDinosaur = {
-      ...initialOwnedDinosaur,
-      name: dinosaurName,
     };
 
     setGameState({
@@ -936,13 +1009,11 @@ export default function App() {
       updateSelectedOwnedDinosaur(current, (dinosaur) => ({
         ...dinosaur,
         stamina: clampPercent(dinosaur.stamina - trainingEffects.staminaCost),
-        hunger: clampPercent(dinosaur.hunger - trainingEffects.hungerCost),
       })),
     );
     setLastRewards([]);
     setLastTrainingEffects([
       `체력 -${trainingEffects.staminaCost}`,
-      `포만감 -${trainingEffects.hungerCost}`,
       ...(trainingEffects.warnings ?? []),
     ]);
   }
@@ -961,7 +1032,6 @@ export default function App() {
       selectedLevel: gameState.selectedLevel,
       activeDinosaurCondition: {
         stamina: activeOwnedDinosaur.stamina,
-        hunger: activeOwnedDinosaur.hunger,
       },
     });
     const completedAt = completedSession.completedAt ?? Date.now();
@@ -1038,11 +1108,11 @@ export default function App() {
         ...dinosaur,
         exp: clampPercent(dinosaur.exp + (changes.exp ?? 0)),
         mood: clampPercent(dinosaur.mood + (changes.mood ?? 0)),
-        hunger: clampPercent(dinosaur.hunger + (changes.hunger ?? 0)),
-        stamina: clampPercent(dinosaur.stamina + (changes.stamina ?? 0)),
+        stamina: clampPercent(dinosaur.stamina + (changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, dinosaur.mood) : changes.stamina ?? 0)),
       })),
     );
-    setDinoFeedback(message);
+    const staminaBonus = changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, activeOwnedDinosaur.mood) : null;
+    setDinoFeedback(staminaBonus ? message.replace(`체력 +${changes.stamina}`, `체력 +${staminaBonus}`) : message);
   }
 
   function feedDinosaur() {
@@ -1085,14 +1155,20 @@ export default function App() {
     setGameState((current) => {
       const currentInventoryItem = current.inventory.find((item) => item.itemId === inventoryItem.itemId);
       remainingQuantity = Math.max(0, (currentInventoryItem?.quantity ?? 0) - 1);
+      const selectedDinosaur = getSelectedOwnedDinosaur(getUniqueOwnedDinosaurs(current.ownedDinosaurs), current.userProfile?.selectedDinosaurId);
+      const adjustedEffect = selectedDinosaur
+        ? {
+            ...effect,
+            stamina: getAdjustedStaminaRecovery(effect.stamina ?? 0, selectedDinosaur.mood),
+          }
+        : effect;
 
       return {
         ...updateSelectedOwnedDinosaur(current, (dinosaur) => ({
           ...dinosaur,
-          exp: clampPercent(dinosaur.exp + (effect.exp ?? 0)),
-          mood: clampPercent(dinosaur.mood + (effect.mood ?? 0)),
-          hunger: clampPercent(dinosaur.hunger + (effect.hunger ?? 0)),
-          stamina: clampPercent(dinosaur.stamina + (effect.stamina ?? 0)),
+          exp: clampPercent(dinosaur.exp + (adjustedEffect.exp ?? 0)),
+          mood: clampPercent(dinosaur.mood + (adjustedEffect.mood ?? 0)),
+          stamina: clampPercent(dinosaur.stamina + (adjustedEffect.stamina ?? 0)),
         })),
         inventory: current.inventory.map((item) => (item.itemId === inventoryItem.itemId ? { ...item, quantity: remainingQuantity } : item)),
       };
@@ -1100,7 +1176,11 @@ export default function App() {
     if (remainingQuantity <= 0) {
       setSelectedFoodItemId(null);
     }
-    setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${formatDinosaurStatChanges(effect)}` : `${foodName}를 먹었어요! ${formatDinosaurStatChanges(effect)} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
+    const activeHappiness = activeOwnedDinosaur.mood;
+    const recoveredStamina = getAdjustedStaminaRecovery(effect.stamina ?? 0, activeHappiness);
+    const multiplier = getStaminaRecoveryMultiplier(activeHappiness);
+    const recoveryMessage = `체력 +${recoveredStamina}${multiplier > 1 ? ` (행복 보너스 x${multiplier})` : ''}`;
+    setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${recoveryMessage}` : `${foodName}를 먹었어요! ${recoveryMessage} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
   }
 
   function purchaseItem(itemId: string) {
@@ -1115,18 +1195,32 @@ export default function App() {
       return;
     }
 
-    if (item.category === 'egg' && item.eggCategory === 'rare') {
-      const requiredFragmentId = item.requiredFragmentId;
-      const requiredFragmentAmount = item.requiredFragmentAmount ?? 0;
-      const ownedFragmentQuantity = requiredFragmentId ? gameState.inventory.find((entry) => entry.itemId === requiredFragmentId)?.quantity ?? 0 : 0;
+    if (item.category === 'egg') {
+      const eggAvailability = canBuyEggItem(item, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool);
+      if (eggAvailability.hasEggInCategory) {
+        setShopFeedback(`${getEggCategoryLabel(item.eggCategory)}은 이미 부화장에 있어요. 부화 후 다음 알을 준비할 수 있어요.`);
+        return;
+      }
 
-      if (!requiredFragmentId || requiredFragmentAmount <= 0) {
+      if (!eggAvailability.canBuyMore) {
+        setShopFeedback('이 알에서 만날 수 있는 공룡을 모두 만났어요. 다른 알을 선택해보세요.');
+        return;
+      }
+    }
+
+    if (item.category === 'egg' && item.eggCategory === 'rare') {
+      const requiredFragments = getEggRequiredFragments(item);
+      const missingFragment = requiredFragments.find((fragment) => (gameState.inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) < fragment.amount);
+
+      if (requiredFragments.length === 0) {
         setShopFeedback('희귀알 교환 조건이 아직 준비되지 않았어요.');
         return;
       }
 
-      if (ownedFragmentQuantity < requiredFragmentAmount) {
-        setShopFeedback(`희귀알 조각이 부족해요. ${requiredFragmentAmount}개가 필요해요.`);
+      if (missingFragment) {
+        const currentFragmentQuantity = gameState.inventory.find((entry) => entry.itemId === missingFragment.itemId)?.quantity ?? 0;
+        const missingFragmentAmount = Math.max(0, missingFragment.amount - currentFragmentQuantity);
+        setShopFeedback(`공통 희귀알 조각이 부족해요. 내 조각 ${currentFragmentQuantity}개 · 필요 ${missingFragment.amount}개 · 부족 ${missingFragmentAmount}개`);
         return;
       }
 
@@ -1138,8 +1232,8 @@ export default function App() {
 
       setGameState((current) => ({
         ...current,
-        inventory: subtractInventoryQuantity(current.inventory, requiredFragmentId, requiredFragmentAmount),
-        ownedEggs: [...current.ownedEggs, newEgg],
+        inventory: requiredFragments.reduce((inventory, fragment) => subtractInventoryQuantity(inventory, fragment.itemId, fragment.amount), current.inventory),
+        ownedEggs: getOneEggPerCategory([...current.ownedEggs, newEgg]),
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
@@ -1177,7 +1271,7 @@ export default function App() {
           ...current.player,
           coins: current.player.coins - item.price,
         },
-        ownedEggs: [...current.ownedEggs, newEgg],
+        ownedEggs: getOneEggPerCategory([...current.ownedEggs, newEgg]),
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
@@ -1276,8 +1370,7 @@ export default function App() {
 
     isHatchingRef.current = true;
     const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(gameState.ownedDinosaurs);
-    const ownedSpeciesIds = new Set(uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId));
-    const hatchedTemplate = getAvailableHatchSpecies(uniqueOwnedDinosaurs)[0];
+    const hatchedTemplate = getHatchCandidates(currentActiveEgg, uniqueOwnedDinosaurs, hatchableDinosaurPool).candidates[0];
 
     if (!hatchedTemplate) {
       setGameState((current) => ({
@@ -1287,22 +1380,7 @@ export default function App() {
         egg: {
           ...current.egg,
           ...(activeEggToEggState(currentActiveEgg) ?? {}),
-          lastHatchMessage: '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.',
-        },
-      }));
-      isHatchingRef.current = false;
-      return;
-    }
-
-    if (ownedSpeciesIds.has(hatchedTemplate.speciesId)) {
-      setGameState((current) => ({
-        ...current,
-        ownedDinosaurs: uniqueOwnedDinosaurs,
-        discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
-        egg: {
-          ...current.egg,
-          ...(activeEggToEggState(currentActiveEgg) ?? {}),
-          lastHatchMessage: '이미 만난 공룡이에요.',
+          lastHatchMessage: '이 알에서 만날 수 있는 새 공룡을 모두 만났어요. 다른 알을 부화해보세요.',
         },
       }));
       isHatchingRef.current = false;
@@ -1322,7 +1400,6 @@ export default function App() {
         level: 1,
         exp: 0,
         mood: 70,
-        hunger: 70,
         stamina: 70,
         obtainedAt,
       };
@@ -1699,7 +1776,7 @@ export default function App() {
           />
         )}
         {activeTab === 'shop' && (
-          <ShopScreen coins={gameState.player.coins} feedback={shopFeedback} inventory={gameState.inventory} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />
+          <ShopScreen coins={gameState.player.coins} feedback={shopFeedback} inventory={gameState.inventory} ownedDinosaurs={gameState.ownedDinosaurs} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />
         )}
         {activeTab === 'pokedex' && <DexScreen ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} onViewOwnedDinosaur={viewOwnedDinosaurFromDex} />}
         {activeTab === 'adventure' && (
@@ -1842,46 +1919,39 @@ function TrainingView({
   onGoToDino: () => void;
   onGoToHatchery: () => void;
 }) {
-  const bluetoothStatus = bluetoothInput ? 'Bluetooth 입력 수신' : 'Bluetooth 입력 대기';
+  const bluetoothStatus = bluetoothInput ? 'Bluetooth 주판 연결됨' : 'Bluetooth 입력 대기';
   const bluetoothStatusTone = bluetoothInput ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800';
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
-  const canSubmitAnswer = activeDinosaur.stamina > 0 && !isSetComplete;
+  const canSubmitAnswer = !isSetComplete;
   const staminaMessage = getDinoStaminaMessage(activeDinosaur.stamina);
   const dinoReaction = getTrainingDinoReaction({ isSetComplete, submissionResult, stamina: activeDinosaur.stamina });
   const answerFeedback = getAnswerFeedbackText({ feedback, isSetComplete, submissionResult, stamina: activeDinosaur.stamina });
   const problemExpression = currentProblem.expressionText ?? currentProblem.displayText;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
-      <section className="game-panel p-4 md:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-3xl font-black text-emerald-950">오늘의 주산훈련</h3>
-            <p className="mt-1 font-black text-emerald-700/70">
-              {isSetComplete ? `세트 완료! 정답 ${correctCount}/${totalProblems}` : `문제 ${currentProblemIndex + 1}/${totalProblems} · 정답 ${correctCount}개 · 오답 시도 ${wrongCount}회`}
-            </p>
-          </div>
-          <div className={`inline-flex items-center gap-2 rounded-full border-4 border-white px-4 py-2 text-xs font-black shadow-sm ${bluetoothStatusTone}`}>
-            <Bluetooth className="h-4 w-4" />
-            {bluetoothStatus}
-          </div>
-        </div>
-
-        <div className="mb-5 rounded-[28px] border-4 border-white bg-white/82 p-4 shadow-sm">
-          {selectedLevelConfig ? (
-            <>
-              <p className="text-sm font-black text-cyan-700">
-                현재 훈련: {selectedLevelConfig.title} · {selectedLevelConfig.summary}
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="game-panel p-3 md:p-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[26px] border-4 border-white bg-white/74 px-3 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={onGoToDino} className="min-h-11 rounded-[16px] bg-white px-4 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
+              나가기
+            </button>
+            <div>
+              <h3 className="text-2xl font-black text-emerald-950 md:text-3xl">오늘의 주산훈련</h3>
+              <p className="mt-0.5 text-sm font-black text-emerald-700/70">
+                {isSetComplete ? `세트 완료 · 정답 ${correctCount}/${totalProblems}` : `문제 ${currentProblemIndex + 1}/${totalProblems} · 정답 ${correctCount}개 · 오답 ${wrongCount}회`}
               </p>
-              <p className="mt-1 text-xs font-black text-slate-500">문제 진행률: 문제 {Math.min(currentProblemIndex + 1, totalProblems)}/{totalProblems}</p>
-              <p className="mt-1 text-xs font-black text-slate-500">
-                {effectiveProblemCount}문제 · {effectiveNumberCountLabel} 수 · {effectiveDigitTypeLabel} · {effectiveOperationsLabel}
-              </p>
-              {usesFallbackGenerator && <p className="mt-1 text-xs font-black text-amber-700">이 단계는 임시 생성 규칙으로 연동 중입니다.</p>}
-            </>
-          ) : (
-            <p className="text-sm font-black text-slate-500">선택된 교재 단계 정보를 찾지 못했어요.</p>
-          )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={`inline-flex min-h-10 items-center gap-2 rounded-full border-4 border-white px-4 py-1.5 text-xs font-black shadow-sm ${bluetoothStatusTone}`}>
+              <Bluetooth className="h-4 w-4" />
+              {bluetoothStatus}
+            </div>
+            <button className="min-h-10 rounded-full border-4 border-white bg-amber-100 px-4 text-xs font-black text-amber-900 shadow-sm transition active:translate-y-1">
+              힌트
+            </button>
+          </div>
         </div>
 
         {isSetComplete ? (
@@ -1900,7 +1970,7 @@ function TrainingView({
             />
           </div>
         ) : (
-          <div className="rounded-[34px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-5 shadow-inner md:p-8">
+          <div className="rounded-[32px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-4 shadow-inner md:p-6">
             <CurrentProblemCard
               answer={answer}
               answerFeedback={answerFeedback}
@@ -1915,6 +1985,18 @@ function TrainingView({
             />
           </div>
         )}
+
+        <div className="mt-4 rounded-[24px] border-4 border-white bg-white/74 px-4 py-3 shadow-sm">
+          {selectedLevelConfig ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-500">
+              <span className="text-cyan-700">{selectedLevelConfig.title} · {selectedLevelConfig.summary}</span>
+              <span>{effectiveProblemCount}문제 · {effectiveNumberCountLabel} 수 · {effectiveDigitTypeLabel} · {effectiveOperationsLabel}</span>
+              {usesFallbackGenerator && <span className="text-amber-700">임시 생성 규칙 사용 중</span>}
+            </div>
+          ) : (
+            <p className="text-sm font-black text-slate-500">선택된 교재 단계 정보를 찾지 못했어요.</p>
+          )}
+        </div>
 
         <details className="mt-5 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 생성된 문제 전체 보기</summary>
@@ -1954,7 +2036,7 @@ function TrainingView({
           staminaMessage={staminaMessage}
           onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
         />
-        <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <div className="rounded-[28px] border-4 border-white bg-white/84 p-4 shadow-lg">
           <h4 className="text-xl font-black text-emerald-950">훈련 메모</h4>
           <div className="mt-3 grid gap-2">
             {lastRewards.length > 0 ? (
@@ -1999,31 +2081,39 @@ function CurrentProblemCard({
   staminaMessage: string;
   totalProblems: number;
 }) {
+  function appendDigit(digit: string) {
+    if (!canSubmitAnswer) return;
+    onAnswer(`${answer}${digit}`);
+  }
+
+  function deleteDigit() {
+    if (!canSubmitAnswer) return;
+    onAnswer(answer.slice(0, -1));
+  }
+
   return (
     <>
       <div className="text-center">
         <p className="mb-2 text-sm font-black text-cyan-700">문제 {currentProblemIndex + 1}/{totalProblems}</p>
-        <p className="mx-auto max-w-4xl break-words text-5xl font-black leading-tight text-emerald-950 md:text-7xl">{problemExpression}</p>
+        <p className="mx-auto max-w-4xl break-words text-6xl font-black leading-tight text-emerald-950 md:text-8xl">{problemExpression}</p>
       </div>
-      <div className="mx-auto mt-8 grid max-w-xl gap-3 sm:grid-cols-[1fr_auto]">
-        <input
-          value={answer}
-          onChange={(event) => onAnswer(event.target.value)}
-          disabled={!canSubmitAnswer}
-          inputMode="numeric"
-          placeholder="답 입력"
-          className="min-h-20 rounded-[24px] border-4 border-white bg-white px-5 text-4xl font-black text-slate-900 shadow-inner outline-none focus:border-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-        />
-        <button
-          disabled={!canSubmitAnswer}
-          onClick={onCheck}
-          className="game-button min-h-20 bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-cyan disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <CheckCircle2 className="h-6 w-6" />
-          정답 확인
-        </button>
+      <div className="mx-auto mt-7 grid max-w-4xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid content-start gap-3">
+          <label className="grid gap-2 rounded-[26px] border-4 border-white bg-white/86 p-4 text-left shadow-sm">
+            <span className="text-sm font-black text-emerald-700">정답 입력</span>
+            <input
+              value={answer}
+              onChange={(event) => onAnswer(event.target.value.replace(/[^\d-]/g, ''))}
+              disabled={!canSubmitAnswer}
+              inputMode="numeric"
+              placeholder="정답을 입력하세요"
+              className="min-h-20 rounded-[20px] bg-slate-50 px-5 text-4xl font-black text-slate-900 outline-none focus:bg-cyan-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            />
+          </label>
+          <AbacusInputGuide bluetoothInput={bluetoothInput} />
+        </div>
+        <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
       </div>
-      <AbacusInputGuide bluetoothInput={bluetoothInput} />
       {!canSubmitAnswer && (
         <p className="mx-auto mt-3 max-w-xl rounded-[20px] border-4 border-white bg-amber-100 px-4 py-3 text-center text-sm font-black text-amber-900">
           {staminaMessage}
@@ -2034,10 +2124,53 @@ function CurrentProblemCard({
   );
 }
 
+function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolean; onDigit: (digit: string) => void; onDelete: () => void; onSubmit: () => void }) {
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+  return (
+    <div className="rounded-[26px] border-4 border-white bg-white/82 p-3 shadow-sm">
+      <div className="grid grid-cols-3 gap-2">
+        {keys.map((key) => (
+          <button
+            key={key}
+            disabled={disabled}
+            onClick={() => onDigit(key)}
+            className="min-h-14 rounded-[18px] bg-slate-100 text-2xl font-black text-slate-900 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {key}
+          </button>
+        ))}
+        <button
+          disabled={disabled}
+          onClick={onDelete}
+          className="min-h-14 rounded-[18px] bg-amber-200 px-2 text-sm font-black text-amber-950 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          지우기
+        </button>
+        <button
+          disabled={disabled}
+          onClick={() => onDigit('0')}
+          className="min-h-14 rounded-[18px] bg-slate-100 text-2xl font-black text-slate-900 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          0
+        </button>
+        <button
+          disabled={disabled}
+          onClick={onSubmit}
+          className="min-h-14 rounded-[18px] bg-emerald-500 px-2 text-sm font-black text-white shadow-[0_4px_0_#047857] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          입력
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AbacusInputGuide({ bluetoothInput }: { bluetoothInput: BluetoothNotificationPayload | null }) {
   return (
-    <div className="mx-auto mt-4 grid max-w-xl gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-sm font-black text-slate-600 shadow-sm">
+    <div className="grid gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-sm font-black text-slate-600 shadow-sm">
       <p className="text-center text-emerald-900">주판알을 답에 맞게 움직인 뒤 리턴 버튼을 눌러주세요.</p>
+      <p className="text-center text-xs text-slate-500">Bluetooth 주판이 없을 때 숫자패드로 입력할 수 있어요.</p>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="text-cyan-800">Bluetooth 제출값</span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-800">{bluetoothInput?.parsedNumber ?? '-'}</span>
@@ -2065,7 +2198,7 @@ function ActiveDinoReactionPanel({
   const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
 
   return (
-    <div className="rounded-[30px] border-4 border-white bg-white/86 p-5 shadow-lg">
+    <div className="rounded-[30px] border-4 border-white bg-white/86 p-4 shadow-lg">
       <div className="mb-3 flex items-center justify-between gap-2">
         <button
           aria-label="이전 훈련 공룡"
@@ -2078,6 +2211,7 @@ function ActiveDinoReactionPanel({
         <div className="text-center">
           <p className="text-sm font-black text-cyan-700">{dinosaur.name}와 함께 훈련 중</p>
           <h4 className="text-2xl font-black text-emerald-950">{activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId}</h4>
+          <p className="mt-1 text-xs font-black text-slate-500">{rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}</p>
         </div>
         <button
           aria-label="다음 훈련 공룡"
@@ -2091,18 +2225,28 @@ function ActiveDinoReactionPanel({
       <div className="flex min-h-36 items-end justify-center rounded-[28px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-3 shadow-inner">
         <DinoAvatar size="small" />
       </div>
-      <div className="mt-4 rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
-        <div className="mb-2 flex justify-between text-sm font-black text-emerald-900">
-          <span>체력</span>
-          <span>{dinosaur.stamina}%</span>
-        </div>
-        <div className="h-5 overflow-hidden rounded-full bg-slate-100 shadow-inner">
-          <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-lime-500" style={{ width: `${dinosaur.stamina}%` }} />
-        </div>
-        <p className="mt-2 text-xs font-black text-emerald-700">{staminaMessage}</p>
+      <div className="mt-4 grid gap-2 rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
+        <DinoTrainingMeter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
+        <DinoTrainingMeter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
+        <DinoTrainingMeter label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
+        <p className="rounded-[16px] bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">{staminaMessage}</p>
       </div>
       <p className="mt-3 rounded-[20px] bg-cyan-50 px-4 py-3 text-center text-sm font-black leading-relaxed text-cyan-800">{reaction}</p>
       <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
+    </div>
+  );
+}
+
+function DinoTrainingMeter({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-xs font-black text-emerald-900">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="h-4 overflow-hidden rounded-full bg-slate-100 shadow-inner">
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${value}%` }} />
+      </div>
     </div>
   );
 }
@@ -2251,19 +2395,26 @@ function TrainingDinosaurCard({
         <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
         <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
         <Meter label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
-        <Meter label="포만감" value={dinosaur.hunger} tone="from-amber-400 to-orange-500" />
       </div>
     </div>
   );
 }
 
-function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName: string; ageOrGrade: string; dinosaurName: string }) => void }) {
+function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName: string; starterSpeciesId: string; dinosaurName: string }) => void }) {
+  const starterSpecies = getStarterSelectableSpecies();
   const [childName, setChildName] = useState('');
-  const [ageOrGrade, setAgeOrGrade] = useState('');
-  const [dinosaurName, setDinosaurName] = useState('');
+  const [selectedSpeciesId, setSelectedSpeciesId] = useState(starterSpecies[0]?.speciesId ?? initialOwnedDinosaur.speciesId);
+  const selectedSpecies = starterSpecies.find((species) => species.speciesId === selectedSpeciesId) ?? starterSpecies[0];
+  const [dinosaurName, setDinosaurName] = useState(selectedSpecies?.defaultName ?? '몽이');
+
+  function selectStarterSpecies(speciesId: string) {
+    const species = starterSpecies.find((candidate) => candidate.speciesId === speciesId);
+    setSelectedSpeciesId(speciesId);
+    if (species) setDinosaurName(species.defaultName);
+  }
 
   function submitProfile() {
-    onComplete({ childName, ageOrGrade, dinosaurName });
+    onComplete({ childName, starterSpeciesId: selectedSpeciesId, dinosaurName });
   }
 
   return (
@@ -2281,8 +2432,27 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
 
             <div className="mt-7 grid gap-4">
               <ProfileInput label="아이 이름/닉네임" value={childName} placeholder="친구" onChange={setChildName} />
-              <ProfileInput label="나이 또는 학년" value={ageOrGrade} placeholder="8살 / 초2" onChange={setAgeOrGrade} />
-              <ProfileInput label="대표 공룡 이름" value={dinosaurName} placeholder="몽이" onChange={setDinosaurName} />
+              <div className="rounded-[24px] border-4 border-white bg-white/90 p-4 shadow-sm">
+                <p className="text-sm font-black text-emerald-700">첫 번째 공룡 친구를 골라볼까요?</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {starterSpecies.map((species) => {
+                    const isSelected = species.speciesId === selectedSpeciesId;
+                    return (
+                      <button
+                        key={species.speciesId}
+                        onClick={() => selectStarterSpecies(species.speciesId)}
+                        className={`min-h-20 rounded-[20px] border-4 px-4 py-3 text-left transition active:translate-y-1 ${
+                          isSelected ? 'border-cyan-300 bg-cyan-100 text-cyan-950 shadow-[0_5px_0_#67e8f9]' : 'border-white bg-slate-50 text-slate-700 hover:bg-cyan-50'
+                        }`}
+                      >
+                        <span className="block text-lg font-black">{species.displayName}</span>
+                        <span className="mt-1 block text-xs font-black opacity-70">{species.personality} · {species.defaultName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <ProfileInput label="첫 공룡 이름" value={dinosaurName} placeholder={selectedSpecies?.defaultName ?? '몽이'} onChange={setDinosaurName} />
             </div>
 
             <button
@@ -2298,7 +2468,8 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
             <div className="absolute bottom-0 left-0 right-0 h-28 rounded-t-[50%] bg-lime-300/70" />
             <div className="absolute left-8 top-8 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 shadow-lg">
               <p className="text-sm font-black text-cyan-700">시작 공룡</p>
-              <p className="text-3xl font-black text-slate-950">{dinosaurName.trim() || '몽이'}</p>
+              <p className="text-3xl font-black text-slate-950">{dinosaurName.trim() || selectedSpecies?.defaultName || '몽이'}</p>
+              <p className="mt-1 text-xs font-black text-slate-500">{selectedSpecies?.displayName ?? '공룡 친구'}</p>
             </div>
             <DinoAvatar size="hero" />
           </div>

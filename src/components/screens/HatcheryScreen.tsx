@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight, Egg, PackageOpen, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { getEggItemConfig, getHatchItemConfig, type EggCategory } from '../../config/itemConfig';
-import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
+import { getHatchCandidates, type HatchCandidateResult } from '../../utils/hatchCandidates';
 
 type InventoryItemState = { itemId: string; quantity: number };
 
@@ -55,8 +55,10 @@ export function HatcheryScreen({
     [inventory],
   );
   const selectedHatchItem = selectedHatchItemId ? hatchItems.find((entry) => entry.inventoryItem.itemId === selectedHatchItemId) ?? null : null;
-  const hasAvailableHatchSpecies = getAvailableHatchSpecies(ownedDinosaurs).length > 0;
-  const canHatch = Boolean(activeEgg && clampProgress(activeEgg.hatchProgress) >= 100 && hasAvailableHatchSpecies && !hatchResult);
+  const hatchCandidateResult = useMemo(() => getHatchCandidates(activeEgg, ownedDinosaurs), [activeEgg, ownedDinosaurs]);
+  const hatchProgress = clampProgress(activeEgg?.hatchProgress ?? 0);
+  const isHatchReady = Boolean(activeEgg && hatchProgress >= 100);
+  const canHatch = isHatchReady && hatchCandidateResult.candidates.length > 0 && !hatchResult;
 
   useEffect(() => {
     if (!selectedHatchItemId && hatchItems[0]) {
@@ -94,7 +96,7 @@ export function HatcheryScreen({
           activeEgg={activeEgg}
           eggCount={ownedEggs.length}
           canHatch={canHatch}
-          hasAvailableHatchSpecies={hasAvailableHatchSpecies}
+          hatchCandidateResult={hatchCandidateResult}
           feedback={feedback}
           onPreviousEgg={() => selectAdjacentEgg(-1)}
           onNextEgg={() => selectAdjacentEgg(1)}
@@ -104,7 +106,7 @@ export function HatcheryScreen({
 
       <aside className="grid content-start gap-5">
         <HatchItemPanel hatchItems={hatchItems} selectedHatchItemId={selectedHatchItemId} disabled={!activeEgg || Boolean(hatchResult)} onSelectHatchItem={setSelectedHatchItemId} onUseHatchItem={useSelectedHatchItem} />
-        <HatchStatusPanel activeEgg={activeEgg} hasAvailableHatchSpecies={hasAvailableHatchSpecies} />
+        <HatchStatusPanel activeEgg={activeEgg} hatchCandidateResult={hatchCandidateResult} />
       </aside>
 
       {hatchResult && <HatchResultPanel result={hatchResult} onGoToDex={onGoToDex} onGoToDino={onGoToDino} onClose={onCloseHatchResult} />}
@@ -113,41 +115,50 @@ export function HatcheryScreen({
 }
 
 function EggInventoryPanel({ ownedEggs, activeEgg, onSelectEgg }: { ownedEggs: OwnedEgg[]; activeEgg: OwnedEgg | null; onSelectEgg: (eggId: string) => void }) {
+  const ownedEggCount = Math.min(ownedEggs.length, eggSlotCategories.length);
+
   return (
     <section className="rounded-[30px] border-4 border-white bg-white/84 p-4 shadow-lg">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-black text-orange-700">보유 알</p>
-          <h4 className="text-xl font-black text-emerald-950">{ownedEggs.length}개</h4>
+          <p className="text-sm font-black text-orange-700">알 슬롯</p>
+          <h4 className="text-xl font-black text-emerald-950">{ownedEggCount}/3</h4>
         </div>
         <Egg className="h-7 w-7 text-orange-500" />
       </div>
       <div className="grid gap-2">
-        {ownedEggs.length === 0 ? (
-          <div className="rounded-[22px] bg-orange-50 px-4 py-4 text-sm font-black text-orange-800">
-            <p>아직 보유한 알이 없어요.</p>
-            <p className="mt-1 text-xs text-orange-700">상점에서 알을 데려올 수 있어요.</p>
-          </div>
-        ) : (
-          ownedEggs.map((egg) => {
-            const isActive = egg.id === activeEgg?.id;
+        {eggSlotCategories.map((category) => {
+          const egg = ownedEggs.find((ownedEgg) => getOwnedEggCategory(ownedEgg) === category) ?? null;
+          const isActive = egg?.id === activeEgg?.id;
+
+          if (!egg) {
             return (
-              <button
-                key={egg.id}
-                onClick={() => onSelectEgg(egg.id)}
-                className={`rounded-[20px] border-4 px-3 py-3 text-left shadow-sm transition active:translate-y-1 ${
-                  isActive ? 'border-amber-300 bg-amber-100 text-amber-950 shadow-[0_5px_0_#fbbf24]' : 'border-white bg-white/90 text-slate-600 hover:bg-orange-50'
-                }`}
-              >
+              <div key={category} className="rounded-[20px] border-4 border-dashed border-orange-100 bg-orange-50/80 px-3 py-3 text-left text-orange-800">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-black">{egg.name}</span>
-                  <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black">{isActive ? '부화 중' : getEggCategoryLabel(getOwnedEggCategory(egg))}</span>
+                  <span className="font-black">{getEmptyEggSlotTitle(category)}</span>
+                  <span className={`rounded-full px-2 py-1 text-[11px] font-black ${getEggCategoryBadgeTone(category)}`}>{getEggCategoryLabel(category)}</span>
                 </div>
-                <p className="mt-1 text-xs font-black opacity-75">부화 준비 {clampProgress(egg.hatchProgress)}%</p>
-              </button>
+                <p className="mt-1 text-xs font-black text-orange-700">{getEmptyEggSlotDescription(category)}</p>
+              </div>
             );
-          })
-        )}
+          }
+
+          return (
+            <button
+              key={category}
+              onClick={() => onSelectEgg(egg.id)}
+              className={`rounded-[20px] border-4 px-3 py-3 text-left shadow-sm transition active:translate-y-1 ${
+                isActive ? 'border-amber-300 bg-amber-100 text-amber-950 shadow-[0_5px_0_#fbbf24]' : 'border-white bg-white/90 text-slate-600 hover:bg-orange-50'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-black">{egg.name}</span>
+                <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black">{isActive ? '부화 중' : getEggCategoryLabel(category)}</span>
+              </div>
+              <p className="mt-1 text-xs font-black opacity-75">부화 준비 {clampProgress(egg.hatchProgress)}%</p>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
@@ -157,7 +168,7 @@ function EggMainCard({
   activeEgg,
   eggCount,
   canHatch,
-  hasAvailableHatchSpecies,
+  hatchCandidateResult,
   feedback,
   onPreviousEgg,
   onNextEgg,
@@ -166,14 +177,14 @@ function EggMainCard({
   activeEgg: OwnedEgg | null;
   eggCount: number;
   canHatch: boolean;
-  hasAvailableHatchSpecies: boolean;
+  hatchCandidateResult: HatchCandidateResult;
   feedback?: string;
   onPreviousEgg: () => void;
   onNextEgg: () => void;
   onHatchEgg: () => void;
 }) {
   const progress = clampProgress(activeEgg?.hatchProgress ?? 0);
-  const reaction = getEggReactionText(activeEgg, hasAvailableHatchSpecies, feedback);
+  const reaction = getEggReactionText(activeEgg, hatchCandidateResult, feedback);
 
   return (
     <section className="relative min-h-[660px] overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-5 text-center shadow-inner md:p-6">
@@ -303,9 +314,9 @@ function HatchItemPanel({
   );
 }
 
-function HatchStatusPanel({ activeEgg, hasAvailableHatchSpecies }: { activeEgg: OwnedEgg | null; hasAvailableHatchSpecies: boolean }) {
+function HatchStatusPanel({ activeEgg, hatchCandidateResult }: { activeEgg: OwnedEgg | null; hatchCandidateResult: HatchCandidateResult }) {
   const progress = clampProgress(activeEgg?.hatchProgress ?? 0);
-  const value = !activeEgg ? '선택 필요' : !hasAvailableHatchSpecies ? '전체 발견' : progress >= 100 ? '준비 완료' : `${100 - progress}% 남음`;
+  const value = !activeEgg ? '선택 필요' : progress < 100 ? `${100 - progress}% 남음` : hatchCandidateResult.candidates.length === 0 ? '새 후보 없음' : '준비 완료';
 
   return (
     <section className="rounded-[26px] border-4 border-white bg-white/78 p-4 shadow-sm">
@@ -404,6 +415,8 @@ function getSelectedOwnedEgg(ownedEggs: OwnedEgg[], activeEggId?: string | null)
   return ownedEggs.find((egg) => egg.id === activeEggId) ?? ownedEggs[0] ?? null;
 }
 
+const eggSlotCategories: EggCategory[] = ['normal', 'special', 'rare'];
+
 function getOwnedEggCategory(egg: OwnedEgg): EggCategory {
   if (egg.eggCategory) return egg.eggCategory;
 
@@ -423,27 +436,33 @@ function getEggCategoryLabel(category: EggCategory) {
   return labels[category];
 }
 
+function getEmptyEggSlotTitle(category: EggCategory) {
+  return `${getEggCategoryLabel(category)} 없음`;
+}
+
+function getEmptyEggSlotDescription(category: EggCategory) {
+  if (category === 'rare') return '모험에서 희귀알 조각을 모아보세요.';
+  return `상점에서 ${getEggCategoryLabel(category)}을 준비해보세요.`;
+}
+
 function getEggCategoryBadgeTone(category: EggCategory) {
   if (category === 'rare') return 'bg-violet-100 text-violet-800';
   if (category === 'special') return 'bg-sky-100 text-sky-800';
   return 'bg-white/90 text-orange-800';
 }
 
-function getAvailableHatchSpecies(ownedDinosaurs: OwnedDinosaur[]) {
-  const ownedSpeciesIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));
-  return dinosaurSpecies.filter((species) => !species.isPlaceholder && !ownedSpeciesIds.has(species.speciesId));
-}
-
 function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
-function getEggReactionText(activeEgg: OwnedEgg | null, hasAvailableHatchSpecies: boolean, feedback?: string) {
-  if (!activeEgg) return '이 알은 아직 조용해요.';
-  if (!hasAvailableHatchSpecies) return '모든 공룡을 발견했어요! 다음 업데이트를 기다려주세요.';
+function getEggReactionText(activeEgg: OwnedEgg | null, hatchCandidateResult: HatchCandidateResult, feedback?: string) {
+  if (!activeEgg) return '부화할 알을 선택해주세요.';
+  const progress = clampProgress(activeEgg.hatchProgress);
+  if (progress < 100) return '부화 에너지를 더 채워주세요.';
+  if (hatchCandidateResult.matchingSpecies.length === 0) return '이 알에서 만날 수 있는 공룡이 아직 준비 중이에요.';
+  if (hatchCandidateResult.candidates.length === 0) return '이 알에서 만날 수 있는 새 공룡을 모두 만났어요. 다른 알을 부화해보세요.';
   if (feedback) return feedback;
 
-  const progress = clampProgress(activeEgg.hatchProgress);
   if (progress >= 100) return '조금만 더 있으면 깨어날 것 같아요.';
   if (progress >= 70) return '안에서 작은 소리가 들리는 것 같아요!';
   if (progress >= 30) return '알이 따뜻해지고 있어요.';

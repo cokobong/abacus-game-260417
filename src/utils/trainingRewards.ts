@@ -7,7 +7,6 @@ export interface TrainingRewardInput {
   selectedLevel: number;
   activeDinosaurCondition?: {
     stamina: number;
-    hunger: number;
   };
 }
 

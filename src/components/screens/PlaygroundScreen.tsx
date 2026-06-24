@@ -104,7 +104,7 @@ function AdventureAreaGrid({ selectedAreaId, coins, onSelectArea, onExplore }: {
   );
 }
 
-function AdventureAreaCard({ area, isSelected, coins, onSelect, onExplore }: { area: AdventureArea; isSelected: boolean; coins: number; onSelect: () => void; onExplore: () => void }) {
+function AdventureAreaCard({ area, isSelected, coins, onSelect, onExplore }: { key?: string; area: AdventureArea; isSelected: boolean; coins: number; onSelect: () => void; onExplore: () => void }) {
   const isReady = area.status === 'ready';
   const needsCoins = area.entryCost.type === 'coin' && coins < area.entryCost.amount;
   const disabled = !isReady || needsCoins || area.entryCost.type === 'ticket';
@@ -168,7 +168,7 @@ function AdventureResultModal({ result, onClose, onGoToDex, onGoToHatchery }: { 
                 <RewardIcon reward={reward} />
                 {reward.label}
                 </span>
-                {reward.type === 'fragment' && <span className="text-xs text-violet-700">5개를 모으면 희귀알을 열 수 있어요.</span>}
+                {reward.type === 'fragment' && <span className="text-xs text-violet-700">희귀알마다 필요한 조각 수가 달라요.</span>}
               </p>
             ))}
           </div>
