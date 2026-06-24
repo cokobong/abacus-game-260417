@@ -4,6 +4,37 @@
 
 이 커리큘럼은 주산수리셈 교재 흐름을 참고한 앱용 초안이다. 실제 주산 지도 커리큘럼을 확정한 것이 아니며, 아이의 실제 교재 진도와 학습 반응에 따라 stage 순서와 문제 생성 조건은 계속 수정한다. 초기 구현은 MVP 범위의 단순 단계만 반영하고, 5의 보수/10의 보수/암산/급수형 문제는 추후 검증 후 확장한다.
 
+## Current Draft Structure
+
+현재 1~10단계 커리큘럼은 모두 draft이다. 1단계도 최종 확정이 아니며, 실제 주산수리셈 교재 내용을 다시 확인한 뒤 단계별 세부 내용을 수정할 예정이다.
+
+커리큘럼은 코드 로직에 하드코딩하지 않고 `src/data/abacusLevels.ts`와 `src/data/abacusStages.ts` 데이터로 관리한다. 부모 화면에서는 1~10단계 교재 단계만 선택하고, 내부적으로는 stage config가 문제 생성 기본 규칙을 가진다.
+
+현재 부모 override는 문제 수, 숫자 개수, 숫자 자리수, 연산 방식만 허용한다. override 적용 순서는 다음과 같다.
+
+- 문제 수: `problemCountOverride`가 있으면 사용하고, 없으면 `stage.defaultProblemCount`를 사용한다.
+- 숫자 개수: `numberCountOverride`가 3/4/5/6이면 사용하고, `stage-default`이면 `stage.defaultNumberCount`를 사용한다.
+- 숫자 자리수: `digitTypeOverride`가 `one-digit`/`two-digit`/`mixed-digit`이면 사용하고, `stage-default`이면 `stage.defaultDigitType`을 사용한다.
+- 연산 방식: `operationsOverride`가 `add`/`subtract`/`mixed`이면 사용하고, `stage-default`이면 `stage.defaultOperation`을 사용한다.
+
+`src/utils/generateTrainingProblems.ts`의 `generateTrainingProblems`는 stage config와 부모 override가 합쳐진 resolved settings를 받아 실제 `TrainingProblem`을 생성한다. stage의 `generatorStatus`가 `todo`이면 같은 level의 `basic`/`ready` stage를 찾고, 없으면 `L1-DRAFT-01`을 fallback 생성 규칙으로 사용한다.
+
+향후 5의 보수, 10의 보수, 받아올림/받아내림, 자리별 제약, 긴 연속 계산 규칙은 stage config에 필드를 추가하거나 기존 `tags`, `generatorStatus`, `curriculumStatus`를 구체화해 확장한다. 이 문서와 data config는 교재 재확인 후 계속 갱신한다.
+
+## Temporary Mastery Evaluation
+
+현재 성취도 판정 기준은 임시이다. `src/utils/evaluateTrainingProgress.ts`는 저장된 `trainingHistory`, `progressByLevel`, `progressByStage`를 읽어 부모 리포트와 자동 추천 기능의 기초 데이터를 계산한다.
+
+MVP 기준은 최근 3세트 평균 정확도를 중심으로 한다.
+
+- 기록 없음: `not-started`
+- 최근 3세트 평균 정확도 60% 미만: `needs-practice`
+- 최근 3세트 평균 정확도 60~79%: `in-progress`
+- 최근 3세트 평균 정확도 80~89%: `almost-mastered`
+- 최근 3세트 평균 정확도 90% 이상이고 총 세션 3회 이상: `mastered`
+
+이 계산은 자동으로 단계를 강제 이동하지 않는다. 우선은 “현재 단계 반복”, “한 번 더 풀고 다음 단계 준비”, “다음 stage 또는 level 추천” 같은 추천 메시지만 계산한다. 실제 교육 기준과 threshold는 아이의 사용 데이터와 교재 재확인 결과를 보며 나중에 조정한다.
+
 ## 1. 설계 원칙
 
 - 난이도는 단순 `easy / normal / hard`보다 교재 단계 기반 `stage id`로 관리한다.

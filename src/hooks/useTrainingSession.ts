@@ -7,7 +7,7 @@ const RESET_TRAINING_FEEDBACK = '주판알을 새 답에 맞게 움직인 뒤 �
 
 interface UseTrainingSessionOptions {
   onCorrectAnswer?: (answer: TrainingAnswer) => void;
-  onSetComplete?: () => void;
+  onSetComplete?: (session: TrainingSession) => void;
   formatCorrectRewardFeedback?: () => string;
   formatSetCompleteFeedback?: () => string;
   resetKey?: string;
@@ -49,11 +49,15 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
 
   const currentProblem = session.problems[session.currentProblemIndex] ?? session.problems[0];
   const isSetComplete = session.status === 'completed';
+  const wrongCount = useMemo(() => session.answers.filter((item) => !item.isCorrect).length, [session.answers]);
+  const lastAnswerResult = submissionResult;
 
   const correctCount = useMemo(() => {
     const correctProblemIds = new Set(session.answers.filter((item) => item.isCorrect).map((item) => item.problemId));
     return correctProblemIds.size;
   }, [session.answers]);
+  const completedProblemIds = useMemo(() => new Set(session.answers.filter((item) => item.isCorrect).map((item) => item.problemId)), [session.answers]);
+  const answeredCount = completedProblemIds.size;
 
   useEffect(() => {
     return () => {
@@ -92,6 +96,19 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
     problemStartedAtRef.current = Date.now();
   }
 
+  function resetSession(nextProblems = problems) {
+    clearNextProblemTimer();
+    const nextSession = createSession(nextProblems);
+    setSession(nextSession);
+    sessionRef.current = nextSession;
+    setAnswer('');
+    answerRef.current = '';
+    setFeedback(INITIAL_FEEDBACK);
+    setSubmissionResult(null);
+    problemStartedAtRef.current = Date.now();
+    setCompleteRewardGrantedRef.current = false;
+  }
+
   function handleAnswerChange(value: string) {
     if (sessionRef.current.status === 'completed' || sessionRef.current.status === 'showing_feedback') return;
 
@@ -125,14 +142,20 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
     nextProblemTimerRef.current = null;
 
     if (nextIndex >= current.problems.length) {
+      const completedSession = {
+        ...current,
+        status: 'completed' as const,
+        completedAt: Date.now(),
+      };
       setSession((latest) => ({
         ...latest,
         status: 'completed',
-        completedAt: Date.now(),
+        completedAt: completedSession.completedAt,
       }));
+      sessionRef.current = completedSession;
       if (!setCompleteRewardGrantedRef.current) {
         setCompleteRewardGrantedRef.current = true;
-        options.onSetComplete?.();
+        options.onSetComplete?.(completedSession);
       }
       setFeedback(options.formatSetCompleteFeedback?.() ?? '세트 완료! 보상이 더미 상태에 반영되었습니다.');
       return;
@@ -217,6 +240,13 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
     currentProblem,
     currentProblemIndex: session.currentProblemIndex,
     totalProblems: session.problems.length,
+    wrongCount,
+    answeredCount,
+    completedProblemIds,
+    isSessionComplete: isSetComplete,
+    sessionStartedAt: session.startedAt,
+    sessionCompletedAt: session.completedAt,
+    lastAnswerResult,
     answer,
     feedback,
     submissionResult,
@@ -224,6 +254,7 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
     correctCount,
     setAnswer: handleAnswerChange,
     chooseProblem,
+    restartSession: resetSession,
     submitAnswer,
     reportBluetoothParseError,
   };

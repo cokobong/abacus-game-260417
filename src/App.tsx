@@ -20,16 +20,16 @@ import {
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { fallbackFoodEffect, getEggItemConfig, getFoodItemConfig, getHatchItemConfig, getItemConfig, getItemsByCategory, shopCategoryConfigs, type DinosaurStatEffect, type ItemCategory } from './config/itemConfig';
-import { rewardConfig } from './config/rewardConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
-import { getStageById } from './data/abacusStages';
+import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
 import { dinosaurSpecies } from './data/dinosaurSpecies';
-import { trainingProblems } from './data/trainingProblems';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { AbacusLevelConfig, AbacusStageConfig, CostumeSlot, DinosaurState, EggState, EquippedCostumes, OwnedDinosaur, OwnedEgg, Reward, RewardReason, TrainingProblem, UserProfile } from './types/game';
+import type { AbacusLevelConfig, AbacusStageConfig, CostumeSlot, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
+import { generateTrainingProblems } from './utils/generateTrainingProblems';
+import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
 import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
-import { applyRewardsToDummyState, createRewardsFromBundle, formatRewardBundleSummary } from './utils/rewardCalculator';
+import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
@@ -37,7 +37,16 @@ type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'h
 type InventoryItemState = { itemId: string; quantity: number };
 type ProblemCountOverride = 5 | 10 | 15 | 20;
 type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6;
+type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'mixed-digit';
+type ResolvedDigitType = Exclude<DigitTypeOverride, 'stage-default'>;
 type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
+type CompletedTrainingSummary = TrainingRewardResult & {
+  sessionId: string;
+  totalProblems: number;
+  correctCount: number;
+  wrongCount: number;
+  completedAt: number;
+};
 type GameState = {
   userProfile: UserProfile | null;
   player: { coins: number };
@@ -45,6 +54,7 @@ type GameState = {
   selectedStageId: string;
   problemCountOverride?: ProblemCountOverride;
   numberCountOverride: NumberCountOverride;
+  digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
   dinosaur: DinosaurState;
   ownedDinosaurs: OwnedDinosaur[];
@@ -54,6 +64,9 @@ type GameState = {
   activeEggId: string | null;
   ownedCostumeIds: string[];
   inventory: InventoryItemState[];
+  trainingHistory: TrainingSessionRecord[];
+  progressByLevel: Record<number, LevelProgressRecord>;
+  progressByStage: Record<string, StageProgressRecord>;
 };
 
 const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: string; active: string }> = [
@@ -73,7 +86,7 @@ const mapCards = [
 ];
 
 const defaultSelectedLevel = 1;
-const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'S1-01';
+const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
 
 const initialDinosaurState: DinosaurState = {
   id: 'dino-green-little',
@@ -125,6 +138,7 @@ const initialInventory: InventoryItemState[] = [
 ];
 
 const hatchableDinosaurPool = dinosaurSpecies;
+const maxTrainingHistoryRecords = 30;
 
 const defaultGameState: GameState = {
   userProfile: null,
@@ -133,6 +147,7 @@ const defaultGameState: GameState = {
   selectedStageId: defaultSelectedStageId,
   problemCountOverride: undefined,
   numberCountOverride: 'stage-default',
+  digitTypeOverride: 'stage-default',
   operationsOverride: 'stage-default',
   dinosaur: initialDinosaurState,
   ownedDinosaurs: [initialOwnedDinosaur],
@@ -142,6 +157,9 @@ const defaultGameState: GameState = {
   activeEggId: initialOwnedEgg.id,
   ownedCostumeIds: [],
   inventory: initialInventory,
+  trainingHistory: [],
+  progressByLevel: {},
+  progressByStage: {},
 };
 
 function normalizeGameState(state: Partial<GameState>): GameState {
@@ -156,7 +174,11 @@ function normalizeGameState(state: Partial<GameState>): GameState {
       : getDefaultStageIdForLevel(selectedLevel) ?? defaultSelectedStageId;
   const problemCountOverride = normalizeProblemCountOverride(state.problemCountOverride);
   const numberCountOverride = normalizeNumberCountOverride(state.numberCountOverride);
+  const digitTypeOverride = normalizeDigitTypeOverride(state.digitTypeOverride);
   const operationsOverride = normalizeOperationsOverride(state.operationsOverride);
+  const trainingHistory = normalizeTrainingHistory(state.trainingHistory);
+  const progressByLevel = normalizeProgressByLevel(state.progressByLevel);
+  const progressByStage = normalizeProgressByStage(state.progressByStage);
   const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
   const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
   const activeEggId = activeEgg?.id ?? null;
@@ -180,6 +202,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     selectedStageId,
     problemCountOverride,
     numberCountOverride,
+    digitTypeOverride,
     operationsOverride,
     dinosaur: {
       ...defaultGameState.dinosaur,
@@ -201,6 +224,9 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     activeEggId,
     ownedCostumeIds,
     inventory: state.inventory ?? defaultGameState.inventory,
+    trainingHistory,
+    progressByLevel,
+    progressByStage,
     userProfile,
   };
 }
@@ -286,8 +312,24 @@ function normalizeNumberCountOverride(value: unknown): NumberCountOverride {
   return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 ? numericValue : 'stage-default';
 }
 
+function normalizeDigitTypeOverride(value: unknown): DigitTypeOverride {
+  return value === 'stage-default' || value === 'one-digit' || value === 'two-digit' || value === 'mixed-digit' ? value : 'stage-default';
+}
+
 function normalizeOperationsOverride(value: unknown): OperationsOverride {
   return value === 'stage-default' || value === 'add' || value === 'subtract' || value === 'mixed' ? value : 'stage-default';
+}
+
+function normalizeTrainingHistory(value: unknown): TrainingSessionRecord[] {
+  return Array.isArray(value) ? (value.filter((item) => item && typeof item === 'object') as TrainingSessionRecord[]).slice(0, maxTrainingHistoryRecords) : [];
+}
+
+function normalizeProgressByLevel(value: unknown): Record<number, LevelProgressRecord> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<number, LevelProgressRecord>) : {};
+}
+
+function normalizeProgressByStage(value: unknown): Record<string, StageProgressRecord> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, StageProgressRecord>) : {};
 }
 
 function createOwnedEggFromItem(itemId: string, createdAt = Date.now()): OwnedEgg | null {
@@ -310,6 +352,73 @@ function addInventoryQuantity(inventory: InventoryItemState[], itemId: string, q
   if (!existingItem) return [...inventory, { itemId, quantity }];
 
   return inventory.map((item) => (item.itemId === itemId ? { ...item, quantity: item.quantity + quantity } : item));
+}
+
+function createDisplayReward(label: string, amount = 0): Reward {
+  return {
+    id: `display-reward-${Date.now()}-${label}`,
+    reason: 'set_complete',
+    type: 'coin',
+    amount,
+    targetId: null,
+    label,
+    grantedAt: Date.now(),
+  };
+}
+
+function updateProgressByLevel(progressByLevel: Record<number, LevelProgressRecord>, record: TrainingSessionRecord) {
+  const current = progressByLevel[record.selectedLevel] ?? {
+    totalSessions: 0,
+    totalProblems: 0,
+    totalCorrect: 0,
+    totalWrong: 0,
+    bestAccuracy: 0,
+    lastAccuracy: 0,
+    completedStageIds: [],
+  };
+
+  return {
+    ...progressByLevel,
+    [record.selectedLevel]: {
+      totalSessions: current.totalSessions + 1,
+      totalProblems: current.totalProblems + record.totalProblems,
+      totalCorrect: current.totalCorrect + record.correctCount,
+      totalWrong: current.totalWrong + record.wrongCount,
+      bestAccuracy: Math.max(current.bestAccuracy, record.accuracy),
+      lastAccuracy: record.accuracy,
+      lastTrainedAt: record.completedAt,
+      completedStageIds: Array.from(new Set([...current.completedStageIds, record.selectedStageId])),
+    },
+  };
+}
+
+function updateProgressByStage(progressByStage: Record<string, StageProgressRecord>, record: TrainingSessionRecord) {
+  const current = progressByStage[record.selectedStageId] ?? {
+    totalSessions: 0,
+    totalProblems: 0,
+    totalCorrect: 0,
+    totalWrong: 0,
+    bestAccuracy: 0,
+    lastAccuracy: 0,
+  };
+
+  return {
+    ...progressByStage,
+    [record.selectedStageId]: {
+      totalSessions: current.totalSessions + 1,
+      totalProblems: current.totalProblems + record.totalProblems,
+      totalCorrect: current.totalCorrect + record.correctCount,
+      totalWrong: current.totalWrong + record.wrongCount,
+      bestAccuracy: Math.max(current.bestAccuracy, record.accuracy),
+      lastAccuracy: record.accuracy,
+      lastTrainedAt: record.completedAt,
+    },
+  };
+}
+
+function addTrainingRecordToHistory(trainingHistory: TrainingSessionRecord[], record: TrainingSessionRecord) {
+  if (trainingHistory.some((item) => item.id === record.id)) return trainingHistory;
+  return [record, ...trainingHistory].slice(0, maxTrainingHistoryRecords);
 }
 
 function getOwnedCostumeIdsFromInventory(inventory: InventoryItemState[]) {
@@ -399,15 +508,8 @@ function getTrainingConditionEffects(dinosaur: OwnedDinosaur) {
 
 function formatTrainingRewardFeedback(dinosaur: OwnedDinosaur) {
   const effects = getTrainingConditionEffects(dinosaur);
-  const adjustedExp = Math.max(0, Math.round(rewardConfig.correctAnswer.dinosaurExp * effects.rewardMultiplier));
-  const rewardParts = [`코인 +${rewardConfig.correctAnswer.coins}`, `공룡 EXP +${adjustedExp}`];
-
-  if (rewardConfig.correctAnswer.dinosaurMood > 0) {
-    rewardParts.push(`공룡 기분 +${rewardConfig.correctAnswer.dinosaurMood}`);
-  }
-
   const costParts = [`체력 -${effects.staminaCost}`, `포만감 -${effects.hungerCost}`];
-  return [...rewardParts, ...costParts, ...effects.warnings].join(', ');
+  return [...costParts, ...effects.warnings].join(', ');
 }
 
 function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
@@ -421,26 +523,6 @@ function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
   return changes.join(', ');
 }
 
-function formatStageOperations(operations: AbacusStageConfig['operations']) {
-  const labels: Record<AbacusStageConfig['operations'][number], string> = {
-    add: '덧셈',
-    subtract: '뺄셈',
-  };
-
-  return operations.map((operation) => labels[operation]).join('·');
-}
-
-function formatComplementType(complementType: AbacusStageConfig['complementType']) {
-  const labels: Record<AbacusStageConfig['complementType'], string> = {
-    none: '보수 없음',
-    five: '5의 보수',
-    ten: '10의 보수',
-    mixed: '보수 혼합',
-  };
-
-  return labels[complementType];
-}
-
 function getLevelSettingSummary(stages: AbacusStageConfig[]) {
   if (stages.length === 0) {
     return {
@@ -451,27 +533,43 @@ function getLevelSettingSummary(stages: AbacusStageConfig[]) {
     };
   }
 
-  const minNumberCount = Math.min(...stages.map((stage) => stage.numberCount));
-  const maxNumberCount = Math.max(...stages.map((stage) => stage.numberCount));
-  const minProblemCount = Math.min(...stages.map((stage) => stage.problemCountPerSet));
-  const maxProblemCount = Math.max(...stages.map((stage) => stage.problemCountPerSet));
-  const maxDigitCount = Math.max(...stages.map((stage) => stage.digitCount));
-  const operations = Array.from(new Set(stages.flatMap((stage) => stage.operations)));
+  const minNumberCount = Math.min(...stages.map((stage) => stage.defaultNumberCount));
+  const maxNumberCount = Math.max(...stages.map((stage) => stage.defaultNumberCount));
+  const minProblemCount = Math.min(...stages.map((stage) => stage.defaultProblemCount));
+  const maxProblemCount = Math.max(...stages.map((stage) => stage.defaultProblemCount));
+  const digitTypes = Array.from(new Set(stages.map((stage) => stage.defaultDigitType)));
+  const operations = Array.from(new Set(stages.map((stage) => stage.defaultOperation)));
 
   return {
     numberCount: minNumberCount === maxNumberCount ? `${minNumberCount}개` : `${minNumberCount}~${maxNumberCount}개`,
-    numberSize: maxDigitCount <= 1 ? '한 자리' : maxDigitCount === 2 ? '한 자리/두 자리' : '한 자리~세 자리',
+    numberSize: digitTypes.length === 1 ? formatDigitTypeLabel(digitTypes[0]) : digitTypes.map(formatDigitTypeLabel).join(' / '),
     problemCount: minProblemCount === maxProblemCount ? `${minProblemCount}문제` : `${minProblemCount}~${maxProblemCount}문제`,
-    operations: formatStageOperations(operations),
+    operations: operations.map(formatOperationModeLabel).join(' / '),
   };
 }
 
 function getRecommendedProblemCount(levelConfig: AbacusLevelConfig | null, selectedStage: AbacusStageConfig | null) {
-  return levelConfig?.recommendedProblemCount ?? selectedStage?.problemCountPerSet ?? 10;
+  return selectedStage?.defaultProblemCount ?? levelConfig?.recommendedProblemCount ?? 10;
 }
 
-function getEffectiveProblemCount(levelConfig: AbacusLevelConfig | null, selectedStage: AbacusStageConfig | null, override?: ProblemCountOverride) {
-  return override ?? getRecommendedProblemCount(levelConfig, selectedStage);
+function getEffectiveProblemCount(_levelConfig: AbacusLevelConfig | null, selectedStage: AbacusStageConfig | null, override?: ProblemCountOverride) {
+  return override ?? selectedStage?.defaultProblemCount ?? 10;
+}
+
+function getEffectiveNumberCount(selectedStage: AbacusStageConfig | null, override: NumberCountOverride) {
+  if (override !== 'stage-default') return override;
+  return selectedStage?.defaultNumberCount ?? 2;
+}
+
+function getEffectiveDigitType(selectedStage: AbacusStageConfig | null, override: DigitTypeOverride): ResolvedDigitType {
+  if (override !== 'stage-default') return override;
+  return selectedStage?.defaultDigitType ?? 'one-digit';
+}
+
+function getEffectiveOperationMode(selectedStage: AbacusStageConfig | null, override: OperationsOverride): OperationMode {
+  if (override !== 'stage-default') return override;
+
+  return selectedStage?.defaultOperation ?? 'add';
 }
 
 function formatNumberCountOverride(value: NumberCountOverride, stages: AbacusStageConfig[]) {
@@ -479,21 +577,50 @@ function formatNumberCountOverride(value: NumberCountOverride, stages: AbacusSta
   return `단계 기본값 (${getLevelSettingSummary(stages).numberCount})`;
 }
 
-function formatOperationsOverride(value: OperationsOverride, stages: AbacusStageConfig[]) {
-  const labels: Record<Exclude<OperationsOverride, 'stage-default'>, string> = {
+function formatDigitTypeLabel(value: ResolvedDigitType) {
+  const labels: Record<ResolvedDigitType, string> = {
+    'one-digit': '한 자리',
+    'two-digit': '두 자리',
+    'mixed-digit': '한 자리 + 두 자리',
+  };
+
+  return labels[value];
+}
+
+function formatDigitTypeOverride(value: DigitTypeOverride, selectedStage: AbacusStageConfig | null) {
+  if (value !== 'stage-default') return formatDigitTypeLabel(value);
+  return `단계 기본값 (${formatDigitTypeLabel(getEffectiveDigitType(selectedStage, 'stage-default'))})`;
+}
+
+function formatOperationModeLabel(value: OperationMode) {
+  const labels: Record<OperationMode, string> = {
     add: '덧셈만',
     subtract: '뺄셈만',
     mixed: '덧셈 + 뺄셈',
   };
 
-  if (value !== 'stage-default') return labels[value];
+  return labels[value];
+}
+
+function formatOperationsOverride(value: OperationsOverride, stages: AbacusStageConfig[]) {
+  if (value !== 'stage-default') return formatOperationModeLabel(value);
   return `단계 기본값 (${getLevelSettingSummary(stages).operations})`;
 }
 
+function formatMasteryStatus(value: TrainingProgressEvaluation['status']) {
+  const labels: Record<TrainingProgressEvaluation['status'], string> = {
+    'not-started': '시작 전',
+    'needs-practice': '연습 필요',
+    'in-progress': '진행 중',
+    'almost-mastered': '거의 숙달',
+    mastered: '숙달',
+  };
+
+  return labels[value];
+}
+
 function getEffectiveOperationsLabel(value: OperationsOverride, stages: AbacusStageConfig[]) {
-  if (value === 'add') return '덧셈만';
-  if (value === 'subtract') return '뺄셈만';
-  if (value === 'mixed') return '덧셈 + 뺄셈';
+  if (value !== 'stage-default') return formatOperationModeLabel(value);
 
   return getLevelSettingSummary(stages).operations;
 }
@@ -501,26 +628,7 @@ function getEffectiveOperationsLabel(value: OperationsOverride, stages: AbacusSt
 function isOperationsOverrideRecommended(value: OperationsOverride, stages: AbacusStageConfig[]) {
   if (value === 'stage-default') return true;
 
-  const supportedOperations = new Set(stages.flatMap((stage) => stage.operations));
-  if (value === 'add') return supportedOperations.has('add');
-  if (value === 'subtract') return supportedOperations.has('subtract');
-
-  return supportedOperations.has('add') && supportedOperations.has('subtract');
-}
-
-function buildTrainingProblemSet(baseProblems: TrainingProblem[], problemCount: number) {
-  if (baseProblems.length === 0) return [];
-
-  // TODO: apply numberCountOverride and operationsOverride in generateProblemsFromStage.
-  return Array.from({ length: problemCount }, (_, index) => {
-    const source = baseProblems[index % baseProblems.length];
-
-    return {
-      ...source,
-      id: `${source.id}-set-${index + 1}`,
-      index,
-    };
-  });
+  return stages.some((stage) => stage.allowedOperations.includes(value));
 }
 
 export default function App() {
@@ -539,31 +647,82 @@ export default function App() {
   const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
+  const [trainingRunId, setTrainingRunId] = useState(0);
   const selectedLevelConfig = getAbacusLevel(gameState.selectedLevel) ?? getAbacusLevel(defaultSelectedLevel);
   const selectedLevelStages = getStagesForLevel(gameState.selectedLevel);
   const selectedStage = getStageById(gameState.selectedStageId) ?? getStageById(defaultSelectedStageId) ?? null;
+  const generatorStage = getGeneratorFallbackStage(selectedStage) ?? selectedStage;
   const effectiveProblemCount = getEffectiveProblemCount(selectedLevelConfig, selectedStage, gameState.problemCountOverride);
-  const trainingProblemSet = useMemo(() => buildTrainingProblemSet(trainingProblems, effectiveProblemCount), [effectiveProblemCount]);
-  const effectiveNumberCountLabel = gameState.numberCountOverride === 'stage-default' ? getLevelSettingSummary(selectedLevelStages).numberCount : `${gameState.numberCountOverride}개`;
+  const effectiveNumberCount = getEffectiveNumberCount(selectedStage, gameState.numberCountOverride);
+  const effectiveDigitType = getEffectiveDigitType(selectedStage, gameState.digitTypeOverride);
+  const effectiveOperationMode = getEffectiveOperationMode(selectedStage, gameState.operationsOverride);
+  const trainingProblemSet = useMemo(
+    () =>
+      generatorStage
+        ? generateTrainingProblems({
+            stage: generatorStage,
+            problemCount: effectiveProblemCount,
+            numberCount: effectiveNumberCount,
+            digitType: effectiveDigitType,
+            operationMode: effectiveOperationMode,
+          })
+        : [],
+    [effectiveDigitType, effectiveNumberCount, effectiveOperationMode, effectiveProblemCount, generatorStage, trainingRunId],
+  );
+  const effectiveNumberCountLabel = `${effectiveNumberCount}개`;
+  const effectiveDigitTypeLabel = formatDigitTypeLabel(effectiveDigitType);
   const effectiveOperationsLabel = getEffectiveOperationsLabel(gameState.operationsOverride, selectedLevelStages);
+  const selectedLevelEvaluation = useMemo(
+    () =>
+      evaluateLevelProgress({
+        level: gameState.selectedLevel,
+        progressByLevel: gameState.progressByLevel,
+        trainingHistory: gameState.trainingHistory,
+      }),
+    [gameState.progressByLevel, gameState.selectedLevel, gameState.trainingHistory],
+  );
+  const selectedStageEvaluation = useMemo(
+    () =>
+      evaluateStageProgress({
+        stageId: gameState.selectedStageId,
+        progressByStage: gameState.progressByStage,
+        trainingHistory: gameState.trainingHistory,
+      }),
+    [gameState.progressByStage, gameState.selectedStageId, gameState.trainingHistory],
+  );
+  const nextTrainingRecommendation = useMemo(
+    () =>
+      getNextTrainingRecommendation({
+        selectedLevel: gameState.selectedLevel,
+        selectedStageId: gameState.selectedStageId,
+        progressByLevel: gameState.progressByLevel,
+        progressByStage: gameState.progressByStage,
+        trainingHistory: gameState.trainingHistory,
+        abacusLevels,
+        abacusStages,
+      }),
+    [gameState.progressByLevel, gameState.progressByStage, gameState.selectedLevel, gameState.selectedStageId, gameState.trainingHistory],
+  );
   const trainingSettingsKey = [
     gameState.selectedLevel,
     gameState.selectedStageId,
+    generatorStage?.id ?? 'no-stage',
     effectiveProblemCount,
-    gameState.numberCountOverride,
-    gameState.operationsOverride,
+    effectiveNumberCount,
+    effectiveDigitType,
+    effectiveOperationMode,
+    trainingRunId,
   ].join(':');
+  const usesFallbackGenerator = Boolean(selectedStage && generatorStage && selectedStage.id !== generatorStage.id);
   const [lastRewards, setLastRewards] = useState<Reward[]>([]);
   const [setCompleteRewards, setSetCompleteRewards] = useState<Reward[]>([]);
+  const [completedTrainingSummary, setCompletedTrainingSummary] = useState<CompletedTrainingSummary | null>(null);
   const [lastTrainingEffects, setLastTrainingEffects] = useState<string[]>([]);
   const training = useTrainingSession(trainingProblemSet, {
-    onCorrectAnswer: () => applyRewardBundle('problem_correct'),
-    onSetComplete: () => applyRewardBundle('set_complete'),
+    onCorrectAnswer: () => applyCorrectAnswerTrainingCost(),
+    onSetComplete: (completedSession) => applyTrainingCompletionRewards(completedSession),
     formatCorrectRewardFeedback: () => `정답! ${formatTrainingRewardFeedback(activeOwnedDinosaur)}`,
-    formatSetCompleteFeedback: () => {
-      const hatchItem = getHatchItemConfig(rewardConfig.hatchItemRewardOnSetComplete);
-      return `세트 완료! ${formatRewardBundleSummary(rewardConfig.setComplete)}, ${hatchItem?.name ?? rewardConfig.hatchItemRewardOnSetComplete} ${rewardConfig.hatchItemQuantityOnSetComplete}개를 얻었어요.`;
-    },
+    formatSetCompleteFeedback: () => '세트 완료! 결과와 보상이 정리됐어요.',
     resetKey: trainingSettingsKey,
   });
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
@@ -573,8 +732,14 @@ export default function App() {
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const [storageFeedback, setStorageFeedback] = useState(initialLoadResult.message);
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
+  const rewardedSessionIdsRef = useRef<Set<string>>(new Set());
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
+
+  useEffect(() => {
+    setCompletedTrainingSummary(null);
+    setSetCompleteRewards([]);
+  }, [trainingSettingsKey]);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -678,6 +843,13 @@ export default function App() {
     }));
   }
 
+  function updateDigitTypeOverride(value: DigitTypeOverride) {
+    setGameState((current) => ({
+      ...current,
+      digitTypeOverride: value,
+    }));
+  }
+
   function updateOperationsOverride(value: OperationsOverride) {
     setGameState((current) => ({
       ...current,
@@ -685,72 +857,108 @@ export default function App() {
     }));
   }
 
-  function applyRewardBundle(reason: RewardReason) {
-    const bundle = reason === 'set_complete' ? rewardConfig.setComplete : rewardConfig.correctAnswer;
+  function applyCorrectAnswerTrainingCost() {
     const targetDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
-    const trainingEffects = reason === 'problem_correct' ? getTrainingConditionEffects(targetDinosaur) : null;
-    const adjustedBundle =
-      trainingEffects && trainingEffects.rewardMultiplier < 1
-        ? {
-            ...bundle,
-            dinosaurExp: Math.max(0, Math.round(bundle.dinosaurExp * trainingEffects.rewardMultiplier)),
-          }
-        : bundle;
-    const adjustedRewards = createRewardsFromBundle(reason, adjustedBundle, {
-      dinosaurId: targetDinosaur.id,
-      eggId: activeEgg?.id ?? 'no-active-egg',
+    const trainingEffects = getTrainingConditionEffects(targetDinosaur);
+
+    setGameState((current) =>
+      updateSelectedOwnedDinosaur(current, (dinosaur) => ({
+        ...dinosaur,
+        stamina: clampPercent(dinosaur.stamina - trainingEffects.staminaCost),
+        hunger: clampPercent(dinosaur.hunger - trainingEffects.hungerCost),
+      })),
+    );
+    setLastRewards([]);
+    setLastTrainingEffects([
+      `체력 -${trainingEffects.staminaCost}`,
+      `포만감 -${trainingEffects.hungerCost}`,
+      ...(trainingEffects.warnings ?? []),
+    ]);
+  }
+
+  function applyTrainingCompletionRewards(completedSession: TrainingSession) {
+    if (rewardedSessionIdsRef.current.has(completedSession.id)) return;
+    rewardedSessionIdsRef.current.add(completedSession.id);
+
+    const completedProblemIds = new Set(completedSession.answers.filter((answerRecord) => answerRecord.isCorrect).map((answerRecord) => answerRecord.problemId));
+    const correctCount = completedProblemIds.size;
+    const wrongCount = completedSession.answers.filter((answerRecord) => !answerRecord.isCorrect).length;
+    const rewardSummary = calculateTrainingRewards({
+      totalProblems: completedSession.problems.length,
+      correctCount,
+      wrongCount,
+      selectedLevel: gameState.selectedLevel,
+      activeDinosaurCondition: {
+        stamina: activeOwnedDinosaur.stamina,
+        hunger: activeOwnedDinosaur.hunger,
+      },
     });
-    const displayRewards = adjustedRewards.filter((reward) => reward.type !== 'hatch_progress');
+    const completedAt = completedSession.completedAt ?? Date.now();
+    const hatchReward = rewardSummary.hatchItems[0];
+    const hatchItem = hatchReward ? getHatchItemConfig(hatchReward.itemId) : null;
+    const trainingRecord: TrainingSessionRecord = {
+      id: `training-record-${completedSession.id}`,
+      completedAt: new Date(completedAt).toISOString(),
+      selectedLevel: gameState.selectedLevel,
+      selectedStageId: selectedStage?.id ?? gameState.selectedStageId,
+      problemCount: effectiveProblemCount,
+      numberCount: effectiveNumberCount,
+      digitType: effectiveDigitType,
+      operationMode: effectiveOperationMode,
+      totalProblems: completedSession.problems.length,
+      correctCount,
+      wrongCount,
+      accuracy: rewardSummary.accuracy,
+      earnedCoins: rewardSummary.coins,
+      earnedExp: rewardSummary.dinosaurExp,
+      earnedItems: rewardSummary.hatchItems,
+      activeDinosaurId: activeOwnedDinosaur.id,
+    };
 
     setGameState((current) => {
-      const selectedDinosaur = getSelectedOwnedDinosaur(current.ownedDinosaurs, current.userProfile?.selectedDinosaurId);
-      const rewardsForCurrent = adjustedRewards.filter((reward) => reward.type !== 'hatch_progress');
-      if (!selectedDinosaur) return applyRewardsToDummyState(current, rewardsForCurrent);
-
-      const rewardAppliedState = applyRewardsToDummyState(
-        {
-          ...current,
-          dinosaur: ownedDinosaurToDinosaurState(selectedDinosaur),
+      const withPlayerAndInventory: GameState = {
+        ...current,
+        player: {
+          ...current.player,
+          coins: current.player.coins + rewardSummary.coins,
         },
-        rewardsForCurrent.filter((reward) => reward.type !== 'hatch_progress'),
-      );
-      const currentTrainingEffects = reason === 'problem_correct' ? getTrainingConditionEffects(selectedDinosaur) : null;
+        inventory: rewardSummary.hatchItems.reduce((inventory, item) => addInventoryQuantity(inventory, item.itemId, item.quantity), current.inventory),
+        trainingHistory: addTrainingRecordToHistory(current.trainingHistory, trainingRecord),
+        progressByLevel: updateProgressByLevel(current.progressByLevel, trainingRecord),
+        progressByStage: updateProgressByStage(current.progressByStage, trainingRecord),
+      };
 
-      const nextState = updateSelectedOwnedDinosaur(
-        {
-          ...current,
-          player: rewardAppliedState.player,
-          inventory:
-            reason === 'set_complete'
-              ? addInventoryQuantity(current.inventory, rewardConfig.hatchItemRewardOnSetComplete, rewardConfig.hatchItemQuantityOnSetComplete)
-              : current.inventory,
-        },
-        (dinosaur) => ({
-          ...dinosaur,
-          exp: rewardAppliedState.dinosaur.exp,
-          mood: rewardAppliedState.dinosaur.mood,
-          stamina: currentTrainingEffects ? clampPercent(dinosaur.stamina - currentTrainingEffects.staminaCost) : dinosaur.stamina,
-          hunger: currentTrainingEffects ? clampPercent(dinosaur.hunger - currentTrainingEffects.hungerCost) : dinosaur.hunger,
-        }),
-      );
-
-      return nextState;
+      return updateSelectedOwnedDinosaur(withPlayerAndInventory, (dinosaur) => ({
+        ...dinosaur,
+        exp: clampPercent(dinosaur.exp + rewardSummary.dinosaurExp),
+        mood: clampPercent(dinosaur.mood + rewardSummary.happiness),
+      }));
     });
 
-    if (reason === 'set_complete') {
-      setSetCompleteRewards(displayRewards);
-      const hatchItem = getHatchItemConfig(rewardConfig.hatchItemRewardOnSetComplete);
-      setLastTrainingEffects([`${hatchItem?.name ?? rewardConfig.hatchItemRewardOnSetComplete} ${rewardConfig.hatchItemQuantityOnSetComplete}개를 얻었어요.`]);
-      return;
-    }
-
-    setLastRewards(displayRewards);
-    setLastTrainingEffects([
-      `체력 -${trainingEffects?.staminaCost ?? 0}`,
-      `포만감 -${trainingEffects?.hungerCost ?? 0}`,
-      ...(trainingEffects?.rewardMultiplier && trainingEffects.rewardMultiplier < 1 ? [`EXP 보상 ${Math.round(trainingEffects.rewardMultiplier * 100)}% 적용`] : []),
-      ...(trainingEffects?.warnings ?? []),
+    setCompletedTrainingSummary({
+      ...rewardSummary,
+      sessionId: completedSession.id,
+      totalProblems: completedSession.problems.length,
+      correctCount,
+      wrongCount,
+      completedAt,
+    });
+    setSetCompleteRewards([
+      createDisplayReward(`코인 +${rewardSummary.coins}`, rewardSummary.coins),
+      createDisplayReward(`공룡 EXP +${rewardSummary.dinosaurExp}`, rewardSummary.dinosaurExp),
+      createDisplayReward(`공룡 기분 +${rewardSummary.happiness}`, rewardSummary.happiness),
+      ...(hatchReward ? [createDisplayReward(`${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개`, hatchReward.quantity)] : []),
     ]);
+    setLastRewards([]);
+    setLastTrainingEffects(hatchReward ? [`${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개를 얻었어요.`] : []);
+  }
+
+  function restartTrainingSet() {
+    setCompletedTrainingSummary(null);
+    setSetCompleteRewards([]);
+    setLastRewards([]);
+    setLastTrainingEffects([]);
+    setTrainingRunId((current) => current + 1);
   }
 
   function applyDinosaurInteraction(changes: DinosaurInteractionChange, message: string) {
@@ -1204,23 +1412,30 @@ export default function App() {
             currentProblemIndex={training.currentProblemIndex}
             totalProblems={training.totalProblems}
             correctCount={training.correctCount}
+            wrongCount={training.wrongCount}
             answer={training.answer}
             feedback={training.feedback}
             lastRewards={lastRewards}
             lastTrainingEffects={lastTrainingEffects}
             setCompleteRewards={setCompleteRewards}
+            completedTrainingSummary={completedTrainingSummary}
             isSetComplete={training.isSetComplete}
             bluetoothInput={lastBluetoothInput}
             selectedLevelConfig={selectedLevelConfig}
             effectiveProblemCount={effectiveProblemCount}
             effectiveNumberCountLabel={effectiveNumberCountLabel}
+            effectiveDigitTypeLabel={effectiveDigitTypeLabel}
             effectiveOperationsLabel={effectiveOperationsLabel}
+            usesFallbackGenerator={usesFallbackGenerator}
             activeOwnedDinosaur={activeOwnedDinosaur}
             ownedDinosaurs={gameState.ownedDinosaurs}
             onSelectAdjacentDinosaur={selectAdjacentDinosaur}
             onAnswer={training.setAnswer}
             onCheck={() => training.submitAnswer('manual')}
             onChooseProblem={training.chooseProblem}
+            onRestartTraining={restartTrainingSet}
+            onGoToDino={() => setActiveTab('dino')}
+            onGoToHatchery={() => setActiveTab('hatchery')}
           />
         )}
         {activeTab === 'dino' && (
@@ -1256,12 +1471,18 @@ export default function App() {
             selectedLevelStages={selectedLevelStages}
             problemCountOverride={gameState.problemCountOverride}
             numberCountOverride={gameState.numberCountOverride}
+            digitTypeOverride={gameState.digitTypeOverride}
             operationsOverride={gameState.operationsOverride}
+            trainingHistory={gameState.trainingHistory}
+            selectedLevelEvaluation={selectedLevelEvaluation}
+            selectedStageEvaluation={selectedStageEvaluation}
+            nextTrainingRecommendation={nextTrainingRecommendation}
             storageFeedback={storageFeedback}
             onSelectLevel={selectTrainingLevel}
             onSelectStage={selectTrainingStage}
             onProblemCountOverride={updateProblemCountOverride}
             onNumberCountOverride={updateNumberCountOverride}
+            onDigitTypeOverride={updateDigitTypeOverride}
             onOperationsOverride={updateOperationsOverride}
             onResetSavedGameState={resetSavedGameState}
             onBluetoothNotification={handleBluetoothNotification}
@@ -1301,46 +1522,60 @@ function TrainingView({
   currentProblemIndex,
   totalProblems,
   correctCount,
+  wrongCount,
   answer,
   feedback,
   lastRewards,
   lastTrainingEffects,
   setCompleteRewards,
+  completedTrainingSummary,
   isSetComplete,
   bluetoothInput,
   selectedLevelConfig,
   effectiveProblemCount,
   effectiveNumberCountLabel,
+  effectiveDigitTypeLabel,
   effectiveOperationsLabel,
+  usesFallbackGenerator,
   activeOwnedDinosaur,
   ownedDinosaurs,
   onSelectAdjacentDinosaur,
   onAnswer,
   onCheck,
   onChooseProblem,
+  onRestartTraining,
+  onGoToDino,
+  onGoToHatchery,
 }: {
   problems: TrainingProblem[];
   currentProblem: TrainingProblem;
   currentProblemIndex: number;
   totalProblems: number;
   correctCount: number;
+  wrongCount: number;
   answer: string;
   feedback: string;
   lastRewards: Reward[];
   lastTrainingEffects: string[];
   setCompleteRewards: Reward[];
+  completedTrainingSummary: CompletedTrainingSummary | null;
   isSetComplete: boolean;
   bluetoothInput: BluetoothNotificationPayload | null;
   selectedLevelConfig: AbacusLevelConfig | null;
   effectiveProblemCount: number;
   effectiveNumberCountLabel: string;
+  effectiveDigitTypeLabel: string;
   effectiveOperationsLabel: string;
+  usesFallbackGenerator: boolean;
   activeOwnedDinosaur: OwnedDinosaur;
   ownedDinosaurs: OwnedDinosaur[];
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
   onAnswer: (value: string) => void;
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
+  onRestartTraining: () => void;
+  onGoToDino: () => void;
+  onGoToHatchery: () => void;
 }) {
   const bluetoothStatus = bluetoothInput ? 'Bluetooth 입력 수신' : 'Bluetooth 입력 대기';
   const bluetoothStatusTone = bluetoothInput ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800';
@@ -1370,34 +1605,20 @@ function TrainingView({
                 현재 훈련: {selectedLevelConfig.title} · {selectedLevelConfig.summary}
               </p>
               <p className="mt-1 text-xs font-black text-slate-500">
-                {effectiveProblemCount}문제 · {effectiveNumberCountLabel} 수 · {effectiveOperationsLabel}
+                {effectiveProblemCount}문제 · {effectiveNumberCountLabel} 수 · {effectiveDigitTypeLabel} · {effectiveOperationsLabel}
               </p>
               <p className="mt-1 text-xs font-black text-slate-500">세부 문제 설정은 설정 탭에서 관리합니다.</p>
+              {usesFallbackGenerator && <p className="mt-1 text-xs font-black text-amber-700">이 단계는 임시 생성 규칙으로 연동 중입니다.</p>}
             </>
           ) : (
             <p className="text-sm font-black text-slate-500">선택된 교재 단계 정보를 찾지 못했어요.</p>
           )}
         </div>
 
-        <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          {problems.map((problem, index) => (
-            <button
-              key={problem.id}
-              onClick={() => onChooseProblem(index)}
-              className={`min-h-24 rounded-[26px] border-4 px-4 text-left shadow-sm transition active:translate-y-1 ${
-                currentProblemIndex === index ? 'border-white bg-gradient-to-b from-cyan-200 to-sky-200 text-cyan-950 shadow-[0_6px_0_#67e8f9]' : 'border-white bg-white/80 text-slate-600'
-              }`}
-            >
-              <p className="text-xs font-black text-cyan-700">미션 {index + 1}</p>
-              <p className="mt-1 text-3xl font-black">{problem.displayText}</p>
-            </button>
-          ))}
-        </div>
-
         <div className="rounded-[34px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-5 shadow-inner md:p-8">
           <div className="text-center">
-            <p className="mb-2 text-sm font-black text-cyan-700">{isSetComplete ? '세트 완료' : '현재 문제'}</p>
-            <p className="text-7xl font-black text-emerald-950 md:text-8xl">{isSetComplete ? '완료!' : currentProblem.displayText}</p>
+            <p className="mb-2 text-sm font-black text-cyan-700">{isSetComplete ? '세트 완료' : `미션 ${currentProblemIndex + 1}`}</p>
+            <p className="mx-auto max-w-4xl break-words text-5xl font-black leading-tight text-emerald-950 md:text-7xl">{isSetComplete ? '완료!' : currentProblem.displayText}</p>
           </div>
           <div className="mx-auto mt-8 grid max-w-xl gap-3 sm:grid-cols-[1fr_auto]">
             <input
@@ -1429,11 +1650,36 @@ function TrainingView({
           </div>
           <p className="mx-auto mt-5 max-w-xl rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">{feedback}</p>
           {isSetComplete && (
-            <div className="mx-auto mt-3 max-w-xl rounded-[24px] border-4 border-white bg-lime-100 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">
-              세트 완료 보상: {setCompleteRewards.length > 0 ? setCompleteRewards.map((reward) => reward.label).join(', ') : '정산 대기'}
-            </div>
+            <TrainingCompletePanel
+              summary={completedTrainingSummary}
+              totalProblems={totalProblems}
+              correctCount={correctCount}
+              wrongCount={wrongCount}
+              setCompleteRewards={setCompleteRewards}
+              onRestartTraining={onRestartTraining}
+              onGoToDino={onGoToDino}
+              onGoToHatchery={onGoToHatchery}
+            />
           )}
         </div>
+
+        <details className="mt-5 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 생성된 문제 전체 보기</summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {problems.map((problem, index) => (
+              <button
+                key={problem.id}
+                onClick={() => onChooseProblem(index)}
+                className={`min-h-24 rounded-[26px] border-4 px-4 text-left shadow-sm transition active:translate-y-1 ${
+                  currentProblemIndex === index ? 'border-white bg-gradient-to-b from-cyan-200 to-sky-200 text-cyan-950 shadow-[0_6px_0_#67e8f9]' : 'border-white bg-white/80 text-slate-600'
+                }`}
+              >
+                <p className="text-xs font-black text-cyan-700">미션 {index + 1}</p>
+                <p className="mt-1 text-3xl font-black">{problem.displayText}</p>
+              </button>
+            ))}
+          </div>
+        </details>
       </section>
 
       <aside className="grid content-start gap-3">
@@ -1443,9 +1689,9 @@ function TrainingView({
           ownedDinosaurs={ownedDinosaurs}
           onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
         />
-        <RewardCard icon={Coins} title="정답 코인" value={`+${rewardConfig.correctAnswer.coins}`} tone="from-amber-200 to-yellow-300 text-amber-900" />
+        <RewardCard icon={Coins} title="완료 코인" value="결과 기준" tone="from-amber-200 to-yellow-300 text-amber-900" />
         <RewardCard icon={Egg} title="세트 완료 보너스" value="부화 아이템" tone="from-orange-200 to-amber-300 text-orange-900" />
-        <RewardCard icon={Heart} title="정답 공룡 기분" value={`+${rewardConfig.correctAnswer.dinosaurMood}`} tone="from-pink-200 to-rose-300 text-rose-900" />
+        <RewardCard icon={Heart} title="완료 공룡 기분" value="결과 기준" tone="from-pink-200 to-rose-300 text-rose-900" />
         <RewardCard icon={Sparkles} title="함께 훈련" value={activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} tone="from-cyan-200 to-sky-300 text-cyan-900" />
         <div className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
           <h4 className="text-xl font-black text-emerald-950">최근 획득 보상</h4>
@@ -1475,6 +1721,81 @@ function TrainingView({
           <p className="mt-2 font-black leading-relaxed text-emerald-700/80">훈련을 끝내면 보상을 얻고, 보상은 알부화와 공룡 돌봄으로 이어집니다.</p>
         </div>
       </aside>
+    </div>
+  );
+}
+
+function TrainingCompletePanel({
+  summary,
+  totalProblems,
+  correctCount,
+  wrongCount,
+  setCompleteRewards,
+  onRestartTraining,
+  onGoToDino,
+  onGoToHatchery,
+}: {
+  summary: CompletedTrainingSummary | null;
+  totalProblems: number;
+  correctCount: number;
+  wrongCount: number;
+  setCompleteRewards: Reward[];
+  onRestartTraining: () => void;
+  onGoToDino: () => void;
+  onGoToHatchery: () => void;
+}) {
+  const hatchReward = summary?.hatchItems[0];
+  const hatchItem = hatchReward ? getHatchItemConfig(hatchReward.itemId) : null;
+  const rewardText = setCompleteRewards.length > 0 ? setCompleteRewards.map((reward) => reward.label).join(', ') : '정산 대기';
+
+  return (
+    <div className="mx-auto mt-5 grid max-w-xl gap-3 rounded-[28px] border-4 border-white bg-lime-100 px-5 py-5 text-emerald-950 shadow-sm">
+      <div className="text-center">
+        <h4 className="text-3xl font-black">훈련 완료!</h4>
+        <p className="mt-1 text-sm font-black text-emerald-700">세트 결과와 보상이 저장됐어요.</p>
+      </div>
+      <div className="grid gap-2 rounded-[22px] bg-white/80 p-4 text-sm font-black text-slate-700">
+        <div className="flex justify-between gap-3">
+          <span>총 문제</span>
+          <span>{summary?.totalProblems ?? totalProblems}문제</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>정답</span>
+          <span>{summary?.correctCount ?? correctCount}개</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>오답 시도</span>
+          <span>{summary?.wrongCount ?? wrongCount}회</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>정확도</span>
+          <span>{summary ? `${summary.accuracy}%` : '정산 중'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>획득 코인</span>
+          <span>{summary ? `${summary.coins}코인` : '정산 중'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>공룡 경험치</span>
+          <span>{summary ? `+${summary.dinosaurExp}` : '정산 중'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>획득 아이템</span>
+          <span>{hatchReward ? `${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개` : '정산 중'}</span>
+        </div>
+      </div>
+      <p className="rounded-[20px] bg-white/70 px-4 py-3 text-center text-sm font-black text-emerald-800">세트 완료 보상: {rewardText}</p>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <button onClick={onRestartTraining} className="rounded-full bg-cyan-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#0891b2] transition active:translate-y-1 active:shadow-none">
+          다시 훈련하기
+        </button>
+        <button onClick={onGoToDino} className="rounded-full bg-amber-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#b45309] transition active:translate-y-1 active:shadow-none">
+          우리 공룡 보러가기
+        </button>
+        <button onClick={onGoToHatchery} className="rounded-full bg-orange-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#c2410c] transition active:translate-y-1 active:shadow-none">
+          알 부화장 가기
+        </button>
+      </div>
     </div>
   );
 }
@@ -2112,12 +2433,18 @@ function SettingsView({
   selectedLevelStages,
   problemCountOverride,
   numberCountOverride,
+  digitTypeOverride,
   operationsOverride,
+  trainingHistory,
+  selectedLevelEvaluation,
+  selectedStageEvaluation,
+  nextTrainingRecommendation,
   storageFeedback,
   onSelectLevel,
   onSelectStage,
   onProblemCountOverride,
   onNumberCountOverride,
+  onDigitTypeOverride,
   onOperationsOverride,
   onResetSavedGameState,
   onBluetoothNotification,
@@ -2131,12 +2458,18 @@ function SettingsView({
   selectedLevelStages: AbacusStageConfig[];
   problemCountOverride?: ProblemCountOverride;
   numberCountOverride: NumberCountOverride;
+  digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
+  trainingHistory: TrainingSessionRecord[];
+  selectedLevelEvaluation: TrainingProgressEvaluation;
+  selectedStageEvaluation: TrainingProgressEvaluation;
+  nextTrainingRecommendation: NextTrainingRecommendation;
   storageFeedback: string;
   onSelectLevel: (level: number) => void;
   onSelectStage: (stageId: string) => void;
   onProblemCountOverride: (value: ProblemCountOverride | 'stage-default') => void;
   onNumberCountOverride: (value: NumberCountOverride) => void;
+  onDigitTypeOverride: (value: DigitTypeOverride) => void;
   onOperationsOverride: (value: OperationsOverride) => void;
   onResetSavedGameState: () => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
@@ -2144,6 +2477,7 @@ function SettingsView({
   const settingSummary = getLevelSettingSummary(selectedLevelStages);
   const effectiveProblemCount = getEffectiveProblemCount(selectedLevelConfig, selectedStage, problemCountOverride);
   const effectiveNumberCountLabel = numberCountOverride === 'stage-default' ? settingSummary.numberCount : `${numberCountOverride}개`;
+  const effectiveDigitTypeLabel = formatDigitTypeLabel(getEffectiveDigitType(selectedStage, digitTypeOverride));
   const effectiveOperationsLabel = getEffectiveOperationsLabel(operationsOverride, selectedLevelStages);
   const isSelectedOperationsRecommended = isOperationsOverrideRecommended(operationsOverride, selectedLevelStages);
 
@@ -2172,11 +2506,11 @@ function SettingsView({
               선택됨: {selectedLevelConfig?.title ?? `${selectedLevel}단계`} · {selectedLevelConfig?.summary ?? '단계 정보 없음'}
             </p>
             <p className="mt-1 text-xs font-black text-slate-500">
-              {selectedLevelConfig?.status === 'mvp' ? '현재 앱에서 우선 연결할 단계입니다.' : '문제 생성 연동은 추후 단계입니다.'}
+              {selectedLevelConfig?.status === 'draft' ? '교재 재확인 후 수정 예정인 draft 단계입니다.' : selectedLevelConfig?.status === 'mvp' ? '현재 앱에서 우선 연결할 단계입니다.' : '문제 생성 연동은 추후 단계입니다.'}
             </p>
           </div>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="grid gap-2 text-sm font-black text-emerald-800">
             한 세트 문제 수
             <select
@@ -2209,6 +2543,19 @@ function SettingsView({
             </select>
           </label>
           <label className="grid gap-2 text-sm font-black text-emerald-800">
+            숫자 자리수
+            <select
+              value={digitTypeOverride}
+              onChange={(event) => onDigitTypeOverride(normalizeDigitTypeOverride(event.target.value))}
+              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+            >
+              <option value="stage-default">{formatDigitTypeOverride('stage-default', selectedStage)}</option>
+              <option value="one-digit">한 자리</option>
+              <option value="two-digit">두 자리</option>
+              <option value="mixed-digit">한 자리 + 두 자리</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-black text-emerald-800">
             연산 방식
             <select
               value={operationsOverride}
@@ -2223,7 +2570,7 @@ function SettingsView({
           </label>
         </div>
         <p className="mt-3 rounded-[20px] bg-slate-50 px-4 py-3 text-xs font-black text-slate-500">
-          한 세트 문제 수는 현재 훈련 세트에 반영됩니다. 숫자 개수와 연산 방식은 문제 생성기 연결 후 완전 반영됩니다.
+          한 세트 문제 수, 숫자 개수, 숫자 자리수, 연산 방식은 현재 훈련 문제 생성에 반영됩니다.
         </p>
         {!isSelectedOperationsRecommended && (
           <p className="mt-2 rounded-[20px] bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">
@@ -2232,7 +2579,7 @@ function SettingsView({
         )}
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <SettingChip label="숫자 개수" value={effectiveNumberCountLabel} />
-          <SettingChip label="숫자 크기" value={settingSummary.numberSize} />
+          <SettingChip label="숫자 크기" value={effectiveDigitTypeLabel} />
           <SettingChip label="세트 문제 수" value={`${effectiveProblemCount}문제`} />
           <SettingChip label="연산 방식" value={effectiveOperationsLabel} />
         </div>
@@ -2257,8 +2604,42 @@ function SettingsView({
             </select>
           </label>
           <p className="mt-2 text-xs font-black text-slate-500">
-            현재 내부 단계: {selectedStage ? `${selectedStage.id} · ${selectedStage.title} · ${selectedStage.objective}` : '연결된 stage 데이터 없음'}
+            현재 내부 단계: {selectedStage ? `${selectedStage.id} · ${selectedStage.title} · ${selectedStage.summary}` : '연결된 stage 데이터 없음'}
           </p>
+          <p className="mt-1 text-xs font-black text-slate-500">
+            자리수 설정: {digitTypeOverride} → {effectiveDigitTypeLabel} · generatorStatus: {selectedStage?.generatorStatus ?? '없음'} · curriculumStatus: {selectedStage?.curriculumStatus ?? '없음'}
+          </p>
+        </details>
+        <details className="mt-4 rounded-[24px] border-4 border-dashed border-lime-100 bg-white/60 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 학습 상태 평가</summary>
+          <div className="mt-3 grid gap-2 text-xs font-black text-slate-600">
+            <p className="rounded-[18px] bg-white/80 px-4 py-3">
+              현재 단계: {selectedLevel}단계 · 최근 3세트 평균 정확도 {selectedLevelEvaluation.recentAccuracy}% · 상태 {formatMasteryStatus(selectedLevelEvaluation.status)}
+            </p>
+            <p className="rounded-[18px] bg-white/80 px-4 py-3">
+              현재 stage: {selectedStageId} · 최근 3세트 평균 정확도 {selectedStageEvaluation.recentAccuracy}% · 오답 시도 {selectedStageEvaluation.recentWrongCount}회 · 상태 {formatMasteryStatus(selectedStageEvaluation.status)}
+            </p>
+            <p className="rounded-[18px] bg-white/80 px-4 py-3">
+              추천: {nextTrainingRecommendation.message}
+              {nextTrainingRecommendation.suggestedLevel ? ` · 제안 단계 ${nextTrainingRecommendation.suggestedLevel}단계` : ''}
+              {nextTrainingRecommendation.suggestedStageId ? ` · ${nextTrainingRecommendation.suggestedStageId}` : ''}
+            </p>
+          </div>
+        </details>
+        <details className="mt-4 rounded-[24px] border-4 border-dashed border-emerald-100 bg-white/60 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 최근 훈련 기록</summary>
+          <div className="mt-3 grid gap-2">
+            {trainingHistory.length > 0 ? (
+              trainingHistory.slice(0, 10).map((record) => (
+                <p key={record.id} className="rounded-[18px] bg-white/80 px-4 py-3 text-xs font-black text-slate-600">
+                  {record.selectedLevel}단계 / {record.problemCount}문제 / {record.numberCount}개 수 / {formatDigitTypeLabel(record.digitType)} / {formatOperationModeLabel(record.operationMode)} / 정확도 {record.accuracy}% /{' '}
+                  {new Date(record.completedAt).toLocaleString()}
+                </p>
+              ))
+            ) : (
+              <p className="rounded-[18px] bg-white/80 px-4 py-3 text-xs font-black text-slate-500">아직 저장된 훈련 기록이 없습니다.</p>
+            )}
+          </div>
         </details>
       </section>
       <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">

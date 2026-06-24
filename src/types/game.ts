@@ -9,39 +9,62 @@ export type SubmissionResult = 'correct' | 'wrong' | null;
 export type RewardReason = 'problem_correct' | 'set_complete';
 export type RewardType = 'coin' | 'exp' | 'hatch_progress' | 'dinosaur_mood';
 export type AbacusOperation = 'add' | 'subtract';
+export type OperationMode = 'add' | 'subtract' | 'mixed';
+export type DigitType = 'one-digit' | 'two-digit' | 'mixed-digit';
 export type AbacusComplementType = 'none' | 'five' | 'ten' | 'mixed';
-export type AbacusStageStatus = 'mvp' | 'planned' | 'later';
+export type AbacusLevelStatus = 'mvp' | 'draft' | 'planned' | 'later';
+export type AbacusStageStatus = 'mvp' | 'draft' | 'planned' | 'later';
+export type CurriculumStatus = 'draft' | 'confirmed';
+export type GeneratorStatus = 'ready' | 'basic' | 'todo';
+export type TrainingMasteryStatus = 'not-started' | 'needs-practice' | 'in-progress' | 'almost-mastered' | 'mastered';
+export type TrainingRecommendationType = 'repeat-current' | 'try-next-stage' | 'review-previous' | 'free-practice';
 
 export interface AbacusLevelConfig {
   level: number;
   title: string;
   summary: string;
   stageIds: Id[];
-  status: AbacusStageStatus;
+  status: AbacusLevelStatus;
   defaultStageId?: Id;
   recommendedProblemCount?: number;
+  note?: string;
 }
 
 export interface AbacusStageConfig {
   id: Id;
+  level: number;
   title: string;
-  textbookLevel: string;
-  objective: string;
-  digitCount: 1 | 2 | 3;
-  numberCount: number;
-  operations: AbacusOperation[];
+  summary: string;
+  minNumber: number;
   maxNumber: number;
-  minResult: number;
-  maxResult: number;
-  allowCarry: boolean;
-  allowBorrow: boolean;
-  complementType: AbacusComplementType;
+  defaultProblemCount: number;
+  defaultNumberCount: number;
+  defaultDigitType: DigitType;
+  defaultOperation: OperationMode;
+  allowedNumberCounts: number[];
+  allowedDigitTypes: DigitType[];
+  allowedOperations: OperationMode[];
+  allowNegative: boolean;
+  curriculumStatus: CurriculumStatus;
+  generatorStatus: GeneratorStatus;
+  tags?: string[];
+  note?: string;
+  textbookLevel?: string;
+  objective?: string;
+  digitCount?: 1 | 2 | 3;
+  numberCount?: number;
+  operations?: AbacusOperation[];
+  minResult?: number;
+  maxResult?: number;
+  allowCarry?: boolean;
+  allowBorrow?: boolean;
+  complementType?: AbacusComplementType;
   complementFocus?: string;
-  rowCount: 2 | 3 | 4 | 5;
-  problemCountPerSet: number;
-  rewardMultiplier: number;
-  generatorStrategy: string;
-  status: AbacusStageStatus;
+  rowCount?: 2 | 3 | 4 | 5 | 6;
+  problemCountPerSet?: number;
+  rewardMultiplier?: number;
+  generatorStrategy?: string;
+  status?: AbacusStageStatus;
   sourceNote?: string;
 }
 
@@ -53,6 +76,10 @@ export interface TrainingProblem {
   correctAnswer: number;
   displayText: string;
   status: ProblemStatus;
+  expressionText?: string;
+  answer?: number;
+  level?: number;
+  stageId?: Id;
 }
 
 export interface TrainingAnswer {
@@ -75,6 +102,65 @@ export interface TrainingSession {
   answers: TrainingAnswer[];
   startedAt: UnixTimeMs;
   completedAt: UnixTimeMs | null;
+}
+
+export interface TrainingSessionRecord {
+  id: Id;
+  completedAt: string;
+  selectedLevel: number;
+  selectedStageId: Id;
+  problemCount: number;
+  numberCount: number;
+  digitType: DigitType;
+  operationMode: OperationMode;
+  totalProblems: number;
+  correctCount: number;
+  wrongCount: number;
+  accuracy: number;
+  earnedCoins: number;
+  earnedExp: number;
+  earnedItems: Array<{ itemId: Id; quantity: number }>;
+  activeDinosaurId?: Id;
+}
+
+export interface LevelProgressRecord {
+  totalSessions: number;
+  totalProblems: number;
+  totalCorrect: number;
+  totalWrong: number;
+  bestAccuracy: number;
+  lastAccuracy: number;
+  lastTrainedAt?: string;
+  completedStageIds: Id[];
+}
+
+export interface StageProgressRecord {
+  totalSessions: number;
+  totalProblems: number;
+  totalCorrect: number;
+  totalWrong: number;
+  bestAccuracy: number;
+  lastAccuracy: number;
+  lastTrainedAt?: string;
+}
+
+export interface TrainingProgressEvaluation {
+  status: TrainingMasteryStatus;
+  totalSessions: number;
+  totalProblems: number;
+  averageAccuracy: number;
+  bestAccuracy: number;
+  recentAccuracy: number;
+  recentWrongCount: number;
+  lastTrainedAt?: string;
+  recommendation: string;
+}
+
+export interface NextTrainingRecommendation {
+  type: TrainingRecommendationType;
+  message: string;
+  suggestedLevel?: number;
+  suggestedStageId?: Id;
 }
 
 export interface Reward {
