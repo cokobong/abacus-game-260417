@@ -249,6 +249,6 @@ MVP 이후에 확장할 것:
 주의:
 
 - 당장은 디자인 리팩터링보다 상태 구조 안정화를 우선한다.
-- `egg` 단일 구조를 `ownedEggs + activeEggId`로 바꿀 때 localStorage migration을 함께 설계한다.
+- 알 런타임 구조는 `ownedEggs + activeEggId`를 기준으로 유지하고, legacy `egg`는 localStorage 호환 fallback으로만 다룬다.
 - 코스튬은 구매와 장착을 분리해 구현한다.
 - 주산 훈련 난이도는 `easy / normal / hard`가 아니라 stage id 기반으로 설계한다.

@@ -1,7 +1,8 @@
-import { BookOpen, Heart, LockKeyhole, Map, Sparkles, Star, Trees, X } from 'lucide-react';
+import { BookOpen, Heart, LockKeyhole, Map as MapIcon, Sparkles, Star, Trees, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { dinosaurSpecies, dexTargetSpeciesCount, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
+import { getGrowthStageLabel } from '../../utils/dinosaurGrowth';
 
 export interface DexScreenProps {
   ownedDinosaurs: OwnedDinosaur[];
@@ -172,7 +173,7 @@ function DexHabitatSection({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="inline-flex items-center gap-2 text-2xl font-black">
-            <Map className="h-5 w-5" />
+            <MapIcon className="h-5 w-5" />
             {meta.label}
           </h4>
           <p className="mt-1 text-sm font-black opacity-75">{meta.description}</p>
@@ -275,6 +276,8 @@ function DexDetailModal({
                 <DexInfoPill label="좋아하는 먹이" value={species.favoriteFoodName} />
                 <DexInfoPill label="만난 방법" value={species.foundMethodLabel} />
                 <DexInfoPill label="만난 날" value={ownedDinosaur ? formatDate(ownedDinosaur.obtainedAt) : '기록 준비 중'} />
+                {ownedDinosaur && <DexInfoPill label="성장 단계" value={`${getGrowthStageLabel(ownedDinosaur.growthStage)} · Lv. ${ownedDinosaur.level}`} />}
+                {ownedDinosaur && <DexInfoPill label="성장 상태" value={ownedDinosaur.growthStage === 'adult' || ownedDinosaur.level >= 20 ? '성장 완료' : '함께 훈련 중'} />}
               </div>
             </>
           ) : isPlaceholder ? (

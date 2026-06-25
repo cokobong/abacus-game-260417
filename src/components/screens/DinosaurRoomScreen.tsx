@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Heart, Shirt, Sparkles, Utensils, Zap } from
 import { getFoodItemConfig, getItemConfig, type DinosaurStatEffect } from '../../config/itemConfig';
 import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { CostumeSlot, DinosaurState, EquippedCostumes, OwnedDinosaur } from '../../types/game';
+import { getGrowthStageLabel } from '../../utils/dinosaurGrowth';
 
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
@@ -134,7 +135,7 @@ function DinosaurMainCard({
         <h3 className="text-3xl font-black text-emerald-950 md:text-5xl">{dinosaur.name}</h3>
       </div>
       <div className="absolute right-5 top-5 z-20 rounded-[22px] border-4 border-white bg-amber-100 px-4 py-3 text-sm font-black text-amber-900 shadow-lg">
-        {activeSpeciesName} · Lv. {dinosaur.level}
+        {activeSpeciesName} · {getGrowthStageLabel(dinosaur.growthStage)} · Lv. {dinosaur.level}
       </div>
       {ownedCount > 1 && (
         <>
@@ -174,9 +175,9 @@ function DinosaurStateMiniPanel({ dinosaur }: { dinosaur: DinosaurState }) {
         <h4 className="text-base font-black text-emerald-950">상태</h4>
       </div>
       <div className="grid gap-1.5">
-        <MiniMeter icon={Zap} label="경험치" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
-        <MiniMeter icon={Sparkles} label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
-        <MiniMeter icon={Heart} label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
+        <MiniMeter icon={Zap} label="경험치" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <MiniMeter icon={Sparkles} label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
+        <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
       </div>
     </section>
   );
@@ -325,6 +326,8 @@ function DeveloperDinosaurDebugPanel({
 }
 
 function MiniMeter({ icon: Icon, label, value, tone }: { icon: typeof Heart; label: string; value: number; tone: string }) {
+  const percent = clampUiPercent(value);
+
   return (
     <div className="rounded-[18px] bg-white/78 px-3 py-2 shadow-sm">
       <div className="mb-1 flex items-center justify-between gap-2 text-xs font-black text-emerald-900">
@@ -332,13 +335,26 @@ function MiniMeter({ icon: Icon, label, value, tone }: { icon: typeof Heart; lab
           <Icon className="h-4 w-4" />
           {label}
         </span>
-        <span>{value}%</span>
+        <span>{percent}%</span>
       </div>
       <div className="h-3 overflow-hidden rounded-full bg-slate-100 shadow-inner">
-        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${value}%` }} />
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
       </div>
     </div>
   );
+}
+
+function clampUiPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.floor(Number.isFinite(value) ? value : 0)));
+}
+
+function getPercentValue(value: number, max = 100) {
+  if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0;
+  return clampUiPercent((value / max) * 100);
+}
+
+function getExpPercent(exp: number, expToNextLevel?: number) {
+  return getPercentValue(exp, expToNextLevel ?? 0);
 }
 
 function DinoAvatar({ size }: { size: 'small' | 'large' | 'hero' }) {

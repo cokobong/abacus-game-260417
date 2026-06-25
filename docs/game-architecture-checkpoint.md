@@ -215,34 +215,26 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 
 ### dinosaur / egg
 
-현재 `green-starter-egg`는 구매 가능한 알이고, `rare-egg-fragment`는 모험 보상용 재료로 분리되어 있다.
+현재 구매 가능한 알은 `category: 'egg'`로 정의하고, 구매/해금 결과는 `inventory`가 아니라 `ownedEggs`에 반영한다. `rare-egg-fragment`는 모험 보상용 공통 재화이며, 서식지별 희귀알을 열 때 필요한 수량만 소비한다.
 
-위험 지점:
+운영 기준:
 
-- “공룡 아이템”과 “알 아이템”의 경계가 흐리다.
-- 다음 단계에서는 구매 가능한 알을 `category: 'egg'`로 정리하고, 구매 결과를 `inventory`가 아니라 `ownedEggs`에 반영하는 편이 좋다.
+- 알은 일반알/특수알/희귀알 3개 카테고리다.
+- `ownedEggs`는 카테고리별 1개 슬롯처럼 동작한다.
+- 같은 카테고리 알이 이미 있으면 추가 구매/해금하지 않는다.
+- 자세한 알/희귀조각 정책은 `docs/adventure-system.md`와 `docs/shop-items.md`를 기준으로 한다.
 
 ## 현재 기능 흐름
 
 ### 훈련장 정답 -> 보상 -> active dinosaur 성장/소모
 
 1. `useTrainingSession`이 정답을 판정한다.
-2. 정답이면 `onCorrectAnswer`로 `applyRewardBundle('problem_correct')`를 호출한다.
-3. reward config에서 코인, 알 게이지, EXP, 기분 보상을 만든다.
-4. 현재 active dinosaur를 찾는다.
-5. active dinosaur에 EXP/기분 보상을 적용한다.
-6. 정답 1개당 체력을 config 값만큼 소모한다.
-7. 낮은 체력이면 경고 메시지를 준비한다.
-8. `localStorage` 자동 저장 effect가 변경된 `gameState`를 저장한다.
-
-### 훈련장 정답 -> 알 게이지 증가
-
-1. 정답 reward에 `hatch_progress`가 포함된다.
-2. 현재 단일 `egg.hatchProgress`가 증가한다.
-3. 100을 넘지 않게 clamp한다.
-4. 알 부화장에서 100% 이상이면 부화 버튼이 활성화된다.
-
-주의: 다음 단계의 active egg 구조가 들어오면 reward 적용 대상은 `gameState.egg`가 아니라 `ownedEggs[activeEggId]`가 되어야 한다.
+2. 정답이면 active dinosaur의 체력을 소량 소모한다.
+3. 세트 완료 시 `calculateTrainingRewards`가 코인, EXP, 행복, 부화 아이템 보상을 만든다.
+4. active dinosaur에 EXP/행복 보상을 적용한다.
+5. EXP가 내부 `expToNextLevel`에 도달하면 레벨업하고 남은 EXP는 이월한다.
+6. 화면 표시용 EXP는 `exp / expToNextLevel`을 0~100으로 환산해 보여준다.
+7. `localStorage` 자동 저장 effect가 변경된 `gameState`를 저장한다.
 
 ### 알 부화 -> ownedDinosaurs 추가 -> 도감 발견
 
@@ -251,7 +243,7 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 3. 후보가 있으면 새 `OwnedDinosaur`를 생성한다.
 4. `ownedDinosaurs`에 추가한다.
 5. `discoveredSpeciesIds`에 speciesId를 추가한다.
-6. `egg.hatchProgress`를 0으로 초기화한다.
+6. 부화한 알은 `ownedEggs`에서 제거하고, 같은 카테고리 슬롯은 비운다.
 7. 모든 species를 이미 보유했다면 부화를 막고 progress는 유지한다.
 
 ### 상점 구매 -> inventory 증가 -> 먹이주기 사용
@@ -273,9 +265,9 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
 
 ## 구조적으로 위험한 지점
 
-1. 단일 `egg` 구조
-   - 현재는 항상 기본 egg 1개가 있다고 가정한다.
-   - 상점 egg 구매/보유 알 선택을 붙이면 `ownedEggs`와 `activeEggId`가 필요하다.
+1. legacy `egg` 구조
+   - 런타임 기준 source of truth는 `ownedEggs + activeEggId`다.
+   - legacy `egg`는 저장 데이터 호환과 현재 active egg 표시 fallback 용도로만 유지한다.
 
 2. `dinosaur`와 `ownedDinosaurs` 중복 저장
    - 실제 source of truth는 `ownedDinosaurs`가 되어가고 있다.
@@ -293,9 +285,9 @@ costume은 `cosmeticOnly`와 optional `effect`를 가질 수 있다. 현재 구�
    - 현재는 보유 공룡 기반 발견과 `discoveredSpeciesIds` 저장이 섞여 있다.
    - “발견했지만 보유하지 않음” 같은 상태가 필요하면 명시적 dex state가 필요하다.
 
-6. localStorage migration 단순함
+6. localStorage migration
    - version 불일치 시 기본 상태로 fallback한다.
-   - 다음 구조 변경, 특히 `egg -> ownedEggs` 전환 전에 migration 함수를 두는 것이 좋다.
+   - 저장 데이터에 새 성장 필드나 `ownedEggs`가 없어도 `normalizeGameState`에서 기본값을 채운다.
 
 7. App.tsx 비대화
    - 상태 helper, 화면 컴포넌트, 비즈니스 로직이 한 파일에 모여 있다.

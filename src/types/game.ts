@@ -18,6 +18,7 @@ export type CurriculumStatus = 'draft' | 'confirmed';
 export type GeneratorStatus = 'ready' | 'basic' | 'todo';
 export type TrainingMasteryStatus = 'not-started' | 'needs-practice' | 'in-progress' | 'almost-mastered' | 'mastered';
 export type TrainingRecommendationType = 'repeat-current' | 'try-next-stage' | 'review-previous' | 'free-practice';
+export type DinosaurGrowthStage = 'baby' | 'child' | 'teen' | 'adult';
 
 export interface AbacusLevelConfig {
   level: number;
@@ -192,8 +193,12 @@ export interface DinosaurState {
   name: string;
   level: number;
   exp: number;
+  expToNextLevel: number;
+  growthStage: DinosaurGrowthStage;
   mood: number;
+  happiness: number;
   stamina: number;
+  maxStamina: number;
   /** @deprecated 포만감은 MVP 주요 수치에서 제외한다. 기존 localStorage 호환용으로만 유지한다. */
   hunger?: number;
 }
@@ -209,8 +214,12 @@ export interface OwnedDinosaur {
   rarity: 'common' | 'rare' | 'epic' | 'special' | 'legendary';
   level: number;
   exp: number;
+  expToNextLevel: number;
+  growthStage: DinosaurGrowthStage;
   mood: number;
+  happiness: number;
   stamina: number;
+  maxStamina: number;
   /** @deprecated 포만감은 MVP 주요 수치에서 제외한다. 기존 localStorage 호환용으로만 유지한다. */
   hunger?: number;
   obtainedAt: UnixTimeMs;

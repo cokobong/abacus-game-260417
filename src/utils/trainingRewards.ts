@@ -1,4 +1,5 @@
 import { rewardConfig } from '../config/rewardConfig';
+import { growthConfig } from '../config/growthConfig';
 
 export interface TrainingRewardInput {
   totalProblems: number;
@@ -30,7 +31,10 @@ export function calculateTrainingRewards({ totalProblems, correctCount, wrongCou
   const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
   const rewardMultiplier = getRewardMultiplier(accuracy);
   const baseCoins = correctCount * 3 + 10;
-  const baseExp = correctCount * 2;
+  const baseExp =
+    correctCount * growthConfig.expPerCorrect +
+    (totalProblems > 0 ? growthConfig.setCompleteExp : 0) +
+    (wrongCount === 0 ? growthConfig.perfectSetBonusExp : accuracy >= growthConfig.highAccuracyThreshold ? growthConfig.highAccuracyBonusExp : 0);
 
   return {
     coins: Math.max(0, Math.round(baseCoins * rewardMultiplier)),

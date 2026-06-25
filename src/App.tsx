@@ -32,6 +32,8 @@ import { clearGameState, loadGameState, saveGameState } from './utils/gameStorag
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
 import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
+import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getGrowthStageLabel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
+import { growthConfig } from './config/growthConfig';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
@@ -89,8 +91,12 @@ const initialDinosaurState: DinosaurState = {
   name: '용감한 티라노',
   level: 3,
   exp: 44,
+  expToNextLevel: getExpToNextLevel(3),
+  growthStage: getGrowthStageForLevel(3),
   mood: 74,
+  happiness: 74,
   stamina: 81,
+  maxStamina: getMaxStaminaForLevel(3),
 };
 
 const initialEggState: EggState = {
@@ -120,8 +126,12 @@ const initialOwnedDinosaur: OwnedDinosaur = {
   rarity: 'common',
   level: initialDinosaurState.level,
   exp: initialDinosaurState.exp,
+  expToNextLevel: initialDinosaurState.expToNextLevel,
+  growthStage: initialDinosaurState.growthStage,
   mood: initialDinosaurState.mood,
+  happiness: initialDinosaurState.happiness,
   stamina: initialDinosaurState.stamina,
+  maxStamina: initialDinosaurState.maxStamina,
   obtainedAt: 0,
 };
 
@@ -159,9 +169,12 @@ const defaultGameState: GameState = {
 };
 
 function normalizeGameState(state: Partial<GameState>): GameState {
-  const ownedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs ?? defaultGameState.ownedDinosaurs);
-  const discoveredSpeciesIds = getUniqueSpeciesIds([...(state.discoveredSpeciesIds ?? defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
-  const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, state.userProfile?.selectedDinosaurId);
+  const rawUserProfile = isRecord(state.userProfile) ? state.userProfile : null;
+  const legacyActiveDinosaurId = typeof (state as Partial<GameState> & { activeDinosaurId?: unknown }).activeDinosaurId === 'string' ? (state as Partial<GameState> & { activeDinosaurId?: string }).activeDinosaurId : undefined;
+  const selectedDinosaurId = typeof rawUserProfile?.selectedDinosaurId === 'string' ? rawUserProfile.selectedDinosaurId : legacyActiveDinosaurId;
+  const ownedDinosaurs = getUniqueOwnedDinosaurs(getArrayValue(state.ownedDinosaurs, defaultGameState.ownedDinosaurs));
+  const discoveredSpeciesIds = normalizeDiscoveredSpeciesIds([...getArrayValue(state.discoveredSpeciesIds, defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
+  const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, selectedDinosaurId);
   const selectedLevel = getAbacusLevel(state.selectedLevel ?? defaultSelectedLevel)?.level ?? defaultSelectedLevel;
   const selectedLevelStages = getStagesForLevel(selectedLevel);
   const selectedStageId =
@@ -181,15 +194,21 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const rareEggFragmentsFallback =
     (state as Partial<GameState> & { rareEggFragments?: unknown }).rareEggFragments ??
     (state as Partial<GameState> & { resources?: { rareEggFragments?: unknown } }).resources?.rareEggFragments;
-  const inventory = normalizeInventoryItems(state.inventory ?? defaultGameState.inventory, rareEggFragmentsFallback);
-  const ownedCostumeIds = getUniqueSpeciesIds([...(state.ownedCostumeIds ?? []), ...getOwnedCostumeIdsFromInventory(inventory)]);
-  const userProfile = state.userProfile
+  const inventory = normalizeInventoryItems(state.inventory, rareEggFragmentsFallback);
+  const ownedCostumeIds = getUniqueSpeciesIds([...getArrayValue(state.ownedCostumeIds, []), ...getOwnedCostumeIdsFromInventory(inventory)].filter((itemId): itemId is string => typeof itemId === 'string'));
+  const userProfile = rawUserProfile
     ? {
-        ...state.userProfile,
-        selectedDinosaurId: selectedDinosaur?.id ?? state.userProfile.selectedDinosaurId,
-        dinosaurName: selectedDinosaur?.name ?? state.userProfile.dinosaurName,
+        ...(rawUserProfile as UserProfile),
+        id: typeof rawUserProfile.id === 'string' ? rawUserProfile.id : `profile-restored-${Date.now()}`,
+        childName: typeof rawUserProfile.childName === 'string' ? rawUserProfile.childName : '친구',
+        ageOrGrade: typeof rawUserProfile.ageOrGrade === 'string' ? rawUserProfile.ageOrGrade : '',
+        createdAt: typeof rawUserProfile.createdAt === 'number' ? rawUserProfile.createdAt : Date.now(),
+        selectedDinosaurId: selectedDinosaur?.id ?? selectedDinosaurId ?? initialOwnedDinosaur.id,
+        dinosaurName: selectedDinosaur?.name ?? (typeof rawUserProfile.dinosaurName === 'string' ? rawUserProfile.dinosaurName : initialOwnedDinosaur.name),
+        parentModeEnabled: typeof rawUserProfile.parentModeEnabled === 'boolean' ? rawUserProfile.parentModeEnabled : false,
       }
     : null;
+  const playerCoins = normalizeNumber(state.player?.coins, defaultGameState.player.coins);
 
   return {
     ...defaultGameState,
@@ -197,6 +216,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     player: {
       ...defaultGameState.player,
       ...state.player,
+      coins: playerCoins,
     },
     selectedLevel,
     selectedStageId,
@@ -235,11 +255,49 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getArrayValue<T>(value: unknown, fallback: T[]): T[] {
+  return Array.isArray(value) ? (value as T[]) : fallback;
+}
+
+function normalizeNumber(value: unknown, fallback: number) {
+  const numericValue = typeof value === 'string' ? Number(value) : value;
+  return typeof numericValue === 'number' && Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+function clampUiPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.floor(Number.isFinite(value) ? value : 0)));
+}
+
+function getPercentValue(value: number, max = 100) {
+  if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0;
+  return clampUiPercent((value / max) * 100);
+}
+
+function getExpPercent(exp: number, expToNextLevel?: number) {
+  return getPercentValue(exp, expToNextLevel ?? 0);
+}
+
 function getUniqueSpeciesIds(speciesIds: string[]) {
   return Array.from(new Set(speciesIds));
 }
 
-function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
+function getCurrentSpeciesId(speciesId: string) {
+  const speciesIdAliases: Record<string, string> = {
+    'green-little': 'tiny-tyranno',
+    'green-forest-rare': 'leafcera',
+    'sparkle-cave-rare': 'crystalo',
+    'volcano-island-rare': 'volcanodon',
+    'secret-land-rare': 'starano',
+  };
+
+  return speciesIdAliases[speciesId] ?? speciesId;
+}
+
+function getUniqueOwnedDinosaurs(ownedDinosaurs: unknown[]) {
   const seenSpeciesIds = new Set<string>();
 
   return ownedDinosaurs
@@ -257,29 +315,41 @@ function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
     }));
 }
 
-function normalizeOwnedDinosaurSpecies(dinosaur: OwnedDinosaur): OwnedDinosaur | null {
-  const speciesIdAliases: Record<string, string> = {
-    'green-little': 'tiny-tyranno',
-  };
-  const speciesId = speciesIdAliases[dinosaur.speciesId] ?? dinosaur.speciesId;
+function normalizeOwnedDinosaurSpecies(dinosaur: unknown): OwnedDinosaur | null {
+  if (!isRecord(dinosaur) || typeof dinosaur.speciesId !== 'string') return null;
+  const speciesId = getCurrentSpeciesId(dinosaur.speciesId);
   const species = getDinosaurSpecies(speciesId);
   if (!species || species.isPlaceholder || species.status === 'planned' || species.status === 'locked') return null;
+  const level = Math.max(1, normalizeNumber(dinosaur.level, 1));
+  const happinessFallback = normalizeNumber(dinosaur.happiness ?? dinosaur.mood, growthConfig.defaultHappiness);
+  const maxStamina = normalizeNumber(dinosaur.maxStamina, getMaxStaminaForLevel(level));
+  const rawName = typeof dinosaur.name === 'string' ? dinosaur.name : '';
+  const normalizedName = speciesId !== dinosaur.speciesId && rawName === dinosaur.speciesId ? species.defaultName : rawName || species.defaultName;
+  const rawEquippedCostumes = isRecord(dinosaur.equippedCostumes) ? dinosaur.equippedCostumes : {};
 
   return {
-    ...dinosaur,
+    id: typeof dinosaur.id === 'string' ? dinosaur.id : `owned-${speciesId}-restored`,
     speciesId,
+    name: normalizedName,
     rarity: species.rarity,
-    exp: clampPercent(dinosaur.exp ?? 0),
-    mood: clampPercent(dinosaur.mood ?? 70),
-    stamina: clampPercent(dinosaur.stamina ?? 100),
-    name: dinosaur.name || species.defaultName,
+    level,
+    exp: Math.max(0, normalizeNumber(dinosaur.exp, 0)),
+    expToNextLevel: normalizeNumber(dinosaur.expToNextLevel, getExpToNextLevel(level)),
+    growthStage: dinosaur.growthStage === 'baby' || dinosaur.growthStage === 'child' || dinosaur.growthStage === 'teen' || dinosaur.growthStage === 'adult' ? dinosaur.growthStage : getGrowthStageForLevel(level),
+    mood: clampHappiness(normalizeNumber(dinosaur.mood, happinessFallback)),
+    happiness: clampHappiness(happinessFallback),
+    stamina: clampStamina(normalizeNumber(dinosaur.stamina, growthConfig.defaultStamina), maxStamina),
+    maxStamina,
+    hunger: typeof dinosaur.hunger === 'number' ? dinosaur.hunger : undefined,
+    obtainedAt: normalizeNumber(dinosaur.obtainedAt, Date.now()),
+    equippedCostumes: rawEquippedCostumes,
   };
 }
 
-function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState): OwnedEgg[] {
+function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg[] {
   const sourceEggs: OwnedEgg[] =
-    ownedEggs !== undefined
-      ? ownedEggs
+    Array.isArray(ownedEggs)
+      ? (ownedEggs as OwnedEgg[])
       : legacyEgg
         ? [
             {
@@ -295,15 +365,24 @@ function normalizeOwnedEggs(ownedEggs?: OwnedEgg[], legacyEgg?: EggState): Owned
           ]
         : defaultGameState.ownedEggs;
 
-  const normalizedEggs: OwnedEgg[] = sourceEggs.map((egg) => ({
-    ...egg,
-    name: egg.name ?? getEggItemConfig(egg.eggItemId)?.name ?? '미확인 알',
-    rarity: egg.rarity ?? getEggItemConfig(egg.eggItemId)?.rarity ?? 'normal',
-    eggType: egg.eggType ?? getEggItemConfig(egg.eggItemId)?.eggType ?? 'normal',
-    eggCategory: egg.eggCategory ?? getEggItemConfig(egg.eggItemId)?.eggCategory ?? getEggCategoryForOwnedEgg(egg),
-    eggHabitatId: egg.eggHabitatId ?? getEggItemConfig(egg.eggItemId)?.eggHabitatId,
-    hatchProgress: clampPercent(egg.hatchProgress ?? 0),
-  }));
+  const normalizedEggs: OwnedEgg[] = sourceEggs
+    .filter((egg): egg is OwnedEgg => isRecord(egg) && typeof egg.id === 'string')
+    .map((egg) => {
+      const eggItemId = typeof egg.eggItemId === 'string' ? egg.eggItemId : egg.eggType === 'rare-spark' || egg.eggType === 'special' ? 'rare-spark-egg' : 'green-starter-egg';
+      const eggConfig = getEggItemConfig(eggItemId);
+
+      return {
+        ...egg,
+        eggItemId,
+        name: typeof egg.name === 'string' ? egg.name : eggConfig?.name ?? '미확인 알',
+        rarity: egg.rarity ?? eggConfig?.rarity ?? 'normal',
+        eggType: typeof egg.eggType === 'string' ? egg.eggType : eggConfig?.eggType ?? 'normal',
+        eggCategory: egg.eggCategory ?? eggConfig?.eggCategory ?? getEggCategoryForOwnedEgg({ ...egg, eggItemId }),
+        eggHabitatId: egg.eggHabitatId ?? eggConfig?.eggHabitatId,
+        hatchProgress: clampPercent(normalizeNumber(egg.hatchProgress, 0)),
+        createdAt: normalizeNumber(egg.createdAt, 0),
+      };
+    });
 
   return getOneEggPerCategory(normalizedEggs);
 }
@@ -337,13 +416,26 @@ function getEggCategoryLabel(category: NonNullable<OwnedEgg['eggCategory']>) {
   return labels[category];
 }
 
-function normalizeInventoryItems(inventory: InventoryItemState[], rareEggFragmentsFallback?: unknown) {
+function getHabitatShortLabel(habitatId: string) {
+  const labels: Record<string, string> = {
+    'green-forest': '초록 숲',
+    'sparkle-cave': '반짝 동굴',
+    'volcano-island': '화산섬',
+    'secret-land': '비밀의 땅',
+  };
+
+  return labels[habitatId] ?? '새 서식지';
+}
+
+function normalizeInventoryItems(inventory: unknown, rareEggFragmentsFallback?: unknown) {
   const itemIdAliases: Record<string, string> = {
     'rare-tricera-fragment': 'rare-egg-fragment',
   };
-  const quantityByItemId = inventory.reduce<Record<string, number>>((quantities, item) => {
+  const inventoryItems = getArrayValue<InventoryItemState>(inventory, defaultGameState.inventory);
+  const quantityByItemId = inventoryItems.reduce<Record<string, number>>((quantities, item) => {
+    if (!isRecord(item) || typeof item.itemId !== 'string') return quantities;
     const itemId = itemIdAliases[item.itemId] ?? item.itemId;
-    quantities[itemId] = (quantities[itemId] ?? 0) + item.quantity;
+    quantities[itemId] = (quantities[itemId] ?? 0) + Math.max(0, normalizeNumber(item.quantity, 0));
     return quantities;
   }, {});
   const rareEggFragmentFallbackQuantity = typeof rareEggFragmentsFallback === 'string' ? Number(rareEggFragmentsFallback) : rareEggFragmentsFallback;
@@ -353,6 +445,10 @@ function normalizeInventoryItems(inventory: InventoryItemState[], rareEggFragmen
   }
 
   return Object.entries(quantityByItemId).map(([itemId, quantity]) => ({ itemId, quantity }));
+}
+
+function normalizeDiscoveredSpeciesIds(speciesIds: string[]) {
+  return getUniqueSpeciesIds(speciesIds.map(getCurrentSpeciesId).filter((speciesId) => Boolean(getDinosaurSpecies(speciesId))));
 }
 
 function getSelectedOwnedEgg(ownedEggs: OwnedEgg[], activeEggId?: string | null) {
@@ -523,13 +619,21 @@ function getSelectedOwnedDinosaur(ownedDinosaurs: OwnedDinosaur[], selectedDinos
 }
 
 function ownedDinosaurToDinosaurState(dinosaur: OwnedDinosaur): DinosaurState {
+  const level = Math.max(1, dinosaur.level ?? 1);
+  const maxStamina = dinosaur.maxStamina ?? getMaxStaminaForLevel(level);
+  const happiness = dinosaur.happiness ?? dinosaur.mood ?? growthConfig.defaultHappiness;
+
   return {
     id: dinosaur.id,
     name: dinosaur.name,
-    level: dinosaur.level,
-    exp: clampPercent(dinosaur.exp ?? 0),
-    mood: clampPercent(dinosaur.mood ?? 70),
-    stamina: clampPercent(dinosaur.stamina ?? 100),
+    level,
+    exp: Math.max(0, dinosaur.exp ?? 0),
+    expToNextLevel: dinosaur.expToNextLevel ?? getExpToNextLevel(level),
+    growthStage: dinosaur.growthStage ?? getGrowthStageForLevel(level),
+    mood: clampHappiness(dinosaur.mood ?? happiness),
+    happiness: clampHappiness(happiness),
+    stamina: clampStamina(dinosaur.stamina ?? growthConfig.defaultStamina, maxStamina),
+    maxStamina,
   };
 }
 
@@ -628,17 +732,6 @@ function formatDinosaurStatChanges(effect: DinosaurStatEffect) {
   ].filter(Boolean);
 
   return changes.join(', ');
-}
-
-function getStaminaRecoveryMultiplier(happiness: number) {
-  if (happiness >= 90) return 1.3;
-  if (happiness >= 70) return 1.2;
-  if (happiness >= 40) return 1.1;
-  return 1;
-}
-
-function getAdjustedStaminaRecovery(baseRecovery: number, happiness: number) {
-  return Math.round(baseRecovery * getStaminaRecoveryMultiplier(happiness));
 }
 
 function getLevelSettingSummary(stages: AbacusStageConfig[]) {
@@ -921,8 +1014,12 @@ export default function App() {
       rarity: starterSpecies?.rarity ?? initialOwnedDinosaur.rarity,
       level: 1,
       exp: 0,
+      expToNextLevel: getExpToNextLevel(1),
+      growthStage: getGrowthStageForLevel(1),
       mood: 74,
+      happiness: 74,
       stamina: 81,
+      maxStamina: getMaxStaminaForLevel(1),
       obtainedAt: createdAt,
       equippedCostumes: {},
     };
@@ -1008,7 +1105,7 @@ export default function App() {
     setGameState((current) =>
       updateSelectedOwnedDinosaur(current, (dinosaur) => ({
         ...dinosaur,
-        stamina: clampPercent(dinosaur.stamina - trainingEffects.staminaCost),
+        stamina: clampStamina(dinosaur.stamina - trainingEffects.staminaCost, dinosaur.maxStamina),
       })),
     );
     setLastRewards([]);
@@ -1069,11 +1166,16 @@ export default function App() {
         progressByStage: updateProgressByStage(current.progressByStage, trainingRecord),
       };
 
-      return updateSelectedOwnedDinosaur(withPlayerAndInventory, (dinosaur) => ({
-        ...dinosaur,
-        exp: clampPercent(dinosaur.exp + rewardSummary.dinosaurExp),
-        mood: clampPercent(dinosaur.mood + rewardSummary.happiness),
-      }));
+      return updateSelectedOwnedDinosaur(withPlayerAndInventory, (dinosaur) => {
+        const grownDinosaur = applyDinosaurExp(dinosaur, rewardSummary.dinosaurExp);
+        const nextHappiness = clampHappiness(grownDinosaur.happiness + rewardSummary.happiness);
+
+        return {
+          ...grownDinosaur,
+          mood: nextHappiness,
+          happiness: nextHappiness,
+        };
+      });
     });
 
     setCompletedTrainingSummary({
@@ -1104,14 +1206,19 @@ export default function App() {
 
   function applyDinosaurInteraction(changes: DinosaurInteractionChange, message: string) {
     setGameState((current) =>
-      updateSelectedOwnedDinosaur(current, (dinosaur) => ({
-        ...dinosaur,
-        exp: clampPercent(dinosaur.exp + (changes.exp ?? 0)),
-        mood: clampPercent(dinosaur.mood + (changes.mood ?? 0)),
-        stamina: clampPercent(dinosaur.stamina + (changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, dinosaur.mood) : changes.stamina ?? 0)),
-      })),
+      updateSelectedOwnedDinosaur(current, (dinosaur) => {
+        const grownDinosaur = changes.exp ? applyDinosaurExp(dinosaur, changes.exp) : dinosaur;
+        const nextHappiness = clampHappiness(grownDinosaur.happiness + (changes.mood ?? 0));
+
+        return {
+          ...grownDinosaur,
+          mood: nextHappiness,
+          happiness: nextHappiness,
+          stamina: clampStamina(grownDinosaur.stamina + (changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, nextHappiness) : changes.stamina ?? 0), grownDinosaur.maxStamina),
+        };
+      }),
     );
-    const staminaBonus = changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, activeOwnedDinosaur.mood) : null;
+    const staminaBonus = changes.stamina && changes.stamina > 0 ? getAdjustedStaminaRecovery(changes.stamina, activeOwnedDinosaur.happiness) : null;
     setDinoFeedback(staminaBonus ? message.replace(`체력 +${changes.stamina}`, `체력 +${staminaBonus}`) : message);
   }
 
@@ -1159,24 +1266,29 @@ export default function App() {
       const adjustedEffect = selectedDinosaur
         ? {
             ...effect,
-            stamina: getAdjustedStaminaRecovery(effect.stamina ?? 0, selectedDinosaur.mood),
+            stamina: getAdjustedStaminaRecovery(effect.stamina ?? 0, selectedDinosaur.happiness),
           }
         : effect;
 
       return {
-        ...updateSelectedOwnedDinosaur(current, (dinosaur) => ({
-          ...dinosaur,
-          exp: clampPercent(dinosaur.exp + (adjustedEffect.exp ?? 0)),
-          mood: clampPercent(dinosaur.mood + (adjustedEffect.mood ?? 0)),
-          stamina: clampPercent(dinosaur.stamina + (adjustedEffect.stamina ?? 0)),
-        })),
+        ...updateSelectedOwnedDinosaur(current, (dinosaur) => {
+          const grownDinosaur = adjustedEffect.exp ? applyDinosaurExp(dinosaur, adjustedEffect.exp) : dinosaur;
+          const nextHappiness = clampHappiness(grownDinosaur.happiness + (adjustedEffect.mood ?? 0));
+
+          return {
+            ...grownDinosaur,
+            mood: nextHappiness,
+            happiness: nextHappiness,
+            stamina: clampStamina(grownDinosaur.stamina + (adjustedEffect.stamina ?? 0), grownDinosaur.maxStamina),
+          };
+        }),
         inventory: current.inventory.map((item) => (item.itemId === inventoryItem.itemId ? { ...item, quantity: remainingQuantity } : item)),
       };
     });
     if (remainingQuantity <= 0) {
       setSelectedFoodItemId(null);
     }
-    const activeHappiness = activeOwnedDinosaur.mood;
+    const activeHappiness = activeOwnedDinosaur.happiness;
     const recoveredStamina = getAdjustedStaminaRecovery(effect.stamina ?? 0, activeHappiness);
     const multiplier = getStaminaRecoveryMultiplier(activeHappiness);
     const recoveryMessage = `체력 +${recoveredStamina}${multiplier > 1 ? ` (행복 보너스 x${multiplier})` : ''}`;
@@ -1399,8 +1511,12 @@ export default function App() {
         rarity: hatchedTemplate.rarity,
         level: 1,
         exp: 0,
+        expToNextLevel: getExpToNextLevel(1),
+        growthStage: getGrowthStageForLevel(1),
         mood: 70,
+        happiness: 70,
         stamina: 70,
+        maxStamina: getMaxStaminaForLevel(1),
         obtainedAt,
       };
 
@@ -1443,7 +1559,10 @@ export default function App() {
       dinosaurName: hatchedTemplate.defaultName,
       speciesName: hatchedTemplate.displayName,
       rarity: hatchedTemplate.rarity,
-      message: `${hatchedTemplate.defaultName}가 태어났어요! 새 공룡이 우리 공룡과 도감에 추가되었어요.`,
+      message:
+        hatchedTemplate.rarity === 'rare'
+          ? `${hatchedTemplate.displayName}를 만났어요! ${getHabitatShortLabel(hatchedTemplate.habitat)}의 희귀 공룡이에요.`
+          : `${hatchedTemplate.defaultName}가 태어났어요! 새 공룡이 우리 공룡과 도감에 추가되었어요.`,
     });
   }
 
@@ -2226,9 +2345,9 @@ function ActiveDinoReactionPanel({
         <DinoAvatar size="small" />
       </div>
       <div className="mt-4 grid gap-2 rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
-        <DinoTrainingMeter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
-        <DinoTrainingMeter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
-        <DinoTrainingMeter label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
+        <DinoTrainingMeter label="EXP" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <DinoTrainingMeter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
+        <DinoTrainingMeter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
         <p className="rounded-[16px] bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">{staminaMessage}</p>
       </div>
       <p className="mt-3 rounded-[20px] bg-cyan-50 px-4 py-3 text-center text-sm font-black leading-relaxed text-cyan-800">{reaction}</p>
@@ -2238,14 +2357,15 @@ function ActiveDinoReactionPanel({
 }
 
 function DinoTrainingMeter({ label, value, tone }: { label: string; value: number; tone: string }) {
+  const percent = clampUiPercent(value);
   return (
     <div>
       <div className="mb-1 flex justify-between text-xs font-black text-emerald-900">
         <span>{label}</span>
-        <span>{value}%</span>
+        <span>{percent}%</span>
       </div>
       <div className="h-4 overflow-hidden rounded-full bg-slate-100 shadow-inner">
-        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${value}%` }} />
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
       </div>
     </div>
   );
@@ -2388,13 +2508,13 @@ function TrainingDinosaurCard({
         <DinoAvatar size="small" />
       </div>
       <p className="mt-3 rounded-full bg-amber-100 px-4 py-2 text-center text-sm font-black text-amber-800">
-        {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · Lv. {dinosaur.level}
+        {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · {getGrowthStageLabel(dinosaur.growthStage)} · Lv. {dinosaur.level}
       </p>
       <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-sm font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
       <div className="mt-4 grid gap-3">
-        <Meter label="EXP" value={dinosaur.exp} tone="from-cyan-400 to-sky-500" />
-        <Meter label="행복" value={dinosaur.mood} tone="from-pink-400 to-rose-500" />
-        <Meter label="체력" value={dinosaur.stamina} tone="from-emerald-400 to-lime-500" />
+        <Meter label="EXP" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <Meter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
+        <Meter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
       </div>
     </div>
   );
@@ -2815,14 +2935,16 @@ function RewardCard({ icon: Icon, title, value, tone }: { icon: typeof Coins; ti
 }
 
 function Meter({ label, value, tone }: { label: string; value: number; tone: string }) {
+  const percent = clampUiPercent(value);
+
   return (
     <div className="rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
       <div className="mb-2 flex justify-between text-sm font-black text-emerald-900">
         <span>{label}</span>
-        <span>{value}%</span>
+        <span>{percent}%</span>
       </div>
       <div className="h-6 overflow-hidden rounded-full bg-slate-100 shadow-inner">
-        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${value}%` }} />
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
       </div>
     </div>
   );
