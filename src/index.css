@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+button,
+input,
+select,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(14, 165, 233, 0.18);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 4px solid rgba(14, 165, 233, 0.55) !important;
+  outline-offset: 3px;
+}
+
 @layer components {
   .game-panel {
     @apply rounded-[36px] border-4 border-white bg-white/82 shadow-[0_18px_46px_rgba(14,116,144,0.16)] backdrop-blur;

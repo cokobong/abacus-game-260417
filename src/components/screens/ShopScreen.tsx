@@ -6,6 +6,7 @@ import { canBuyEggItem } from '../../utils/hatchCandidates';
 
 type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'all' | 'food' | 'costume' | 'egg' | 'hatchItem';
+const showDeveloperPanels = false;
 
 export interface ShopScreenProps {
   coins: number;
@@ -49,7 +50,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
 
       <ShopCategoryTabs activeCategory={activeCategory} onCategory={setActiveCategory} />
       <ShopItemGrid activeCategory={activeCategory} items={visibleItems} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelectItem={setSelectedItemId} />
-      <DeveloperShopDebugPanel inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} />
+      {showDeveloperPanels && <DeveloperShopDebugPanel inventory={inventory} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} />}
 
       {selectedItem && <ShopItemDetailModal item={selectedItem} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onClose={() => setSelectedItemId(null)} onPurchase={onPurchase} />}
     </div>
@@ -65,7 +66,7 @@ function ShopCategoryTabs({ activeCategory, onCategory }: { activeCategory: Shop
           <button
             key={category.id}
             onClick={() => onCategory(category.id)}
-            className={`min-h-12 shrink-0 rounded-[18px] px-4 text-sm font-black transition active:translate-y-1 ${
+            className={`min-h-14 shrink-0 rounded-[18px] px-4 text-sm font-black transition active:translate-y-1 ${
               isActive ? 'bg-violet-500 text-white shadow-[0_4px_0_#7c3aed]' : 'bg-white/80 text-slate-600 hover:bg-violet-50'
             }`}
           >
@@ -285,7 +286,7 @@ function ShopItemDetailModal({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-3 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4 backdrop-blur-sm sm:px-4 sm:pt-6">
       <section className="grid max-h-full min-h-0 w-full max-w-lg grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-white via-violet-50 to-cyan-50 shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
         <div className="flex justify-end px-3 pt-3">
-          <button aria-label="닫기" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-[14px] bg-slate-900 text-white transition active:translate-y-1">
+          <button aria-label="닫기" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-slate-900 text-white transition active:translate-y-1">
             <X className="h-6 w-6" />
           </button>
         </div>

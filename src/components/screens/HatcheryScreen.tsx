@@ -5,6 +5,7 @@ import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getHatchCandidates, type HatchCandidateResult } from '../../utils/hatchCandidates';
 
 type InventoryItemState = { itemId: string; quantity: number };
+const showDeveloperPanels = false;
 
 export type HatchResult = {
   eggName: string;
@@ -85,13 +86,13 @@ export function HatcheryScreen({
   }
 
   return (
-    <div className="relative grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
-      <aside className="grid content-start gap-5">
+    <div className="relative grid h-full min-h-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+      <aside className="grid min-h-0 content-start gap-3">
         <EggInventoryPanel ownedEggs={ownedEggs} activeEgg={activeEgg} onSelectEgg={onSelectEgg} />
-        <DeveloperHatcheryDebugPanel activeEggId={activeEggId} activeEgg={activeEgg} ownedEggs={ownedEggs} inventory={inventory} hatchResult={hatchResult} />
+        {showDeveloperPanels && <DeveloperHatcheryDebugPanel activeEggId={activeEggId} activeEgg={activeEgg} ownedEggs={ownedEggs} inventory={inventory} hatchResult={hatchResult} />}
       </aside>
 
-      <section className="game-panel overflow-hidden p-3 md:p-4">
+      <section className="game-panel min-h-0 overflow-hidden p-2">
         <EggMainCard
           activeEgg={activeEgg}
           eggCount={ownedEggs.length}
@@ -104,7 +105,7 @@ export function HatcheryScreen({
         />
       </section>
 
-      <aside className="grid content-start gap-5">
+      <aside className="grid min-h-0 content-start gap-3">
         <HatchItemPanel hatchItems={hatchItems} selectedHatchItemId={selectedHatchItemId} disabled={!activeEgg || Boolean(hatchResult)} onSelectHatchItem={setSelectedHatchItemId} onUseHatchItem={useSelectedHatchItem} />
         <HatchStatusPanel activeEgg={activeEgg} hatchCandidateResult={hatchCandidateResult} />
       </aside>
@@ -118,8 +119,8 @@ function EggInventoryPanel({ ownedEggs, activeEgg, onSelectEgg }: { ownedEggs: O
   const ownedEggCount = Math.min(ownedEggs.length, eggSlotCategories.length);
 
   return (
-    <section className="rounded-[30px] border-4 border-white bg-white/84 p-4 shadow-lg">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className="rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-orange-700">알 슬롯</p>
           <h4 className="text-xl font-black text-emerald-950">{ownedEggCount}/3</h4>
@@ -133,7 +134,7 @@ function EggInventoryPanel({ ownedEggs, activeEgg, onSelectEgg }: { ownedEggs: O
 
           if (!egg) {
             return (
-              <div key={category} className="rounded-[20px] border-4 border-dashed border-orange-100 bg-orange-50/80 px-3 py-3 text-left text-orange-800">
+              <div key={category} className="rounded-[18px] border-4 border-dashed border-orange-100 bg-orange-50/80 px-3 py-2 text-left text-orange-800">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-black">{getEmptyEggSlotTitle(category)}</span>
                   <span className={`rounded-full px-2 py-1 text-[11px] font-black ${getEggCategoryBadgeTone(category)}`}>{getEggCategoryLabel(category)}</span>
@@ -147,7 +148,7 @@ function EggInventoryPanel({ ownedEggs, activeEgg, onSelectEgg }: { ownedEggs: O
             <button
               key={category}
               onClick={() => onSelectEgg(egg.id)}
-              className={`rounded-[20px] border-4 px-3 py-3 text-left shadow-sm transition active:translate-y-1 ${
+              className={`rounded-[18px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
                 isActive ? 'border-amber-300 bg-amber-100 text-amber-950 shadow-[0_5px_0_#fbbf24]' : 'border-white bg-white/90 text-slate-600 hover:bg-orange-50'
               }`}
             >
@@ -187,8 +188,8 @@ function EggMainCard({
   const reaction = getEggReactionText(activeEgg, hatchCandidateResult, feedback);
 
   return (
-    <section className="relative min-h-[660px] overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-5 text-center shadow-inner md:p-6">
-      <div className="absolute bottom-0 left-0 right-0 h-40 rounded-t-[50%] bg-amber-300/45" />
+    <section className="relative min-h-[clamp(410px,calc(100vh-15.75rem),540px)] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-4 text-center shadow-inner">
+      <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-amber-300/45" />
       {eggCount > 1 && (
         <>
           <button
@@ -207,32 +208,32 @@ function EggMainCard({
           </button>
         </>
       )}
-      <div className="relative z-10 flex min-h-[570px] flex-col items-center justify-center pt-10">
+      <div className="relative z-10 flex min-h-[clamp(350px,calc(100vh-19rem),455px)] flex-col items-center justify-center pt-8">
         {activeEgg ? (
           <>
-            <p className={`mb-3 rounded-full border-4 border-white px-5 py-2 text-sm font-black shadow-sm ${getEggCategoryBadgeTone(getOwnedEggCategory(activeEgg))}`}>{getEggCategoryLabel(getOwnedEggCategory(activeEgg))}</p>
-            <div className="relative mb-6">
+            <p className={`mb-2 rounded-full border-4 border-white px-4 py-1.5 text-sm font-black shadow-sm ${getEggCategoryBadgeTone(getOwnedEggCategory(activeEgg))}`}>{getEggCategoryLabel(getOwnedEggCategory(activeEgg))}</p>
+            <div className="relative mb-3">
               <div className="absolute inset-x-10 bottom-0 h-12 rounded-full bg-orange-900/10 blur-md" />
-              <div className="relative flex h-80 w-60 items-center justify-center rounded-[50%] border-[14px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-2xl">
-                <Egg className="h-32 w-32 text-orange-400" />
+              <div className="relative flex h-56 w-44 items-center justify-center rounded-[50%] border-[12px] border-white bg-gradient-to-br from-amber-100 via-white to-orange-200 shadow-2xl">
+                <Egg className="h-24 w-24 text-orange-400" />
               </div>
-              {progress >= 100 && <div className="absolute -right-8 top-10 rounded-full border-4 border-white bg-lime-400 px-4 py-2 text-lg font-black text-lime-950 shadow-lg">준비 완료</div>}
+              {progress >= 100 && <div className="absolute -right-7 top-8 rounded-full border-4 border-white bg-lime-400 px-3 py-1.5 text-sm font-black text-lime-950 shadow-lg">준비 완료</div>}
             </div>
-            <h3 className="text-4xl font-black text-emerald-950 md:text-5xl">{activeEgg.name}</h3>
-            <p className="mt-3 max-w-md rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 text-lg font-black leading-relaxed text-emerald-900 shadow-sm">{reaction}</p>
-            <div className="mt-6 w-full max-w-xl rounded-[26px] border-4 border-white bg-white/82 p-4 shadow-sm">
+            <h3 className="text-3xl font-black text-emerald-950 md:text-4xl">{activeEgg.name}</h3>
+            <p className="mt-2 max-w-md rounded-[20px] border-4 border-white bg-white/90 px-4 py-2 text-base font-black leading-relaxed text-emerald-900 shadow-sm">{reaction}</p>
+            <div className="mt-3 w-full max-w-xl rounded-[22px] border-4 border-white bg-white/82 p-3 shadow-sm">
               <div className="mb-2 flex justify-between text-sm font-black text-emerald-800">
                 <span>{progress >= 100 ? '부화 준비 완료!' : '부화 준비'}</span>
                 <span>{progress}%</span>
               </div>
-              <div className="h-7 overflow-hidden rounded-full bg-orange-100 shadow-inner">
+              <div className="h-5 overflow-hidden rounded-full bg-orange-100 shadow-inner">
                 <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-cyan-400" style={{ width: `${progress}%` }} />
               </div>
             </div>
             <button
               disabled={!canHatch}
               onClick={onHatchEgg}
-              className={`mt-5 inline-flex min-h-16 items-center justify-center gap-2 rounded-[24px] border-4 border-white px-9 text-lg font-black text-white transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 ${
+              className={`mt-3 inline-flex min-h-14 items-center justify-center gap-2 rounded-[22px] border-4 border-white px-8 text-base font-black text-white transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 ${
                 canHatch ? 'bg-gradient-to-b from-orange-400 to-amber-500 shadow-[0_7px_0_#d97706]' : 'bg-gradient-to-b from-slate-300 to-slate-400 shadow-[0_7px_0_#94a3b8]'
               }`}
             >
@@ -241,7 +242,7 @@ function EggMainCard({
             </button>
           </>
         ) : (
-          <div className="mx-auto grid max-w-md place-items-center rounded-[32px] border-4 border-white bg-white/86 px-6 py-10 shadow-lg">
+          <div className="mx-auto grid max-w-md place-items-center rounded-[28px] border-4 border-white bg-white/86 px-5 py-8 shadow-lg">
             <PackageOpen className="h-20 w-20 text-orange-400" />
             <h3 className="mt-4 text-3xl font-black text-emerald-950">아직 보유한 알이 없어요.</h3>
             <p className="mt-2 font-black text-emerald-700/75">상점에서 알을 데려올 수 있어요.</p>
@@ -268,19 +269,19 @@ function HatchItemPanel({
   const selectedItem = selectedHatchItemId ? hatchItems.find((entry) => entry.inventoryItem.itemId === selectedHatchItemId) ?? null : null;
 
   return (
-    <section className="rounded-[30px] border-4 border-white bg-white/84 p-4 shadow-lg">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className="rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-amber-700">부화 아이템</p>
           <h4 className="text-xl font-black text-emerald-950">아이템 사용</h4>
         </div>
         <Sparkles className="h-7 w-7 text-amber-500" />
       </div>
-      <div className="mb-3 rounded-[20px] bg-amber-50 px-4 py-3">
+      <div className="mb-2 rounded-[18px] bg-amber-50 px-3 py-2">
         <p className="text-xs font-black text-amber-700">선택한 아이템</p>
         <p className="mt-1 text-base font-black text-amber-950">{selectedItem ? selectedItem.config.name : '아이템을 선택해주세요.'}</p>
       </div>
-      <button disabled={disabled || !selectedItem} onClick={onUseHatchItem} className="mb-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45">
+      <button disabled={disabled || !selectedItem} onClick={onUseHatchItem} className="mb-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45">
         <Sparkles className="h-5 w-5" />
         사용하기
       </button>
@@ -295,7 +296,7 @@ function HatchItemPanel({
                 key={inventoryItem.itemId}
                 disabled={disabled || inventoryItem.quantity <= 0}
                 onClick={() => onSelectHatchItem(inventoryItem.itemId)}
-                className={`min-h-20 rounded-[20px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
+                className={`min-h-16 rounded-[18px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
                   isSelected ? 'border-amber-400 bg-gradient-to-b from-yellow-200 to-orange-200 text-amber-950 shadow-[0_6px_0_#f59e0b]' : 'border-white bg-gradient-to-b from-amber-100 to-orange-100 text-amber-950 hover:brightness-105'
                 } disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
               >
@@ -303,8 +304,8 @@ function HatchItemPanel({
                   <span className="font-black">{config.name}</span>
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-black">x{inventoryItem.quantity}</span>
                 </div>
-                <p className="mt-2 text-xs font-black text-amber-700">부화 +{config.effect.hatchProgress}%</p>
-                {isSelected && <p className="mt-2 w-fit rounded-full bg-amber-500 px-3 py-1 text-xs font-black text-white">선택됨</p>}
+                <p className="mt-1 text-xs font-black text-amber-700">부화 +{config.effect.hatchProgress}%</p>
+                {isSelected && <p className="mt-1 w-fit rounded-full bg-amber-500 px-3 py-0.5 text-xs font-black text-white">선택됨</p>}
               </button>
             );
           })
@@ -319,7 +320,7 @@ function HatchStatusPanel({ activeEgg, hatchCandidateResult }: { activeEgg: Owne
   const value = !activeEgg ? '선택 필요' : progress < 100 ? `${100 - progress}% 남음` : hatchCandidateResult.candidates.length === 0 ? '새 후보 없음' : '준비 완료';
 
   return (
-    <section className="rounded-[26px] border-4 border-white bg-white/78 p-4 shadow-sm">
+    <section className="rounded-[22px] border-4 border-white bg-white/78 p-3 shadow-sm">
       <p className="text-xs font-black text-orange-700">부화 상태</p>
       <p className="mt-1 text-2xl font-black text-emerald-950">{value}</p>
     </section>
@@ -328,8 +329,8 @@ function HatchStatusPanel({ activeEgg, hatchCandidateResult }: { activeEgg: Owne
 
 function HatchResultPanel({ result, onGoToDex, onGoToDino, onClose }: { result: HatchResult; onGoToDex: () => void; onGoToDino: () => void; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 py-8 backdrop-blur-sm">
-      <section className="w-full max-w-2xl rounded-[36px] border-4 border-white bg-gradient-to-b from-amber-100 via-white to-lime-100 p-5 text-center shadow-[0_24px_80px_rgba(15,23,42,0.28)] md:p-8">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
+      <section className="max-h-full w-full max-w-2xl overflow-y-auto rounded-[36px] border-4 border-white bg-gradient-to-b from-amber-100 via-white to-lime-100 p-5 text-center shadow-[0_24px_80px_rgba(15,23,42,0.28)] md:p-8">
         <p className="mx-auto mb-4 w-fit rounded-full bg-orange-200 px-5 py-2 text-sm font-black text-orange-900">알이 톡! 하고 갈라졌어요!</p>
         <div className="mx-auto grid max-w-lg grid-cols-[0.8fr_1fr] items-end gap-4">
           <div className="relative flex min-h-48 items-end justify-center">
@@ -348,13 +349,13 @@ function HatchResultPanel({ result, onGoToDex, onGoToDino, onClose }: { result: 
         <p className="mt-2 text-lg font-black text-emerald-800">{result.speciesName} · {formatRarity(result.rarity)}</p>
         <p className="mx-auto mt-4 max-w-lg rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-lg font-black leading-relaxed text-emerald-900 shadow-sm">{result.message}</p>
         <div className="mt-6 grid gap-2 sm:grid-cols-3">
-          <button onClick={onGoToDex} className="rounded-full bg-sky-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#0284c7] transition active:translate-y-1 active:shadow-none">
+          <button onClick={onGoToDex} className="min-h-14 rounded-full bg-sky-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#0284c7] transition active:translate-y-1 active:shadow-none">
             도감으로 이동
           </button>
-          <button onClick={onGoToDino} className="rounded-full bg-amber-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#b45309] transition active:translate-y-1 active:shadow-none">
+          <button onClick={onGoToDino} className="min-h-14 rounded-full bg-amber-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#b45309] transition active:translate-y-1 active:shadow-none">
             우리 공룡으로 이동
           </button>
-          <button onClick={onClose} className="rounded-full bg-emerald-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#047857] transition active:translate-y-1 active:shadow-none">
+          <button onClick={onClose} className="min-h-14 rounded-full bg-emerald-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#047857] transition active:translate-y-1 active:shadow-none">
             계속 부화장 보기
           </button>
         </div>

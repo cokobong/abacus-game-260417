@@ -266,7 +266,7 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
             <input
               value={serviceUuid}
               onChange={(event) => setServiceUuid(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm focus:border-cyan-400"
             />
           </label>
           <label className="block">
@@ -274,7 +274,7 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
             <input
               value={characteristicUuid}
               onChange={(event) => setCharacteristicUuid(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm focus:border-cyan-400"
             />
           </label>
 

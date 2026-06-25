@@ -5,6 +5,7 @@ import type { DinosaurState } from '../../types/game';
 import type { AdventureRunResult } from '../../utils/adventureRewards';
 
 type InventoryItemState = { itemId: string; quantity: number };
+const showDeveloperPanels = false;
 
 export interface PlaygroundScreenProps {
   activeDinosaur: DinosaurState | null;
@@ -23,16 +24,16 @@ export function PlaygroundScreen({ activeDinosaur, coins, inventory, result, fee
   const selectedArea = adventureAreas.find((area) => area.id === selectedAreaId) ?? adventureAreas[0];
 
   return (
-    <div className="grid gap-5">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2">
       <AdventureHeader activeDinosaur={activeDinosaur} coins={coins} />
-      <section className="grid gap-5 lg:grid-cols-[320px_1fr]">
-        <div className="grid gap-4">
+      <section className="grid min-h-0 gap-3 lg:grid-cols-[280px_1fr]">
+        <div className="grid content-start gap-3">
           <ActiveDinoCompanionCard activeDinosaur={activeDinosaur} />
           <AdventurePrepCard feedback={feedback} />
         </div>
         <AdventureAreaGrid selectedAreaId={selectedArea?.id} coins={coins} onSelectArea={setSelectedAreaId} onExplore={onExplore} />
       </section>
-      <DeveloperAdventureDebugPanel activeDinosaur={activeDinosaur} inventory={inventory} result={result} selectedArea={selectedArea} />
+      {showDeveloperPanels && <DeveloperAdventureDebugPanel activeDinosaur={activeDinosaur} inventory={inventory} result={result} selectedArea={selectedArea} />}
 
       {result && <AdventureResultModal result={result} onClose={onCloseResult} onGoToDex={onGoToDex} onGoToHatchery={onGoToHatchery} />}
     </div>
@@ -41,19 +42,18 @@ export function PlaygroundScreen({ activeDinosaur, coins, inventory, result, fee
 
 function AdventureHeader({ activeDinosaur, coins }: { activeDinosaur: DinosaurState | null; coins: number }) {
   return (
-    <section className="overflow-hidden rounded-[34px] border-4 border-white bg-[linear-gradient(135deg,#ccefd1,#d7f7ff_52%,#f7e7bd)] p-5 shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section className="overflow-hidden rounded-[24px] border-4 border-white bg-[linear-gradient(135deg,#ccefd1,#d7f7ff_52%,#f7e7bd)] p-3 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/82 px-4 py-2 text-sm font-black text-emerald-800">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/82 px-3 py-1.5 text-xs font-black text-emerald-800">
             <Compass className="h-4 w-4" />
             탐험 지도
           </p>
-          <h3 className="mt-3 text-4xl font-black text-emerald-950">모험</h3>
-          <p className="mt-2 font-black text-emerald-800">탐험을 떠나 조각과 단서를 얻어보세요.</p>
+          <h3 className="mt-1 text-3xl font-black text-emerald-950">모험</h3>
         </div>
         <div className="grid gap-2 text-right">
-          <p className="rounded-full border-4 border-white bg-white/88 px-4 py-2 text-sm font-black text-emerald-900 shadow-sm">{activeDinosaur ? `${activeDinosaur.name}와 함께 탐험 중` : '함께할 공룡을 기다리는 중'}</p>
-          <p className="inline-flex items-center justify-end gap-2 rounded-full border-4 border-white bg-amber-200 px-4 py-2 text-lg font-black text-amber-950 shadow-sm">
+          <p className="rounded-full border-4 border-white bg-white/88 px-3 py-1.5 text-xs font-black text-emerald-900 shadow-sm">{activeDinosaur ? `${activeDinosaur.name}와 함께` : '공룡 대기 중'}</p>
+          <p className="inline-flex items-center justify-end gap-2 rounded-full border-4 border-white bg-amber-200 px-3 py-1.5 text-base font-black text-amber-950 shadow-sm">
             <Coins className="h-5 w-5 text-amber-600" />
             {coins.toLocaleString()}
           </p>
@@ -65,15 +65,15 @@ function AdventureHeader({ activeDinosaur, coins }: { activeDinosaur: DinosaurSt
 
 function ActiveDinoCompanionCard({ activeDinosaur }: { activeDinosaur: DinosaurState | null }) {
   return (
-    <section className="rounded-[34px] border-4 border-white bg-white/86 p-5 shadow-lg">
+    <section className="rounded-[24px] border-4 border-white bg-white/86 p-3 shadow-lg">
       <p className="text-sm font-black text-emerald-700">오늘의 동행자</p>
-      <div className="mt-4 flex items-center gap-4">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[28px] bg-gradient-to-b from-lime-100 to-emerald-200 shadow-inner">
+      <div className="mt-2 flex items-center gap-3">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-b from-lime-100 to-emerald-200 shadow-inner">
           <MiniDino />
         </div>
         <div>
-          <h4 className="text-2xl font-black text-emerald-950">{activeDinosaur?.name ?? '공룡 친구'}</h4>
-          <p className="mt-1 text-sm font-black leading-relaxed text-slate-500">모험 성공률이나 체력 소모 없이, 함께 다녀온 느낌을 주는 동행자예요.</p>
+          <h4 className="text-xl font-black text-emerald-950">{activeDinosaur?.name ?? '공룡 친구'}</h4>
+          <p className="mt-1 text-xs font-black leading-relaxed text-slate-500">함께 다녀온 느낌을 주는 동행자예요.</p>
         </div>
       </div>
     </section>
@@ -82,21 +82,21 @@ function ActiveDinoCompanionCard({ activeDinosaur }: { activeDinosaur: DinosaurS
 
 function AdventurePrepCard({ feedback }: { feedback: string }) {
   return (
-    <section className="rounded-[34px] border-4 border-white bg-gradient-to-b from-amber-100 to-lime-100 p-5 shadow-lg">
-      <p className="inline-flex items-center gap-2 rounded-full bg-white/82 px-4 py-2 text-sm font-black text-amber-800">
+    <section className="rounded-[24px] border-4 border-white bg-gradient-to-b from-amber-100 to-lime-100 p-3 shadow-lg">
+      <p className="inline-flex items-center gap-2 rounded-full bg-white/82 px-3 py-1.5 text-xs font-black text-amber-800">
         <Backpack className="h-4 w-4" />
         모험 준비
       </p>
-      <h4 className="mt-3 text-2xl font-black text-emerald-950">훈련 뒤에는 더 멀리</h4>
-      <p className="mt-2 font-black leading-relaxed text-emerald-800/80">모험 티켓은 훈련 1세트 완료 보상으로 연결할 예정이에요. 지금은 일부 지역을 무료 테스트로 열어두었습니다.</p>
-      <p className="mt-4 rounded-[20px] bg-white/82 px-4 py-3 text-sm font-black text-emerald-900">{feedback}</p>
+      <h4 className="mt-2 text-xl font-black text-emerald-950">훈련 뒤에는 더 멀리</h4>
+      <p className="mt-1 text-xs font-black leading-relaxed text-emerald-800/80">탐험으로 조각과 도감 단서를 얻어요.</p>
+      <p className="mt-2 rounded-[18px] bg-white/82 px-3 py-2 text-xs font-black text-emerald-900">{feedback}</p>
     </section>
   );
 }
 
 function AdventureAreaGrid({ selectedAreaId, coins, onSelectArea, onExplore }: { selectedAreaId?: string; coins: number; onSelectArea: (areaId: string) => void; onExplore: (areaId: string) => void }) {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
+    <section className="grid min-h-0 gap-3 md:grid-cols-3">
       {adventureAreas.map((area) => (
         <AdventureAreaCard key={area.id} area={area} isSelected={area.id === selectedAreaId} coins={coins} onSelect={() => onSelectArea(area.id)} onExplore={() => onExplore(area.id)} />
       ))}
@@ -110,19 +110,19 @@ function AdventureAreaCard({ area, isSelected, coins, onSelect, onExplore }: { k
   const disabled = !isReady || needsCoins || area.entryCost.type === 'ticket';
 
   return (
-    <article className={`rounded-[32px] border-4 p-4 shadow-lg transition ${isSelected ? 'border-emerald-300 bg-white/94' : 'border-white bg-white/82'} ${!isReady ? 'text-slate-500' : 'text-emerald-950'}`}>
+    <article className={`rounded-[24px] border-4 p-3 shadow-lg transition ${isSelected ? 'border-emerald-300 bg-white/94' : 'border-white bg-white/82'} ${!isReady ? 'text-slate-500' : 'text-emerald-950'}`}>
       <button onClick={onSelect} className="block w-full text-left">
-        <div className={`mb-4 flex h-28 items-center justify-center rounded-[28px] border-4 border-white ${getAreaTone(area)}`}>
-          {area.status === 'coming-soon' ? <LockKeyhole className="h-12 w-12" /> : <Map className="h-12 w-12" />}
+        <div className={`mb-3 flex h-20 items-center justify-center rounded-[20px] border-4 border-white ${getAreaTone(area)}`}>
+          {area.status === 'coming-soon' ? <LockKeyhole className="h-10 w-10" /> : <Map className="h-10 w-10" />}
         </div>
         <div className="flex items-start justify-between gap-2">
-          <h4 className="text-2xl font-black">{area.title}</h4>
+          <h4 className="text-xl font-black">{area.title}</h4>
           <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-black">{getStatusLabel(area)}</span>
         </div>
-        <p className="mt-3 min-h-16 text-sm font-black leading-relaxed text-slate-500">{area.summary}</p>
-        <p className="mt-3 rounded-[18px] bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800">입장 조건: {formatEntryCost(area)}</p>
-        {area.entryNote && <p className="mt-2 rounded-[16px] bg-white/72 px-3 py-2 text-xs font-black text-slate-500">{area.entryNote}</p>}
-        <div className="mt-3 flex flex-wrap gap-2">
+        <p className="mt-2 min-h-10 text-xs font-black leading-relaxed text-slate-500">{area.summary}</p>
+        <p className="mt-2 rounded-[16px] bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">입장 조건: {formatEntryCost(area)}</p>
+        {area.entryNote && <p className="mt-1.5 rounded-[14px] bg-white/72 px-3 py-1.5 text-xs font-black text-slate-500">{area.entryNote}</p>}
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {area.rewardCandidates.map((reward) => (
             <span key={`${area.id}-${reward.type}-${reward.itemId ?? reward.label}`} title={getRewardPurposeLabel(reward)} className="inline-flex items-center gap-1 rounded-full bg-white/86 px-3 py-1 text-xs font-black text-slate-600">
               <RewardIcon reward={reward} />
@@ -134,7 +134,7 @@ function AdventureAreaCard({ area, isSelected, coins, onSelect, onExplore }: { k
       <button
         disabled={disabled}
         onClick={onExplore}
-        className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-emerald-400 to-emerald-600 px-5 text-base font-black text-white shadow-[0_5px_0_#059669] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none"
+        className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[18px] border-4 border-white bg-gradient-to-b from-emerald-400 to-emerald-600 px-5 text-base font-black text-white shadow-[0_5px_0_#059669] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none"
       >
         <Compass className="h-5 w-5" />
         {getExploreButtonLabel(area, needsCoins)}
@@ -175,9 +175,9 @@ function AdventureResultModal({ result, onClose, onGoToDex, onGoToHatchery }: { 
           {result.hasDexHint && <p className="rounded-[20px] bg-sky-100 px-4 py-3 text-sm font-black text-sky-900">도감에 새로운 힌트가 추가되었어요! 지금은 메시지로 표시하고, 나중에 힌트 저장 상태와 연결할 수 있어요.</p>}
         </div>
         <div className="grid gap-2 border-t-4 border-white bg-white/90 p-4 sm:grid-cols-3">
-          <button onClick={onGoToDex} className="min-h-12 rounded-[18px] bg-sky-100 px-4 text-sm font-black text-sky-800 transition active:translate-y-1">도감으로 이동</button>
-          <button onClick={onGoToHatchery} className="min-h-12 rounded-[18px] bg-orange-100 px-4 text-sm font-black text-orange-800 transition active:translate-y-1">알 부화장으로 이동</button>
-          <button onClick={onClose} className="min-h-12 rounded-[18px] bg-emerald-500 px-4 text-sm font-black text-white transition active:translate-y-1">계속 모험하기</button>
+          <button onClick={onGoToDex} className="min-h-14 rounded-[18px] bg-sky-100 px-4 text-sm font-black text-sky-800 transition active:translate-y-1">도감으로 이동</button>
+          <button onClick={onGoToHatchery} className="min-h-14 rounded-[18px] bg-orange-100 px-4 text-sm font-black text-orange-800 transition active:translate-y-1">알 부화장으로 이동</button>
+          <button onClick={onClose} className="min-h-14 rounded-[18px] bg-emerald-500 px-4 text-sm font-black text-white transition active:translate-y-1">계속 모험하기</button>
         </div>
       </section>
     </div>

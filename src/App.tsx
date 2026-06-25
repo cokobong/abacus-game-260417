@@ -145,6 +145,8 @@ const initialInventory: InventoryItemState[] = [
 
 const hatchableDinosaurPool = dinosaurSpecies;
 const maxTrainingHistoryRecords = 30;
+const showDeveloperPanels = false;
+const showSettingsAdvancedPanels = true;
 
 const defaultGameState: GameState = {
   userProfile: null,
@@ -950,6 +952,7 @@ export default function App() {
   const isHatchingRef = useRef(false);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
+  const allowsPageScroll = activeTab === 'shop' || activeTab === 'settings';
 
   useEffect(() => {
     setCompletedTrainingSummary(null);
@@ -1786,16 +1789,16 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 pb-28 text-slate-800">
+    <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 text-slate-800">
       <div className="pointer-events-none fixed inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_20%_25%,rgba(255,255,255,0.9),transparent_16%),radial-gradient(circle_at_72%_20%,rgba(255,255,255,0.75),transparent_14%)]" />
-      <header className="sticky top-0 z-20 px-3 py-3 md:px-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[28px] border-4 border-white bg-white/82 px-3 py-3 shadow-[0_12px_30px_rgba(14,116,144,0.16)] backdrop-blur md:px-5">
+      <header className="relative z-20 shrink-0 px-3 py-2 md:px-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 rounded-[24px] border-4 border-white bg-white/82 px-3 py-2 shadow-[0_12px_30px_rgba(14,116,144,0.16)] backdrop-blur md:px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[22px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-400 text-white shadow-md">
-              <Baby className="h-8 w-8" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-400 text-white shadow-md">
+              <Baby className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-emerald-950 md:text-3xl">주산 공룡 모험</h1>
+              <h1 className="text-xl font-black text-emerald-950 md:text-2xl">주산 공룡 모험</h1>
               <p className="hidden text-sm font-black text-emerald-700/75 sm:block">주산훈련 → 보상 → 알부화와 성장</p>
             </div>
           </div>
@@ -1807,14 +1810,14 @@ export default function App() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-7xl px-3 py-3 md:px-6">
-        <section className="mb-4 flex items-center gap-3 rounded-[30px] border-4 border-white bg-white/72 p-3 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur md:p-4">
-          <div className={`flex h-16 w-16 items-center justify-center rounded-[24px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
-            <activeMeta.icon className={`h-8 w-8 ${activeMeta.color}`} />
+      <main className={`relative z-10 mx-auto min-h-0 w-full max-w-7xl px-3 py-2 md:px-4 ${allowsPageScroll ? 'flex-1 overflow-y-auto pb-[calc(6.5rem+env(safe-area-inset-bottom))]' : 'flex-1 overflow-hidden pb-[calc(5.75rem+env(safe-area-inset-bottom))]'}`}>
+        <section className="mb-2 flex items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
+            <activeMeta.icon className={`h-7 w-7 ${activeMeta.color}`} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-emerald-950">{activeMeta.label}</h2>
-            <p className="text-sm font-black text-emerald-700/70">화면 흐름과 디자인 방향을 확인하는 목업입니다.</p>
+            <h2 className="text-2xl font-black text-emerald-950">{activeMeta.label}</h2>
+            <p className="hidden text-xs font-black text-emerald-700/70 md:block">터치 화면 안에서 바로 사용할 수 있게 정리했어요.</p>
           </div>
         </section>
 
@@ -1949,8 +1952,8 @@ export default function App() {
         )}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 px-2 pb-2">
-        <div className="mx-auto grid max-w-5xl grid-cols-7 gap-1 rounded-[30px] border-4 border-white bg-white/90 p-2 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-30 px-2 pb-[calc(0.4rem+env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid max-w-5xl grid-cols-7 gap-1 rounded-[24px] border-4 border-white bg-white/90 p-1.5 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur">
           {mainTabs.map((tab) => {
             const Icon = tab.icon;
             const active = tab.id === activeTab;
@@ -1958,7 +1961,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-[22px] border-2 text-[10px] font-black transition active:translate-y-1 sm:text-sm ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[18px] border-2 text-[10px] font-black transition active:translate-y-1 sm:text-xs ${
                   active
                     ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_6px_0_rgba(15,23,42,0.16)]`
                     : 'border-transparent bg-transparent text-slate-500 hover:bg-sky-50'
@@ -2048,15 +2051,15 @@ function TrainingView({
   const problemExpression = currentProblem.expressionText ?? currentProblem.displayText;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <section className="game-panel p-3 md:p-4">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[26px] border-4 border-white bg-white/74 px-3 py-3 shadow-sm">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <section className="game-panel min-h-0 p-3 md:p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[22px] border-4 border-white bg-white/74 px-3 py-2 shadow-sm">
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={onGoToDino} className="min-h-11 rounded-[16px] bg-white px-4 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
               나가기
             </button>
             <div>
-              <h3 className="text-2xl font-black text-emerald-950 md:text-3xl">오늘의 주산훈련</h3>
+              <h3 className="text-xl font-black text-emerald-950 md:text-2xl">오늘의 주산훈련</h3>
               <p className="mt-0.5 text-sm font-black text-emerald-700/70">
                 {isSetComplete ? `세트 완료 · 정답 ${correctCount}/${totalProblems}` : `문제 ${currentProblemIndex + 1}/${totalProblems} · 정답 ${correctCount}개 · 오답 ${wrongCount}회`}
               </p>
@@ -2074,7 +2077,7 @@ function TrainingView({
         </div>
 
         {isSetComplete ? (
-          <div className="rounded-[34px] border-4 border-white bg-gradient-to-b from-lime-100 via-white to-amber-100 p-5 shadow-inner md:p-8">
+          <div className="rounded-[30px] border-4 border-white bg-gradient-to-b from-lime-100 via-white to-amber-100 p-4 shadow-inner md:p-5">
             <TrainingCompletePanel
               summary={completedTrainingSummary}
               totalProblems={totalProblems}
@@ -2089,7 +2092,7 @@ function TrainingView({
             />
           </div>
         ) : (
-          <div className="rounded-[32px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-4 shadow-inner md:p-6">
+          <div className="rounded-[32px] border-4 border-white bg-gradient-to-b from-cyan-100 via-white to-amber-100 p-4 shadow-inner">
             <CurrentProblemCard
               answer={answer}
               answerFeedback={answerFeedback}
@@ -2105,7 +2108,7 @@ function TrainingView({
           </div>
         )}
 
-        <div className="mt-4 rounded-[24px] border-4 border-white bg-white/74 px-4 py-3 shadow-sm">
+        <div className="mt-2 rounded-[20px] border-4 border-white bg-white/74 px-3 py-2 shadow-sm">
           {selectedLevelConfig ? (
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-500">
               <span className="text-cyan-700">{selectedLevelConfig.title} · {selectedLevelConfig.summary}</span>
@@ -2117,7 +2120,7 @@ function TrainingView({
           )}
         </div>
 
-        <details className="mt-5 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
+        {showDeveloperPanels && <details className="mt-5 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 생성된 문제 전체 보기</summary>
           <div className="mt-3 grid gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-xs font-black text-slate-600 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2143,10 +2146,10 @@ function TrainingView({
               </button>
             ))}
           </div>
-        </details>
+        </details>}
       </section>
 
-      <aside className="grid content-start gap-3">
+      <aside className="grid min-h-0 content-start gap-2">
         <ActiveDinoReactionPanel
           dinosaur={activeDinosaur}
           activeOwnedDinosaur={activeOwnedDinosaur}
@@ -2155,9 +2158,9 @@ function TrainingView({
           staminaMessage={staminaMessage}
           onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
         />
-        <div className="rounded-[28px] border-4 border-white bg-white/84 p-4 shadow-lg">
-          <h4 className="text-xl font-black text-emerald-950">훈련 메모</h4>
-          <div className="mt-3 grid gap-2">
+        <div className="hidden rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+          <h4 className="text-lg font-black text-emerald-950">훈련 메모</h4>
+          <div className="mt-2 grid gap-1.5">
             {lastRewards.length > 0 ? (
               lastRewards.map((reward) => (
                 <p key={reward.id} className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800">
@@ -2168,7 +2171,7 @@ function TrainingView({
               <p className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-500">정답 후 여기에 표시됩니다.</p>
             )}
           </div>
-          <p className="mt-3 rounded-[20px] bg-cyan-50 px-4 py-3 text-sm font-black leading-relaxed text-cyan-800">
+          <p className="mt-2 rounded-[18px] bg-cyan-50 px-3 py-2 text-xs font-black leading-relaxed text-cyan-800">
             훈련 중에는 체력만 확인해요. 경험치와 기분 변화는 완료 화면에서 정리됩니다.
           </p>
         </div>
@@ -2213,12 +2216,12 @@ function CurrentProblemCard({
   return (
     <>
       <div className="text-center">
-        <p className="mb-2 text-sm font-black text-cyan-700">문제 {currentProblemIndex + 1}/{totalProblems}</p>
-        <p className="mx-auto max-w-4xl break-words text-6xl font-black leading-tight text-emerald-950 md:text-8xl">{problemExpression}</p>
+        <p className="mb-1 text-sm font-black text-cyan-700">문제 {currentProblemIndex + 1}/{totalProblems}</p>
+        <p className="mx-auto max-w-5xl break-words text-6xl font-black leading-tight text-emerald-950 md:text-8xl">{problemExpression}</p>
       </div>
-      <div className="mx-auto mt-7 grid max-w-4xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto mt-5 grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_310px]">
         <div className="grid content-start gap-3">
-          <label className="grid gap-2 rounded-[26px] border-4 border-white bg-white/86 p-4 text-left shadow-sm">
+          <label className="grid gap-2 rounded-[24px] border-4 border-white bg-white/86 p-4 text-left shadow-sm">
             <span className="text-sm font-black text-emerald-700">정답 입력</span>
             <input
               value={answer}
@@ -2226,7 +2229,7 @@ function CurrentProblemCard({
               disabled={!canSubmitAnswer}
               inputMode="numeric"
               placeholder="정답을 입력하세요"
-              className="min-h-20 rounded-[20px] bg-slate-50 px-5 text-4xl font-black text-slate-900 outline-none focus:bg-cyan-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              className="min-h-20 rounded-[20px] bg-slate-50 px-5 text-4xl font-black text-slate-900 focus:bg-cyan-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             />
           </label>
           <AbacusInputGuide bluetoothInput={bluetoothInput} />
@@ -2234,11 +2237,11 @@ function CurrentProblemCard({
         <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
       </div>
       {!canSubmitAnswer && (
-        <p className="mx-auto mt-3 max-w-xl rounded-[20px] border-4 border-white bg-amber-100 px-4 py-3 text-center text-sm font-black text-amber-900">
+        <p className="mx-auto mt-2 max-w-xl rounded-[18px] border-4 border-white bg-amber-100 px-4 py-2 text-center text-sm font-black text-amber-900">
           {staminaMessage}
         </p>
       )}
-      <p className="mx-auto mt-5 max-w-xl rounded-[24px] border-4 border-white bg-white/90 px-5 py-4 text-center text-lg font-black text-emerald-900 shadow-sm">{answerFeedback}</p>
+      <p className="mx-auto mt-4 max-w-2xl rounded-[22px] border-4 border-white bg-white/90 px-5 py-3 text-center text-lg font-black text-emerald-900 shadow-sm">{answerFeedback}</p>
     </>
   );
 }
@@ -2247,7 +2250,7 @@ function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolea
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   return (
-    <div className="rounded-[26px] border-4 border-white bg-white/82 p-3 shadow-sm">
+    <div className="rounded-[22px] border-4 border-white bg-white/82 p-2 shadow-sm">
       <div className="grid grid-cols-3 gap-2">
         {keys.map((key) => (
           <button
@@ -2287,7 +2290,7 @@ function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolea
 
 function AbacusInputGuide({ bluetoothInput }: { bluetoothInput: BluetoothNotificationPayload | null }) {
   return (
-    <div className="grid gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-sm font-black text-slate-600 shadow-sm">
+    <div className="grid gap-1.5 rounded-[20px] border-4 border-white bg-white/70 px-3 py-2 text-xs font-black text-slate-600 shadow-sm">
       <p className="text-center text-emerald-900">주판알을 답에 맞게 움직인 뒤 리턴 버튼을 눌러주세요.</p>
       <p className="text-center text-xs text-slate-500">Bluetooth 주판이 없을 때 숫자패드로 입력할 수 있어요.</p>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -2317,7 +2320,7 @@ function ActiveDinoReactionPanel({
   const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
 
   return (
-    <div className="rounded-[30px] border-4 border-white bg-white/86 p-4 shadow-lg">
+    <div className="rounded-[24px] border-4 border-white bg-white/86 p-3 shadow-lg">
       <div className="mb-3 flex items-center justify-between gap-2">
         <button
           aria-label="이전 훈련 공룡"
@@ -2341,17 +2344,17 @@ function ActiveDinoReactionPanel({
           <ChevronRight className="h-7 w-7" />
         </button>
       </div>
-      <div className="flex min-h-36 items-end justify-center rounded-[28px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-3 shadow-inner">
+      <div className="flex min-h-24 items-end justify-center rounded-[22px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-2 shadow-inner">
         <DinoAvatar size="small" />
       </div>
-      <div className="mt-4 grid gap-2 rounded-[22px] border-4 border-white bg-white/80 p-3 shadow-sm">
+      <div className="mt-2 grid gap-1.5 rounded-[20px] border-4 border-white bg-white/80 p-2 shadow-sm">
         <DinoTrainingMeter label="EXP" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <DinoTrainingMeter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
         <DinoTrainingMeter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
         <p className="rounded-[16px] bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">{staminaMessage}</p>
       </div>
-      <p className="mt-3 rounded-[20px] bg-cyan-50 px-4 py-3 text-center text-sm font-black leading-relaxed text-cyan-800">{reaction}</p>
-      <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
+      <p className="mt-2 rounded-[18px] bg-cyan-50 px-3 py-2 text-center text-xs font-black leading-relaxed text-cyan-800">{reaction}</p>
+      <p className="mt-1.5 rounded-full bg-violet-100 px-3 py-1.5 text-center text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
     </div>
   );
 }
@@ -2399,12 +2402,12 @@ function TrainingCompletePanel({
   const rewardText = setCompleteRewards.length > 0 ? setCompleteRewards.map((reward) => reward.label).join(', ') : '정산 대기';
 
   return (
-    <div className="mx-auto mt-5 grid max-w-xl gap-3 rounded-[28px] border-4 border-white bg-lime-100 px-5 py-5 text-emerald-950 shadow-sm">
+    <div className="mx-auto grid max-w-xl gap-2 rounded-[24px] border-4 border-white bg-lime-100 px-4 py-3 text-emerald-950 shadow-sm">
       <div className="text-center">
-        <h4 className="text-3xl font-black">훈련 완료!</h4>
+        <h4 className="text-2xl font-black">훈련 완료!</h4>
         <p className="mt-1 text-sm font-black text-emerald-700">{activeDinosaurName}도 끝까지 함께했어요!</p>
       </div>
-      <div className="grid gap-2 rounded-[22px] bg-white/80 p-4 text-sm font-black text-slate-700">
+      <div className="grid gap-1 rounded-[20px] bg-white/80 p-3 text-sm font-black text-slate-700">
         <div className="flex justify-between gap-3">
           <span>총 문제</span>
           <span>{summary?.totalProblems ?? totalProblems}문제</span>
@@ -2438,7 +2441,7 @@ function TrainingCompletePanel({
           <span>{hatchReward ? `${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개` : '정산 중'}</span>
         </div>
       </div>
-      <div className="rounded-[20px] bg-white/70 px-4 py-3 text-sm font-black text-emerald-800">
+      <div className="rounded-[18px] bg-white/70 px-3 py-2 text-xs font-black text-emerald-800">
         <p>공룡 상태 변화: 경험치와 행복감이 반영됐고, 체력은 훈련 중 문제를 맞힐 때마다 소모됐어요.</p>
         {lastTrainingEffects.length > 0 && (
           <div className="mt-2 grid gap-2">
@@ -2450,15 +2453,15 @@ function TrainingCompletePanel({
           </div>
         )}
       </div>
-      <p className="rounded-[20px] bg-white/70 px-4 py-3 text-center text-sm font-black text-emerald-800">세트 완료 보상: {rewardText}</p>
+      <p className="rounded-[18px] bg-white/70 px-3 py-2 text-center text-sm font-black text-emerald-800">세트 완료 보상: {rewardText}</p>
       <div className="grid gap-2 sm:grid-cols-3">
-        <button onClick={onRestartTraining} className="rounded-full bg-cyan-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#0891b2] transition active:translate-y-1 active:shadow-none">
+        <button onClick={onRestartTraining} className="min-h-14 rounded-full bg-cyan-500 px-4 text-sm font-black text-white shadow-[0_4px_0_#0891b2] transition active:translate-y-1 active:shadow-none">
           다시 훈련하기
         </button>
-        <button onClick={onGoToDino} className="rounded-full bg-amber-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#b45309] transition active:translate-y-1 active:shadow-none">
+        <button onClick={onGoToDino} className="min-h-14 rounded-full bg-amber-500 px-4 text-sm font-black text-white shadow-[0_4px_0_#b45309] transition active:translate-y-1 active:shadow-none">
           우리 공룡 보러가기
         </button>
-        <button onClick={onGoToHatchery} className="rounded-full bg-orange-500 px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#c2410c] transition active:translate-y-1 active:shadow-none">
+        <button onClick={onGoToHatchery} className="min-h-14 rounded-full bg-orange-500 px-4 text-sm font-black text-white shadow-[0_4px_0_#c2410c] transition active:translate-y-1 active:shadow-none">
           알 부화장 가기
         </button>
       </div>
@@ -2538,30 +2541,30 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 p-4 text-slate-800 md:p-8">
-      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center justify-center">
-        <section className="relative grid w-full gap-6 overflow-hidden rounded-[40px] border-4 border-white bg-white/84 p-6 shadow-[0_24px_60px_rgba(14,116,144,0.22)] backdrop-blur md:grid-cols-[1fr_0.9fr] md:p-10">
+    <div className="h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 p-4 text-slate-800 md:p-6">
+      <main className="mx-auto flex h-full max-w-5xl items-center justify-center">
+        <section className="relative grid w-full gap-4 overflow-hidden rounded-[32px] border-4 border-white bg-white/84 p-4 shadow-[0_24px_60px_rgba(14,116,144,0.22)] backdrop-blur md:grid-cols-[1fr_0.82fr] md:p-6">
           <SkyDecor />
           <div className="relative z-10">
-            <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border-2 border-cyan-200 bg-white px-5 py-2 text-sm font-black text-cyan-800 shadow-sm">
+            <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border-2 border-cyan-200 bg-white px-4 py-1.5 text-sm font-black text-cyan-800 shadow-sm">
               <Sparkles className="h-4 w-4" />
               처음 만나는 공룡 친구
             </div>
-            <h1 className="text-4xl font-black leading-tight text-emerald-950 md:text-6xl">프로필 만들기</h1>
-            <p className="mt-4 max-w-lg text-lg font-black leading-relaxed text-emerald-800/80">이름을 정하고 대표 공룡과 함께 주산 모험을 시작해요.</p>
+            <h1 className="text-4xl font-black leading-tight text-emerald-950 md:text-5xl">프로필 만들기</h1>
+            <p className="mt-2 max-w-lg text-base font-black leading-relaxed text-emerald-800/80">이름을 정하고 대표 공룡과 함께 주산 모험을 시작해요.</p>
 
-            <div className="mt-7 grid gap-4">
+            <div className="mt-4 grid gap-3">
               <ProfileInput label="아이 이름/닉네임" value={childName} placeholder="친구" onChange={setChildName} />
-              <div className="rounded-[24px] border-4 border-white bg-white/90 p-4 shadow-sm">
+              <div className="rounded-[22px] border-4 border-white bg-white/90 p-3 shadow-sm">
                 <p className="text-sm font-black text-emerald-700">첫 번째 공룡 친구를 골라볼까요?</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   {starterSpecies.map((species) => {
                     const isSelected = species.speciesId === selectedSpeciesId;
                     return (
                       <button
                         key={species.speciesId}
                         onClick={() => selectStarterSpecies(species.speciesId)}
-                        className={`min-h-20 rounded-[20px] border-4 px-4 py-3 text-left transition active:translate-y-1 ${
+                        className={`min-h-16 rounded-[18px] border-4 px-3 py-2 text-left transition active:translate-y-1 ${
                           isSelected ? 'border-cyan-300 bg-cyan-100 text-cyan-950 shadow-[0_5px_0_#67e8f9]' : 'border-white bg-slate-50 text-slate-700 hover:bg-cyan-50'
                         }`}
                       >
@@ -2577,16 +2580,16 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
 
             <button
               onClick={submitProfile}
-              className="mt-7 inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-[24px] border-4 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-8 text-xl font-black text-white shadow-[0_8px_0_#0891b2,0_18px_24px_rgba(8,145,178,0.24)] transition hover:brightness-105 active:translate-y-1 active:shadow-[0_4px_0_#0891b2] sm:w-fit"
+              className="mt-4 inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-[24px] border-4 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-8 text-xl font-black text-white shadow-[0_8px_0_#0891b2,0_18px_24px_rgba(8,145,178,0.24)] transition hover:brightness-105 active:translate-y-1 active:shadow-[0_4px_0_#0891b2] sm:w-fit"
             >
               모험 시작하기
               <Play className="h-6 w-6 fill-white" />
             </button>
           </div>
 
-          <div className="relative z-10 flex min-h-[420px] items-end justify-center rounded-[36px] bg-gradient-to-b from-sky-100 via-emerald-50 to-lime-200 p-6 shadow-inner">
+          <div className="relative z-10 flex min-h-[360px] items-end justify-center rounded-[28px] bg-gradient-to-b from-sky-100 via-emerald-50 to-lime-200 p-4 shadow-inner">
             <div className="absolute bottom-0 left-0 right-0 h-28 rounded-t-[50%] bg-lime-300/70" />
-            <div className="absolute left-8 top-8 rounded-[24px] border-4 border-white bg-white/90 px-5 py-3 shadow-lg">
+            <div className="absolute left-5 top-5 rounded-[20px] border-4 border-white bg-white/90 px-4 py-2 shadow-lg">
               <p className="text-sm font-black text-cyan-700">시작 공룡</p>
               <p className="text-3xl font-black text-slate-950">{dinosaurName.trim() || selectedSpecies?.defaultName || '몽이'}</p>
               <p className="mt-1 text-xs font-black text-slate-500">{selectedSpecies?.displayName ?? '공룡 친구'}</p>
@@ -2601,13 +2604,13 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
 
 function ProfileInput({ label, value, placeholder, onChange }: { label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
   return (
-    <label className="block rounded-[24px] border-4 border-white bg-white/90 p-4 shadow-sm">
+    <label className="block rounded-[22px] border-4 border-white bg-white/90 p-3 shadow-sm">
       <span className="text-sm font-black text-emerald-700">{label}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 min-h-12 w-full rounded-[18px] bg-slate-50 px-4 text-lg font-black text-slate-900 outline-none focus:bg-cyan-50"
+        className="mt-2 min-h-14 w-full rounded-[18px] bg-slate-50 px-4 text-lg font-black text-slate-900 focus:bg-cyan-50"
       />
     </label>
   );
@@ -2681,16 +2684,16 @@ function SettingsView({
 
   return (
     <div className="grid gap-5">
-      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
-        <h3 className="text-3xl font-black text-slate-950">설정</h3>
-        <p className="mt-2 font-black text-slate-500">아이의 실제 교재 진도에 맞춰 복습할 단계를 고릅니다.</p>
+      <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <h3 className="text-2xl font-black text-slate-950">설정</h3>
+        <p className="mt-1 text-sm font-black text-slate-500">교재 진도에 맞춰 복습할 단계를 고릅니다.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-[260px_1fr]">
           <label className="grid gap-2 text-sm font-black text-emerald-800">
             교재 단계
             <select
               value={String(selectedLevel)}
               onChange={(event) => onSelectLevel(Number(event.target.value))}
-              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               {levels.map((level) => (
                 <option key={level.level} value={level.level}>
@@ -2717,7 +2720,7 @@ function SettingsView({
                 const value = event.target.value;
                 onProblemCountOverride(value === 'stage-default' ? 'stage-default' : (Number(value) as ProblemCountOverride));
               }}
-              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               <option value="stage-default">단계 기본값 ({getRecommendedProblemCount(selectedLevelConfig, selectedStage)}문제)</option>
               <option value="5">5문제</option>
@@ -2731,7 +2734,7 @@ function SettingsView({
             <select
               value={String(numberCountOverride)}
               onChange={(event) => onNumberCountOverride(normalizeNumberCountOverride(event.target.value))}
-              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               <option value="stage-default">{formatNumberCountOverride('stage-default', selectedLevelStages)}</option>
               <option value="3">3개</option>
@@ -2745,7 +2748,7 @@ function SettingsView({
             <select
               value={digitTypeOverride}
               onChange={(event) => onDigitTypeOverride(normalizeDigitTypeOverride(event.target.value))}
-              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               <option value="stage-default">{formatDigitTypeOverride('stage-default', selectedStage)}</option>
               <option value="one-digit">한 자리</option>
@@ -2758,7 +2761,7 @@ function SettingsView({
             <select
               value={operationsOverride}
               onChange={(event) => onOperationsOverride(normalizeOperationsOverride(event.target.value))}
-              className="min-h-12 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               <option value="stage-default">{formatOperationsOverride('stage-default', selectedLevelStages)}</option>
               <option value="add">덧셈만</option>
@@ -2781,7 +2784,7 @@ function SettingsView({
           <SettingChip label="세트 문제 수" value={`${effectiveProblemCount}문제`} />
           <SettingChip label="연산 방식" value={effectiveOperationsLabel} />
         </div>
-        <details className="mt-4 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
+        {showSettingsAdvancedPanels && <details className="mt-4 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용 세부 단계 설정</summary>
           <p className="mt-2 text-xs font-black text-slate-500">세부 stage id는 내부 문제 생성과 개발자 모드용입니다. 기본 부모 설정 화면에서는 교재 단계만 사용합니다.</p>
           <label className="mt-3 grid gap-2 text-xs font-black text-emerald-800">
@@ -2789,7 +2792,7 @@ function SettingsView({
             <select
               value={selectedStageId}
               onChange={(event) => onSelectStage(event.target.value)}
-              className="min-h-11 rounded-[16px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-cyan-300"
+              className="min-h-11 rounded-[16px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               {(selectedLevelConfig?.stageIds.length ? selectedLevelConfig.stageIds : [selectedStageId]).map((stageId) => {
                 const stage = getStageById(stageId);
@@ -2807,8 +2810,8 @@ function SettingsView({
           <p className="mt-1 text-xs font-black text-slate-500">
             자리수 설정: {digitTypeOverride} → {effectiveDigitTypeLabel} · generatorStatus: {selectedStage?.generatorStatus ?? '없음'} · curriculumStatus: {selectedStage?.curriculumStatus ?? '없음'}
           </p>
-        </details>
-        <details className="mt-4 rounded-[24px] border-4 border-dashed border-lime-100 bg-white/60 px-4 py-3">
+        </details>}
+        {showSettingsAdvancedPanels && <details className="mt-4 rounded-[24px] border-4 border-dashed border-lime-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 학습 상태 평가</summary>
           <div className="mt-3 grid gap-2 text-xs font-black text-slate-600">
             <p className="rounded-[18px] bg-white/80 px-4 py-3">
@@ -2823,8 +2826,8 @@ function SettingsView({
               {nextTrainingRecommendation.suggestedStageId ? ` · ${nextTrainingRecommendation.suggestedStageId}` : ''}
             </p>
           </div>
-        </details>
-        <details className="mt-4 rounded-[24px] border-4 border-dashed border-emerald-100 bg-white/60 px-4 py-3">
+        </details>}
+        {showSettingsAdvancedPanels && <details className="mt-4 rounded-[24px] border-4 border-dashed border-emerald-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 최근 훈련 기록</summary>
           <div className="mt-3 grid gap-2">
             {trainingHistory.length > 0 ? (
@@ -2838,29 +2841,29 @@ function SettingsView({
               <p className="rounded-[18px] bg-white/80 px-4 py-3 text-xs font-black text-slate-500">아직 저장된 훈련 기록이 없습니다.</p>
             )}
           </div>
-        </details>
+        </details>}
       </section>
-      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
+      <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
         <h3 className="text-2xl font-black text-emerald-950">프로필</h3>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <SettingChip label="이름" value={userProfile?.childName ?? '미설정'} />
-          <SettingChip label="나이/학년" value={userProfile?.ageOrGrade ?? '미설정'} />
-          <SettingChip label="대표 공룡" value={userProfile?.dinosaurName ?? '미설정'} />
-          <SettingChip label="부모 모드" value={userProfile?.parentModeEnabled ? '켜짐' : '꺼짐'} />
+            <SettingChip label="이름" value={userProfile?.childName ?? '미설정'} />
+            <SettingChip label="나이/학년" value={userProfile?.ageOrGrade ?? '미설정'} />
+            <SettingChip label="대표 공룡" value={userProfile?.dinosaurName ?? '미설정'} />
+            <SettingChip label="부모 모드" value={userProfile?.parentModeEnabled ? '켜짐' : '꺼짐'} />
         </div>
       </section>
-      <section className="rounded-[34px] border-4 border-white bg-white/84 p-5 shadow-lg">
+      <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
         <h3 className="text-2xl font-black text-slate-950">저장 데이터</h3>
         <p className="mt-2 font-black text-slate-500">이 브라우저의 localStorage에 현재 코인, 공룡, 알, 인벤토리를 저장합니다.</p>
         <p className="mt-4 rounded-[22px] border-4 border-white bg-slate-50 px-4 py-3 font-black text-slate-700 shadow-sm">{storageFeedback}</p>
         <button
           onClick={onResetSavedGameState}
-          className="mt-4 rounded-full bg-slate-800 px-5 py-3 text-sm font-black text-white shadow-[0_4px_0_#0f172a] transition active:translate-y-1 active:shadow-none"
+          className="mt-4 min-h-14 rounded-full bg-slate-800 px-5 text-sm font-black text-white shadow-[0_4px_0_#0f172a] transition active:translate-y-1 active:shadow-none"
         >
           프로필/저장 데이터 초기화
         </button>
       </section>
-      <section className="rounded-[28px] border-4 border-dashed border-slate-300 bg-white/70 p-4 md:p-5">
+      {showSettingsAdvancedPanels && <section className="rounded-[28px] border-4 border-dashed border-slate-300 bg-white/70 p-4 md:p-5">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-white">
             <Bluetooth className="h-6 w-6" />
@@ -2873,7 +2876,7 @@ function SettingsView({
         <div className="scale-[0.98] rounded-[24px] bg-white/70 p-2">
           <BluetoothTestPanel onNotification={onBluetoothNotification} />
         </div>
-      </section>
+      </section>}
     </div>
   );
 }

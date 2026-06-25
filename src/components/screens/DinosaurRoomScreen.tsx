@@ -7,6 +7,7 @@ import { getGrowthStageLabel } from '../../utils/dinosaurGrowth';
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
+const showDeveloperPanels = false;
 
 export interface DinosaurRoomScreenProps {
   view: DinoView;
@@ -49,20 +50,20 @@ export function DinosaurRoomScreen({
 
   if (view === 'playground') {
     return (
-      <section className="game-panel p-4 md:p-6">
-        <button onClick={() => onView('care')} className="mb-4 rounded-full border-4 border-white bg-white/90 px-5 py-3 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
+      <section className="game-panel h-full min-h-0 p-3">
+        <button onClick={() => onView('care')} className="mb-2 min-h-12 rounded-full border-4 border-white bg-white/90 px-5 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
           우리 공룡으로 돌아가기
         </button>
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          <div className="relative flex min-h-[520px] flex-col items-center justify-end overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-6 text-center shadow-inner">
+        <div className="grid min-h-0 gap-4 lg:grid-cols-[1fr_280px]">
+          <div className="relative flex min-h-[clamp(380px,calc(100vh-15rem),560px)] flex-col items-center justify-end overflow-hidden rounded-[32px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 text-center shadow-inner">
             <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-lime-400/70" />
             <DinoAvatar size="hero" />
-            <h3 className="relative z-10 text-4xl font-black text-emerald-950">작은 놀이터</h3>
-            <p className="relative z-10 mt-2 rounded-full bg-white/90 px-5 py-2 font-black text-emerald-700 shadow-sm">{feedback}</p>
+            <h3 className="relative z-10 text-3xl font-black text-emerald-950">작은 놀이터</h3>
+            <p className="relative z-10 mt-2 rounded-full bg-white/90 px-4 py-1.5 text-sm font-black text-emerald-700 shadow-sm">{feedback}</p>
           </div>
           <div className="grid content-start gap-3">
             <DinosaurStateMiniPanel dinosaur={dinosaur} />
-            <div className="rounded-[26px] border-4 border-white bg-lime-100 px-5 py-4 shadow-sm">
+            <div className="rounded-[22px] border-4 border-white bg-lime-100 px-4 py-3 shadow-sm">
               <p className="text-sm font-black text-emerald-700">최근 변화</p>
               <p className="mt-1 text-lg font-black text-emerald-950">{feedback}</p>
             </div>
@@ -76,12 +77,12 @@ export function DinosaurRoomScreen({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
-      <aside className="grid content-start gap-5 xl:order-1">
+    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_230px]">
+      <aside className="grid min-h-0 content-start gap-3 xl:order-1">
         <FoodInventoryPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} onFeed={onFeed} />
       </aside>
 
-      <section className="game-panel overflow-hidden p-3 md:p-4 xl:order-2">
+      <section className="game-panel min-h-0 overflow-hidden p-3 xl:order-2">
         <DinosaurMainCard
           dinosaur={dinosaur}
           activeOwnedDinosaur={activeOwnedDinosaur}
@@ -93,18 +94,18 @@ export function DinosaurRoomScreen({
         />
       </section>
 
-      <aside className="grid content-start gap-4 xl:order-3">
-        <section className="rounded-[24px] border-4 border-white bg-white/84 p-4 shadow-sm">
+      <aside className="grid min-h-0 content-start gap-3 xl:order-3">
+        <section className="rounded-[22px] border-4 border-white bg-white/84 p-3 shadow-sm">
           <p className="text-xs font-black text-emerald-700">오늘의 반응</p>
           <p className="mt-1 text-base font-black leading-relaxed text-emerald-950">{getDinosaurMoodText(dinosaur, feedback)}</p>
-          <button onClick={() => onView('playground')} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[16px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-500 px-4 text-sm font-black text-white shadow-green transition active:translate-y-1">
+          <button onClick={() => onView('playground')} className="mt-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[16px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-500 px-4 text-sm font-black text-white shadow-green transition active:translate-y-1">
             <Heart className="h-4 w-4" />
             놀이터로 이동
           </button>
         </section>
         <DinosaurStateMiniPanel dinosaur={dinosaur} />
         <CostumeEquipPanel activeOwnedDinosaur={activeOwnedDinosaur} ownedCostumes={ownedCostumes} onEquipCostume={onEquipCostume} />
-        <DeveloperDinosaurDebugPanel dinosaur={dinosaur} activeOwnedDinosaur={activeOwnedDinosaur} inventory={inventory} />
+        {showDeveloperPanels && <DeveloperDinosaurDebugPanel dinosaur={dinosaur} activeOwnedDinosaur={activeOwnedDinosaur} inventory={inventory} />}
       </aside>
     </div>
   );
@@ -128,13 +129,13 @@ function DinosaurMainCard({
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
 }) {
   return (
-    <section className="relative min-h-[660px] overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 shadow-inner md:p-6">
-      <div className="absolute bottom-0 left-0 right-0 h-40 rounded-t-[50%] bg-lime-400/70" />
-      <div className="absolute left-5 top-5 z-20 rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 shadow-lg">
+    <section className="relative min-h-[clamp(460px,calc(100vh-14.5rem),610px)] overflow-hidden rounded-[34px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 shadow-inner">
+      <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-lime-400/70" />
+      <div className="absolute left-4 top-4 z-20 rounded-[18px] border-4 border-white bg-white/90 px-3 py-2 shadow-lg">
         <p className="text-xs font-black text-amber-700">대표 공룡</p>
-        <h3 className="text-3xl font-black text-emerald-950 md:text-5xl">{dinosaur.name}</h3>
+        <h3 className="text-2xl font-black text-emerald-950 md:text-4xl">{dinosaur.name}</h3>
       </div>
-      <div className="absolute right-5 top-5 z-20 rounded-[22px] border-4 border-white bg-amber-100 px-4 py-3 text-sm font-black text-amber-900 shadow-lg">
+      <div className="absolute right-4 top-4 z-20 rounded-[18px] border-4 border-white bg-amber-100 px-3 py-2 text-xs font-black text-amber-900 shadow-lg">
         {activeSpeciesName} · {getGrowthStageLabel(dinosaur.growthStage)} · Lv. {dinosaur.level}
       </div>
       {ownedCount > 1 && (
@@ -155,13 +156,13 @@ function DinosaurMainCard({
           </button>
         </>
       )}
-      <div className="relative z-10 flex min-h-[570px] items-end justify-center pb-16 pt-28">
+      <div className="relative z-10 flex min-h-[clamp(390px,calc(100vh-18rem),520px)] items-end justify-center pb-16 pt-24">
         <DinoAvatar size="hero" />
       </div>
-      <div className="absolute inset-x-5 bottom-5 z-20 rounded-[26px] border-4 border-white bg-white/92 px-5 py-4 text-center shadow-lg">
-        <p className="text-xl font-black text-emerald-950">{feedback || `${dinosaur.name}가 기다리고 있어요!`}</p>
+      <div className="absolute inset-x-4 bottom-4 z-20 rounded-[22px] border-4 border-white bg-white/92 px-4 py-3 text-center shadow-lg">
+        <p className="text-lg font-black text-emerald-950">{feedback || `${dinosaur.name}가 기다리고 있어요!`}</p>
         <p className="mt-1 text-sm font-black leading-relaxed text-emerald-700/75">{activeSpeciesDescription}</p>
-        <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
+        <p className="mt-1.5 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
       </div>
     </section>
   );
@@ -200,20 +201,20 @@ function FoodInventoryPanel({
   const selectedFood = selectedFoodItemId ? getFoodItemConfig(selectedFoodItemId) : null;
 
   return (
-    <section className="rounded-[30px] border-4 border-white bg-white/84 p-4 shadow-lg">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className="rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-amber-700">먹이 가방</p>
           <h4 className="text-xl font-black text-emerald-950">먹이 적용</h4>
         </div>
         <Utensils className="h-7 w-7 text-orange-500" />
       </div>
-      <div className="mb-3 rounded-[20px] bg-amber-50 px-4 py-3">
+      <div className="mb-2 rounded-[18px] bg-amber-50 px-3 py-2">
         <p className="text-xs font-black text-amber-700">선택한 먹이</p>
         <p className="mt-1 text-base font-black text-amber-950">{selectedFood ? selectedFood.name : '먹이를 선택해주세요.'}</p>
         <p className="mt-1 text-xs font-black text-amber-700">행복할수록 체력이 더 잘 회복돼요.</p>
       </div>
-      <button onClick={onFeed} className="mb-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1">
+      <button onClick={onFeed} className="mb-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1">
         <Utensils className="h-5 w-5" />
         먹이 주기
       </button>
@@ -227,7 +228,7 @@ function FoodInventoryPanel({
               key={inventoryItem.itemId}
               disabled={isDisabled}
               onClick={() => onSelectFood(inventoryItem.itemId)}
-              className={`min-h-20 rounded-[20px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
+              className={`min-h-16 rounded-[18px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
                 isSelected ? 'border-amber-400 bg-gradient-to-b from-yellow-200 to-orange-200 text-amber-950 shadow-[0_6px_0_#f59e0b]' : 'border-white bg-gradient-to-b from-amber-100 to-orange-100'
               } ${isDisabled ? 'cursor-not-allowed opacity-45 shadow-none' : 'hover:brightness-105'}`}
             >
@@ -235,8 +236,8 @@ function FoodInventoryPanel({
                 <span className="font-black text-amber-950">{food.name}</span>
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-orange-700">x{inventoryItem.quantity}</span>
               </div>
-              <p className="mt-2 text-xs font-black text-amber-700">{formatDinosaurStatChanges(food.effect)}</p>
-              {isSelected && <p className="mt-2 w-fit rounded-full bg-amber-500 px-3 py-1 text-xs font-black text-white">선택됨</p>}
+              <p className="mt-1 text-xs font-black text-amber-700">{formatDinosaurStatChanges(food.effect)}</p>
+              {isSelected && <p className="mt-1 w-fit rounded-full bg-amber-500 px-3 py-0.5 text-xs font-black text-white">선택됨</p>}
             </button>
           );
         })}
@@ -255,15 +256,15 @@ function CostumeEquipPanel({
   onEquipCostume: (itemId: string) => void;
 }) {
   return (
-    <section className="rounded-[30px] border-4 border-white bg-white/84 p-4 shadow-lg">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className="rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-violet-700">코스튬 옷장</p>
           <h4 className="text-xl font-black text-emerald-950">코스튬 적용</h4>
         </div>
         <Shirt className="h-7 w-7 text-violet-500" />
       </div>
-      <div className="mb-3 grid gap-2 rounded-[18px] bg-violet-50 px-4 py-3 text-xs font-black text-violet-800">
+      <div className="mb-2 grid gap-1 rounded-[18px] bg-violet-50 px-3 py-2 text-xs font-black text-violet-800">
         <p className="text-violet-900">착용 중</p>
         {costumeSlots.map((slot) => (
           <div key={slot} className="flex items-center justify-between gap-3">
@@ -272,7 +273,7 @@ function CostumeEquipPanel({
           </div>
         ))}
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         {ownedCostumes.length === 0 ? (
           <p className="rounded-[20px] bg-slate-100 px-4 py-3 text-sm font-black text-slate-500">상점에서 코스튬을 구매하면 여기에 표시돼요.</p>
         ) : (
@@ -358,13 +359,13 @@ function getExpPercent(exp: number, expToNextLevel?: number) {
 }
 
 function DinoAvatar({ size }: { size: 'small' | 'large' | 'hero' }) {
-  const shellSize = size === 'hero' ? 'h-[360px] w-[360px]' : size === 'large' ? 'h-64 w-64' : 'h-28 w-28';
-  const bodySize = size === 'hero' ? 'h-52 w-56' : size === 'large' ? 'h-36 w-40' : 'h-16 w-20';
-  const headSize = size === 'hero' ? 'h-36 w-40' : size === 'large' ? 'h-24 w-28' : 'h-12 w-14';
+  const shellSize = size === 'hero' ? 'h-[340px] w-[340px]' : size === 'large' ? 'h-60 w-60' : 'h-24 w-24';
+  const bodySize = size === 'hero' ? 'h-48 w-52' : size === 'large' ? 'h-32 w-36' : 'h-14 w-[4.5rem]';
+  const headSize = size === 'hero' ? 'h-32 w-36' : size === 'large' ? 'h-[5.5rem] w-[6.5rem]' : 'h-11 w-[3.25rem]';
   const eyeSize = size === 'hero' ? 'h-4 w-4' : size === 'large' ? 'h-3 w-3' : 'h-1.5 w-1.5';
 
   return (
-    <div className={`relative z-10 ${shellSize} drop-shadow-2xl`} aria-label="선택한 공룡">
+    <div className={`relative z-10 ${shellSize} max-h-full max-w-full drop-shadow-2xl`} aria-label="선택한 공룡">
       <div className={`absolute bottom-[13%] left-1/2 ${bodySize} -translate-x-1/2 rounded-[45%] border-4 border-emerald-200 bg-emerald-400`} />
       <div className={`absolute left-1/2 top-[12%] ${headSize} -translate-x-1/2 rounded-[45%] border-4 border-emerald-200 bg-emerald-300`} />
       <div className="absolute left-[38%] top-[27%] h-[12%] w-[12%] rounded-full bg-white">
@@ -388,7 +389,7 @@ function DinoAvatar({ size }: { size: 'small' | 'large' | 'hero' }) {
 
 function PlayButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="game-button min-h-20 bg-gradient-to-b from-emerald-300 to-emerald-500 shadow-green">
+    <button onClick={onClick} className="game-button min-h-16 bg-gradient-to-b from-emerald-300 to-emerald-500 shadow-green">
       {label}
     </button>
   );

@@ -1,4 +1,4 @@
-import { BookOpen, Heart, LockKeyhole, Map as MapIcon, Sparkles, Star, Trees, X } from 'lucide-react';
+import { BookOpen, Egg, Heart, LockKeyhole, Map as MapIcon, Sparkles, Star, Trees, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { dinosaurSpecies, dexTargetSpeciesCount, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
@@ -46,6 +46,8 @@ const habitatMeta: Record<DexHabitatFilter, { label: string; shortLabel: string;
 };
 
 const habitatOrder: DexHabitatFilter[] = ['all', 'green-forest', 'sparkle-cave', 'volcano-island', 'secret-land'];
+const dexPageHabitats: DinosaurHabitatId[] = ['green-forest', 'sparkle-cave', 'volcano-island', 'secret-land'];
+const showDeveloperPanels = false;
 
 const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
   common: '일반',
@@ -56,27 +58,25 @@ const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
 };
 
 export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDinosaur }: DexScreenProps) {
-  const [activeHabitat, setActiveHabitat] = useState<DexHabitatFilter>('all');
+  const [activeHabitat, setActiveHabitat] = useState<DinosaurHabitatId>('green-forest');
   const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | null>(null);
   const uniqueOwnedDinosaurs = useMemo(() => getUniqueOwnedDinosaurs(ownedDinosaurs), [ownedDinosaurs]);
   const ownedBySpecies = useMemo(() => getOwnedDinosaurBySpecies(uniqueOwnedDinosaurs), [uniqueOwnedDinosaurs]);
   const discoveredSpeciesSet = useMemo(() => new Set([...discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]), [discoveredSpeciesIds, uniqueOwnedDinosaurs]);
   const discoveredCount = dinosaurSpecies.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
   const selectedSpecies = selectedSpeciesId ? dinosaurSpecies.find((species) => species.speciesId === selectedSpeciesId) ?? null : null;
-  const visibleHabitats = activeHabitat === 'all' ? habitatOrder.filter((habitat) => habitat !== 'all') : [activeHabitat];
 
   return (
-    <div className="grid gap-5">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
       <DexProgressHeader discoveredCount={discoveredCount} totalCount={dexTargetSpeciesCount} />
-      <DexHabitatTabs activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onHabitat={setActiveHabitat} />
 
-      <div className="grid gap-5">
-        {visibleHabitats.map((habitat) => (
-          <DexHabitatSection key={habitat} habitat={habitat} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
-        ))}
+      <div className="grid min-h-0 gap-3 lg:grid-cols-[210px_minmax(0,1fr)_250px]">
+        <DexHabitatTabs activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onHabitat={setActiveHabitat} />
+        <DexHabitatSection habitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
+        <DexHintPanel activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} />
       </div>
 
-      <DeveloperDexDebugPanel ownedDinosaurs={ownedDinosaurs} discoveredSpeciesIds={discoveredSpeciesIds} />
+      {showDeveloperPanels && <DeveloperDexDebugPanel ownedDinosaurs={ownedDinosaurs} discoveredSpeciesIds={discoveredSpeciesIds} />}
 
       {selectedSpecies && (
         <DexDetailModal
@@ -93,28 +93,40 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
 
 function DexProgressHeader({ discoveredCount, totalCount }: { discoveredCount: number; totalCount: number }) {
   const progressPercent = Math.round((discoveredCount / totalCount) * 100);
-  const nextGoal = discoveredCount >= totalCount ? '도감을 모두 채웠어요!' : `${Math.min(totalCount, discoveredCount + 2)}마리를 만나면 다음 페이지가 더 풍성해져요.`;
+  const nextGoalCount = Math.min(totalCount, Math.ceil((discoveredCount + 1) / 6) * 6 || 6);
+  const nextGoal = discoveredCount >= totalCount ? '도감을 모두 채웠어요!' : `${nextGoalCount}마리 만나면 다음 보상`;
 
   return (
-    <section className="overflow-hidden rounded-[34px] border-4 border-white bg-[linear-gradient(135deg,#f7e7bd,#d8f3c8_48%,#c7e8ff)] p-5 shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-black text-emerald-800">
-            <BookOpen className="h-4 w-4" />
-            공룡 스티커북
-          </p>
-          <h3 className="mt-3 text-4xl font-black text-emerald-950">공룡 도감</h3>
-          <p className="mt-2 font-black text-emerald-800">공룡 친구들을 만나고 전시장을 채워보세요!</p>
+    <section className="rounded-[30px] border-4 border-white bg-[linear-gradient(135deg,#fff7dc,#f8f1d8_56%,#e5f4d6)] px-5 py-3 shadow-lg">
+      <div className="grid items-center gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(360px,1.2fr)]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border-4 border-white bg-amber-100 text-3xl shadow-sm">
+            <BookOpen className="h-8 w-8 text-amber-800" />
+          </div>
+          <div>
+            <h3 className="text-4xl font-black text-amber-950">공룡 도감</h3>
+            <p className="mt-1 text-sm font-black text-amber-800">공룡 친구들을 만나고 모아보세요!</p>
+          </div>
         </div>
-        <div className="rounded-[26px] border-4 border-white bg-white/88 px-5 py-4 text-center shadow-sm">
-          <p className="text-sm font-black text-slate-500">만난 공룡</p>
-          <p className="text-3xl font-black text-emerald-950">{discoveredCount} / {totalCount}</p>
+        <div className="grid items-center gap-4 rounded-[28px] border-4 border-white bg-white/86 px-5 py-3 shadow-sm md:grid-cols-[1fr_auto]">
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-3 text-sm font-black text-amber-950">
+              <span className="inline-flex items-center gap-2">
+                <Egg className="h-6 w-6 text-lime-600" />
+                만난 공룡 {discoveredCount} / {totalCount}
+              </span>
+            </div>
+            <div className="h-4 overflow-hidden rounded-full bg-amber-100 shadow-inner">
+              <div className="h-full rounded-full bg-gradient-to-r from-lime-500 to-emerald-500 transition-all" style={{ width: `${progressPercent}%` }} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 border-l border-amber-100 pl-4 text-sm font-black text-amber-950">
+            <Star className="h-8 w-8 fill-amber-300 text-amber-400" />
+            <span>{nextGoal}</span>
+            <span className="text-3xl">🎁</span>
+          </div>
         </div>
       </div>
-      <div className="mt-5 rounded-full border-4 border-white bg-white/70 p-1">
-        <div className="h-5 rounded-full bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 transition-all" style={{ width: `${progressPercent}%` }} />
-      </div>
-      <p className="mt-3 rounded-[20px] bg-white/74 px-4 py-3 text-sm font-black text-emerald-900">{nextGoal}</p>
     </section>
   );
 }
@@ -124,15 +136,15 @@ function DexHabitatTabs({
   discoveredSpeciesSet,
   onHabitat,
 }: {
-  activeHabitat: DexHabitatFilter;
+  activeHabitat: DinosaurHabitatId;
   discoveredSpeciesSet: Set<string>;
-  onHabitat: (habitat: DexHabitatFilter) => void;
+  onHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto rounded-[28px] border-4 border-white bg-white/74 p-2 shadow-sm">
-      {habitatOrder.map((habitat) => {
+    <aside className="grid content-start gap-3 rounded-[30px] border-4 border-white bg-white/70 p-3 shadow-lg">
+      {dexPageHabitats.map((habitat) => {
         const meta = habitatMeta[habitat];
-        const speciesInHabitat = habitat === 'all' ? dinosaurSpecies : dinosaurSpecies.filter((species) => species.habitat === habitat);
+        const speciesInHabitat = dinosaurSpecies.filter((species) => species.habitat === habitat);
         const discoveredCount = speciesInHabitat.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
         const isActive = habitat === activeHabitat;
 
@@ -140,16 +152,23 @@ function DexHabitatTabs({
           <button
             key={habitat}
             onClick={() => onHabitat(habitat)}
-            className={`min-h-14 shrink-0 rounded-[18px] px-4 text-left text-sm font-black transition active:translate-y-1 ${
-              isActive ? 'bg-emerald-500 text-white shadow-[0_4px_0_#059669]' : 'bg-white/84 text-slate-600 hover:bg-lime-50'
+            className={`relative grid min-h-[82px] grid-cols-[54px_1fr] items-center gap-3 rounded-[22px] border-4 px-3 text-left font-black transition active:translate-y-1 ${
+              isActive ? 'border-lime-300 bg-lime-100 text-emerald-950 shadow-[0_5px_0_#bef264]' : 'border-white bg-white/74 text-slate-600 hover:bg-lime-50'
             }`}
           >
-            <span className="block">{meta.shortLabel}</span>
-            <span className={`text-xs ${isActive ? 'text-white/84' : 'text-slate-400'}`}>{discoveredCount}/{speciesInHabitat.length}</span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/70 text-3xl shadow-inner">{getHabitatEmoji(habitat)}</span>
+            <span>
+              <span className="block text-base">{meta.shortLabel}</span>
+              <span className="text-sm text-slate-500">{discoveredCount} / {speciesInHabitat.length}</span>
+            </span>
+            {isActive && <span className="absolute -right-3 top-1/2 h-5 w-5 -translate-y-1/2 rotate-45 border-r-4 border-t-4 border-lime-300 bg-lime-100" />}
           </button>
         );
       })}
-    </div>
+      <div className="mt-auto hidden rounded-[24px] bg-lime-100/80 p-3 text-center lg:block">
+        <div className="mx-auto flex h-20 w-20 items-end justify-center rounded-full bg-lime-200 text-5xl shadow-inner">🦕</div>
+      </div>
+    </aside>
   );
 }
 
@@ -169,16 +188,12 @@ function DexHabitatSection({
   const speciesList = dinosaurSpecies.filter((species) => species.habitat === habitat);
 
   return (
-    <section className={`rounded-[34px] border-4 border-white bg-gradient-to-br ${meta.tone} p-4 shadow-lg`}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h4 className="inline-flex items-center gap-2 text-2xl font-black">
-            <MapIcon className="h-5 w-5" />
-            {meta.label}
-          </h4>
-          <p className="mt-1 text-sm font-black opacity-75">{meta.description}</p>
-        </div>
-        <span className="rounded-full bg-white/82 px-4 py-2 text-sm font-black shadow-sm">
+    <section className={`h-full min-h-0 rounded-[34px] border-4 border-white bg-gradient-to-br ${meta.tone} p-5 shadow-lg`}>
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-3 text-center">
+        <Sparkles className="h-6 w-6 text-lime-700" />
+        <h4 className="text-3xl font-black">{meta.label}</h4>
+        <Sparkles className="h-6 w-6 text-lime-700" />
+        <span className="ml-auto rounded-full bg-white/82 px-4 py-2 text-sm font-black shadow-sm">
           {speciesList.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length}/{speciesList.length} 발견
         </span>
       </div>
@@ -199,7 +214,7 @@ function DexStickerGrid({
   onSelectSpecies: (speciesId: string) => void;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid h-full min-h-0 grid-cols-2 content-start gap-4 xl:grid-cols-3">
       {speciesList.map((species) => (
         <DexDinosaurCard key={species.speciesId} species={species} isDiscovered={isSpeciesDiscovered(species, discoveredSpeciesSet)} ownedDinosaur={ownedBySpecies[species.speciesId]} onSelect={() => onSelectSpecies(species.speciesId)} />
       ))}
@@ -213,27 +228,43 @@ function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { k
   return (
     <button
       onClick={onSelect}
-      className={`relative min-h-72 overflow-hidden rounded-[30px] border-4 p-4 text-left shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-1 ${
+      className={`relative min-h-[210px] overflow-hidden rounded-[24px] border-4 bg-white p-3 text-left shadow-lg transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-1 ${
         isDiscovered ? 'border-white bg-white/90 text-emerald-950' : isPlaceholder ? 'border-slate-200 bg-slate-100/82 text-slate-500' : 'border-white/70 bg-slate-100/86 text-slate-500'
       }`}
     >
-      <div className="absolute right-4 top-4 rounded-full bg-white/86 px-3 py-1 text-xs font-black shadow-sm">{isDiscovered ? '발견 완료' : isPlaceholder ? species.lockedLabel ?? '준비 중' : '미발견'}</div>
-      <div className={`mb-4 flex h-40 items-center justify-center rounded-[26px] border-4 border-white ${isDiscovered ? 'bg-gradient-to-b from-sky-100 via-lime-100 to-amber-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
+      <div className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-rose-500 shadow-sm">
+        <Heart className="h-4 w-4 fill-current" />
+      </div>
+      <div className={`mb-3 flex h-32 items-center justify-center rounded-[20px] border-4 border-white ${isDiscovered ? 'bg-gradient-to-b from-sky-100 via-lime-100 to-amber-100' : 'bg-gradient-to-b from-stone-200 to-stone-300'}`}>
         {isDiscovered ? <DexDinoAvatar species={species} size="card" /> : <DexSilhouette species={species} />}
       </div>
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xl font-black">{isDiscovered ? species.displayName : '???'}</h3>
-        <span className={`rounded-full px-3 py-1 text-xs font-black ${isDiscovered ? 'bg-amber-100 text-amber-800' : 'bg-white/74 text-slate-400'}`}>{isDiscovered ? rarityLabels[species.rarity] : isPlaceholder ? '준비 중' : '힌트'}</span>
+        <h3 className="text-xl font-black leading-tight">{isDiscovered ? species.displayName : '???'}</h3>
+        <Star className={`h-6 w-6 ${isDiscovered ? 'fill-amber-300 text-amber-400' : 'text-stone-300'}`} />
       </div>
-      <p className="mt-3 min-h-14 text-sm font-black leading-relaxed opacity-75">{isDiscovered ? species.dexDescription : isPlaceholder ? species.unlockHint : '아직 만나지 못했어요. 카드를 눌러 힌트를 볼 수 있어요.'}</p>
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${isDiscovered ? 'bg-lime-100 text-lime-800' : 'bg-white/80 text-slate-400'}`}>
-          {isDiscovered ? <Heart className="h-3.5 w-3.5" /> : <LockKeyhole className="h-3.5 w-3.5" />}
-          {isDiscovered ? ownedDinosaur?.name ?? species.displayName : isPlaceholder ? '잠금' : '실루엣'}
-        </span>
-        {isDiscovered && <Star className="h-6 w-6 fill-amber-300 text-amber-400" />}
-      </div>
+      <p className="mt-1 text-xs font-black text-slate-500">{isDiscovered ? ownedDinosaur?.name ?? rarityLabels[species.rarity] : isPlaceholder ? '아직 준비 중이에요' : '아직 만나지 못했어요'}</p>
     </button>
+  );
+}
+
+function DexHintPanel({ activeHabitat, discoveredSpeciesSet }: { activeHabitat: DinosaurHabitatId; discoveredSpeciesSet: Set<string> }) {
+  const speciesList = dinosaurSpecies.filter((species) => species.habitat === activeHabitat);
+  const undiscovered = speciesList.find((species) => !isSpeciesDiscovered(species, discoveredSpeciesSet));
+  const meta = habitatMeta[activeHabitat];
+
+  return (
+    <aside className="grid content-start gap-4 rounded-[30px] border-4 border-white bg-white/72 p-4 shadow-lg">
+      <div className="rotate-2 rounded-[12px] border-4 border-white bg-white p-3 text-center shadow-lg">
+        <div className="flex h-40 items-center justify-center rounded-[10px] bg-gradient-to-b from-violet-100 to-amber-100 text-7xl">
+          🥚
+        </div>
+        <p className="mt-3 text-sm font-black leading-relaxed text-amber-950">알을 부화시켜 더 많은 공룡을 만나보세요!</p>
+      </div>
+      <div className="rounded-[24px] bg-lime-50 px-4 py-3 text-sm font-black text-emerald-900">
+        <p className="text-base text-emerald-950">{meta.shortLabel} 힌트</p>
+        <p className="mt-2 leading-relaxed">{undiscovered ? undiscovered.discoveryHint : '이 서식지 친구들을 모두 만났어요!'}</p>
+      </div>
+    </aside>
   );
 }
 
@@ -256,7 +287,7 @@ function DexDetailModal({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
       <section className="grid max-h-full min-h-0 w-full max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[32px] border-4 border-white bg-gradient-to-b from-white via-lime-50 to-sky-50 shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
         <div className="flex justify-end px-4 pt-4">
-          <button aria-label="닫기" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-[15px] bg-slate-900 text-white transition active:translate-y-1">
+          <button aria-label="닫기" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[15px] bg-slate-900 text-white transition active:translate-y-1">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -302,7 +333,7 @@ function DexDetailModal({
               우리 공룡으로 보기
             </button>
           )}
-          <button onClick={onClose} className="min-h-12 rounded-[18px] bg-slate-100 px-6 text-sm font-black text-slate-600 transition active:translate-y-1">닫기</button>
+          <button onClick={onClose} className="min-h-14 rounded-[18px] bg-slate-100 px-6 text-sm font-black text-slate-600 transition active:translate-y-1">닫기</button>
         </div>
       </section>
     </div>
@@ -319,7 +350,7 @@ function DexInfoPill({ label, value }: { label: string; value: string }) {
 }
 
 function DexDinoAvatar({ species, size }: { species: DinosaurSpecies; size: 'card' | 'modal' }) {
-  const scale = size === 'modal' ? 'h-40 w-44' : 'h-28 w-32';
+  const scale = size === 'modal' ? 'h-40 w-44' : 'h-24 w-28';
 
   return (
     <div className={`relative ${scale}`}>
@@ -336,10 +367,17 @@ function DexDinoAvatar({ species, size }: { species: DinosaurSpecies; size: 'car
 
 function DexSilhouette({ species, large = false }: { species: DinosaurSpecies; large?: boolean }) {
   return (
-    <div className={`${large ? 'h-36 w-36 text-6xl' : 'h-24 w-24 text-5xl'} flex items-center justify-center rounded-full border-4 border-white bg-slate-400 font-black text-white shadow-inner`}>
+    <div className={`${large ? 'h-36 w-36 text-6xl' : 'h-24 w-24 text-5xl'} flex items-center justify-center rounded-full border-4 border-white bg-stone-400 font-black text-white shadow-inner`}>
       {species.silhouette}
     </div>
   );
+}
+
+function getHabitatEmoji(habitat: DinosaurHabitatId) {
+  if (habitat === 'sparkle-cave') return '💎';
+  if (habitat === 'volcano-island') return '🌋';
+  if (habitat === 'secret-land') return '❔';
+  return '🌳';
 }
 
 function DeveloperDexDebugPanel({ ownedDinosaurs, discoveredSpeciesIds }: { ownedDinosaurs: OwnedDinosaur[]; discoveredSpeciesIds: string[] }) {
