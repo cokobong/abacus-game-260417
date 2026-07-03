@@ -1,12 +1,17 @@
 import type { DinosaurGrowthStage } from '../types/game';
 
+export type GrowthSpeedMultiplier = 0.7 | 1 | 1.3;
+
+export const growthSpeedOptions: Array<{ value: GrowthSpeedMultiplier; label: string; percent: number }> = [
+  { value: 0.7, label: '느리게', percent: 70 },
+  { value: 1, label: '보통', percent: 100 },
+  { value: 1.3, label: '빠르게', percent: 130 },
+];
+
+export const defaultGrowthSpeedMultiplier: GrowthSpeedMultiplier = 1;
+
 export interface GrowthConfig {
   version: string;
-  expPerCorrect: number;
-  setCompleteExp: number;
-  perfectSetBonusExp: number;
-  highAccuracyBonusExp: number;
-  highAccuracyThreshold: number;
   baseMaxStamina: number;
   maxStaminaPerLevel: number;
   defaultHappiness: number;
@@ -29,11 +34,6 @@ export interface GrowthConfig {
 
 export const growthConfig: GrowthConfig = {
   version: '2026-06-25.1',
-  expPerCorrect: 1,
-  setCompleteExp: 5,
-  perfectSetBonusExp: 5,
-  highAccuracyBonusExp: 5,
-  highAccuracyThreshold: 90,
   baseMaxStamina: 100,
   maxStaminaPerLevel: 2,
   defaultHappiness: 70,

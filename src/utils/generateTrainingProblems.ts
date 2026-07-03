@@ -7,7 +7,12 @@ export interface GenerateTrainingProblemsInput {
   digitType: DigitType;
   operationMode: OperationMode;
   seed?: number;
+  allowZeroAnswer?: boolean;
+  allowNegativeAnswer?: boolean;
+  maxAttempts?: number;
 }
+
+const DEFAULT_MAX_ATTEMPTS = 100;
 
 function createRandom(seed?: number) {
   if (seed === undefined) return Math.random;
@@ -32,6 +37,8 @@ function getRandomInt(random: () => number, min: number, max: number) {
 function getBaseRange(digitType: DigitType) {
   if (digitType === 'one-digit') return { min: 1, max: 9 };
   if (digitType === 'two-digit') return { min: 10, max: 99 };
+  if (digitType === 'three-digit') return { min: 100, max: 999 };
+  if (digitType === 'mixed-two-three-digit') return { min: 10, max: 999 };
   return { min: 1, max: 99 };
 }
 
@@ -54,6 +61,14 @@ function getRandomTerm(random: () => number, stage: AbacusStageConfig, digitType
     if (canUseOneDigit && canUseTwoDigit) {
       return random() < 0.5 ? getRandomInt(random, oneDigitRange.min, oneDigitRange.max) : getRandomInt(random, twoDigitRange.min, twoDigitRange.max);
     }
+  }
+
+  if (digitType === 'mixed-two-three-digit') {
+    const twoDigitRange = getStageAwareRange(stage, 'two-digit');
+    const threeDigitRange = getStageAwareRange(stage, 'three-digit');
+    return random() < 0.5
+      ? getRandomInt(random, twoDigitRange.min, twoDigitRange.max)
+      : getRandomInt(random, threeDigitRange.min, threeDigitRange.max);
   }
 
   const range = getStageAwareRange(stage, digitType);
@@ -127,12 +142,111 @@ function buildTerms(random: () => number, stage: AbacusStageConfig, numberCount:
   return { numbers, operators };
 }
 
-export function generateTrainingProblems({ stage, problemCount, numberCount, digitType, operationMode, seed }: GenerateTrainingProblemsInput): TrainingProblem[] {
+function isAllowedAnswer(answer: number, allowZeroAnswer: boolean, allowNegativeAnswer: boolean) {
+  if (!allowNegativeAnswer && answer < 0) return false;
+  if (!allowZeroAnswer && answer === 0) return false;
+  return true;
+}
+
+function hasRequiredDigitMix(numbers: number[], digitType: DigitType) {
+  if (digitType !== 'mixed-two-three-digit' || numbers.length < 2) return true;
+
+  return numbers.some((number) => number >= 10 && number <= 99) && numbers.some((number) => number >= 100 && number <= 999);
+}
+
+function buildPositiveFallbackTerms(stage: AbacusStageConfig, numberCount: number, digitType: DigitType, operationMode: OperationMode) {
+  const safeNumberCount = Math.max(1, numberCount);
+  const { min, max } = getStageAwareRange(stage, digitType);
+
+  if (digitType === 'mixed-two-three-digit' && safeNumberCount >= 2) {
+    const tailNumbers = Array.from({ length: safeNumberCount - 1 }, (_, index) => (index % 2 === 0 ? 10 : 100));
+
+    if (operationMode === 'subtract') {
+      const subtractionTotal = tailNumbers.reduce((total, number) => total + number, 0);
+      return {
+        numbers: [subtractionTotal + 1, ...tailNumbers],
+        operators: Array.from({ length: safeNumberCount - 1 }, () => '-' as const),
+      };
+    }
+
+    const numbers = [10, 100, ...tailNumbers.slice(1)];
+    const operators: ProblemOperator[] = Array.from({ length: safeNumberCount - 1 }, () => '+');
+    if (operationMode === 'mixed' && operators.length >= 2) operators[1] = '-';
+    return { numbers, operators };
+  }
+
+  if (operationMode === 'subtract') {
+    const minimumPositiveFirstNumber = min * (safeNumberCount - 1) + 1;
+    const firstNumber = Math.min(max, Math.max(min, minimumPositiveFirstNumber));
+    const numbers = [firstNumber, ...Array.from({ length: safeNumberCount - 1 }, () => min)];
+    const operators = Array.from({ length: safeNumberCount - 1 }, () => '-' as const);
+
+    // Supported training ranges (1~9, 10~99, 100~999) and 3~8 rows
+    // always have enough room for this subtraction fallback to remain positive.
+    return { numbers, operators };
+  }
+
+  const numbers = Array.from({ length: safeNumberCount }, () => min);
+  const operators: ProblemOperator[] = Array.from({ length: safeNumberCount - 1 }, () => '+');
+
+  if (operationMode === 'mixed' && operators.length >= 2) {
+    operators[1] = '-';
+  }
+
+  return { numbers, operators };
+}
+
+function buildValidTerms(
+  random: () => number,
+  stage: AbacusStageConfig,
+  numberCount: number,
+  digitType: DigitType,
+  operationMode: OperationMode,
+  allowZeroAnswer: boolean,
+  allowNegativeAnswer: boolean,
+  maxAttempts: number,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const candidate = buildTerms(random, stage, numberCount, digitType, operationMode);
+    const answer = calculateAnswer(candidate.numbers, candidate.operators);
+
+    if (isAllowedAnswer(answer, allowZeroAnswer, allowNegativeAnswer) && hasRequiredDigitMix(candidate.numbers, digitType)) {
+      return { ...candidate, answer };
+    }
+  }
+
+  const fallback = buildPositiveFallbackTerms(stage, numberCount, digitType, operationMode);
+  return {
+    ...fallback,
+    answer: calculateAnswer(fallback.numbers, fallback.operators),
+  };
+}
+
+export function generateTrainingProblems({
+  stage,
+  problemCount,
+  numberCount,
+  digitType,
+  operationMode,
+  seed,
+  allowZeroAnswer = false,
+  allowNegativeAnswer = false,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+}: GenerateTrainingProblemsInput): TrainingProblem[] {
   const random = createRandom(seed);
+  const safeMaxAttempts = Math.max(0, Math.floor(maxAttempts));
 
   return Array.from({ length: problemCount }, (_, index) => {
-    const { numbers, operators } = buildTerms(random, stage, numberCount, digitType, operationMode);
-    const answer = calculateAnswer(numbers, operators);
+    const { numbers, operators, answer } = buildValidTerms(
+      random,
+      stage,
+      numberCount,
+      digitType,
+      operationMode,
+      allowZeroAnswer,
+      allowNegativeAnswer,
+      safeMaxAttempts,
+    );
     const expressionText = formatExpression(numbers, operators);
 
     return {

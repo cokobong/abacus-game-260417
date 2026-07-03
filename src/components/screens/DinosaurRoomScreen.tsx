@@ -176,7 +176,7 @@ function DinosaurStateMiniPanel({ dinosaur }: { dinosaur: DinosaurState }) {
         <h4 className="text-base font-black text-emerald-950">상태</h4>
       </div>
       <div className="grid gap-1.5">
-        <MiniMeter icon={Zap} label="경험치" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <MiniMeter icon={Zap} label="경험치" value={getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <MiniMeter icon={Sparkles} label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
         <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
       </div>
@@ -354,8 +354,8 @@ function getPercentValue(value: number, max = 100) {
   return clampUiPercent((value / max) * 100);
 }
 
-function getExpPercent(exp: number, expToNextLevel?: number) {
-  return getPercentValue(exp, expToNextLevel ?? 0);
+function getExpProgressPercent(rawExp: number, expToNextLevel?: number) {
+  return getPercentValue(rawExp, expToNextLevel ?? 0);
 }
 
 function DinoAvatar({ size }: { size: 'small' | 'large' | 'hero' }) {

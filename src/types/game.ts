@@ -10,7 +10,7 @@ export type RewardReason = 'problem_correct' | 'set_complete';
 export type RewardType = 'coin' | 'exp' | 'hatch_progress' | 'dinosaur_mood';
 export type AbacusOperation = 'add' | 'subtract';
 export type OperationMode = 'add' | 'subtract' | 'mixed';
-export type DigitType = 'one-digit' | 'two-digit' | 'mixed-digit';
+export type DigitType = 'one-digit' | 'two-digit' | 'three-digit' | 'mixed-digit' | 'mixed-two-three-digit';
 export type AbacusComplementType = 'none' | 'five' | 'ten' | 'mixed';
 export type AbacusLevelStatus = 'mvp' | 'draft' | 'planned' | 'later';
 export type AbacusStageStatus = 'mvp' | 'draft' | 'planned' | 'later';
@@ -61,7 +61,7 @@ export interface AbacusStageConfig {
   allowBorrow?: boolean;
   complementType?: AbacusComplementType;
   complementFocus?: string;
-  rowCount?: 2 | 3 | 4 | 5 | 6;
+  rowCount?: 2 | 3 | 4 | 5 | 6 | 7 | 8;
   problemCountPerSet?: number;
   rewardMultiplier?: number;
   generatorStrategy?: string;

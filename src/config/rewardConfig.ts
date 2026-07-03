@@ -2,8 +2,19 @@ export interface RewardBundleConfig {
   coins: number;
   hatchProgress: number;
   dinosaurMood: number;
-  dinosaurExp: number;
+  /** Raw EXP points, not progress percent. */
+  dinoExp: number;
 }
+
+export type CoinRewardMultiplier = 0.7 | 1 | 1.3;
+
+export const coinRewardOptions: Array<{ value: CoinRewardMultiplier; label: string; percent: number }> = [
+  { value: 0.7, label: '적게', percent: 70 },
+  { value: 1, label: '보통', percent: 100 },
+  { value: 1.3, label: '많이', percent: 130 },
+];
+
+export const defaultCoinRewardMultiplier: CoinRewardMultiplier = 1;
 
 export interface RewardConfig {
   version: string;
@@ -19,13 +30,13 @@ export const rewardConfig: RewardConfig = {
     coins: 10,
     hatchProgress: 0,
     dinosaurMood: 1,
-    dinosaurExp: 5,
+    dinoExp: 0,
   },
   setComplete: {
     coins: 30,
     hatchProgress: 0,
     dinosaurMood: 0,
-    dinosaurExp: 15,
+    dinoExp: 15,
   },
   hatchItemRewardOnSetComplete: 'hatch-warm-stone',
   hatchItemQuantityOnSetComplete: 1,

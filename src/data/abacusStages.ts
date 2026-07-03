@@ -1,8 +1,8 @@
 import type { AbacusStageConfig, DigitType, OperationMode } from '../types/game';
 
 const draftNote = '주산수리셈 교재 재확인 후 수정 예정인 draft stage입니다. 실제 교재 내용 확인 후 data config만 수정해 반영합니다.';
-const defaultNumberCounts = [2, 3, 4, 5, 6];
-const defaultDigitTypes: DigitType[] = ['one-digit', 'two-digit', 'mixed-digit'];
+const defaultNumberCounts = [2, 3, 4, 5, 6, 7, 8];
+const defaultDigitTypes: DigitType[] = ['one-digit', 'two-digit', 'three-digit', 'mixed-digit', 'mixed-two-three-digit'];
 const defaultOperations: OperationMode[] = ['add', 'subtract', 'mixed'];
 
 function createDraftStage(config: {
@@ -33,7 +33,7 @@ function createDraftStage(config: {
     ...config,
     textbookLevel: `${config.level}단계`,
     objective: config.summary,
-    digitCount: config.defaultDigitType === 'one-digit' ? 1 : config.defaultDigitType === 'two-digit' ? 2 : 2,
+    digitCount: config.defaultDigitType === 'one-digit' ? 1 : config.defaultDigitType === 'three-digit' ? 3 : 2,
     numberCount: config.defaultNumberCount,
     operations: config.defaultOperation === 'mixed' ? ['add', 'subtract'] : [config.defaultOperation],
     minResult: 0,
@@ -41,7 +41,7 @@ function createDraftStage(config: {
     allowCarry: config.tags?.includes('carry') ?? false,
     allowBorrow: config.tags?.includes('borrow') ?? false,
     complementType: config.tags?.includes('five-complement') ? 'five' : config.tags?.includes('ten-complement') ? 'ten' : 'none',
-    rowCount: Math.min(6, Math.max(2, config.defaultNumberCount)) as AbacusStageConfig['rowCount'],
+    rowCount: Math.min(8, Math.max(2, config.defaultNumberCount)) as AbacusStageConfig['rowCount'],
     problemCountPerSet: config.defaultProblemCount,
     generatorStrategy: `${config.id.toLowerCase()}-draft-basic`,
     status: config.generatorStatus === 'ready' ? 'mvp' : config.generatorStatus === 'basic' ? 'draft' : 'later',

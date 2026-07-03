@@ -38,7 +38,7 @@ export function createRewardsFromBundle(reason: RewardReason, bundle: RewardBund
   const rewards: Reward[] = [
     createReward(reason, 'coin', bundle.coins, null),
     createReward(reason, 'hatch_progress', bundle.hatchProgress, targets.eggId),
-    createReward(reason, 'exp', bundle.dinosaurExp, targets.dinosaurId),
+    createReward(reason, 'exp', bundle.dinoExp, targets.dinosaurId),
   ];
 
   if (bundle.dinosaurMood > 0) {
@@ -102,7 +102,7 @@ export function formatRewardSummary(rewards: Reward[]) {
 }
 
 export function formatRewardBundleSummary(bundle: RewardBundleConfig) {
-  const parts = [bundle.coins ? `코인 +${bundle.coins}` : null, bundle.hatchProgress ? `알 부화 게이지 +${bundle.hatchProgress}%` : null, bundle.dinosaurExp ? `공룡 EXP +${bundle.dinosaurExp}` : null].filter(Boolean) as string[];
+  const parts = [bundle.coins ? `코인 +${bundle.coins}` : null, bundle.hatchProgress ? `알 부화 게이지 +${bundle.hatchProgress}%` : null, bundle.dinoExp ? `공룡 EXP +${bundle.dinoExp}` : null].filter(Boolean) as string[];
 
   if (bundle.dinosaurMood > 0) {
     parts.push(`공룡 기분 +${bundle.dinosaurMood}`);

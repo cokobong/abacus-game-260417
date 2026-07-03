@@ -29,13 +29,15 @@ export function getAdjustedStaminaRecovery(baseRecovery: number, happiness: numb
   return Math.round(baseRecovery * getStaminaRecoveryMultiplier(happiness));
 }
 
-export function applyDinosaurExp(dinosaur: OwnedDinosaur, gainedExp: number): OwnedDinosaur {
+// Dinosaur EXP is stored as raw points. Percentages are derived only by UI
+// meters as rawExp / expToNextLevel * 100.
+export function applyDinosaurExp(dinosaur: OwnedDinosaur, gainedRawExp: number): OwnedDinosaur {
   let level = Math.max(1, dinosaur.level ?? 1);
-  let exp = Math.max(0, (dinosaur.exp ?? 0) + gainedExp);
+  let rawExp = Math.max(0, (dinosaur.exp ?? 0) + gainedRawExp);
   let expToNextLevel = dinosaur.expToNextLevel ?? getExpToNextLevel(level);
 
-  while (exp >= expToNextLevel) {
-    exp -= expToNextLevel;
+  while (rawExp >= expToNextLevel) {
+    rawExp -= expToNextLevel;
     level += 1;
     expToNextLevel = getExpToNextLevel(level);
   }
@@ -45,7 +47,7 @@ export function applyDinosaurExp(dinosaur: OwnedDinosaur, gainedExp: number): Ow
   return {
     ...dinosaur,
     level,
-    exp,
+    exp: rawExp,
     expToNextLevel,
     growthStage: getGrowthStageForLevel(level),
     maxStamina,

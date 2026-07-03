@@ -18,8 +18,9 @@ import {
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
-import { fallbackFoodEffect, getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, type DinosaurStatEffect } from './config/itemConfig';
+import { fallbackFoodEffect, getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
+import { coinRewardOptions, defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
 import { adventureAreas } from './data/adventures';
@@ -33,15 +34,15 @@ import { createAdventureResult, type AdventureRunResult } from './utils/adventur
 import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getGrowthStageLabel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
-import { growthConfig } from './config/growthConfig';
+import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
 type ProblemCountOverride = 5 | 10 | 15 | 20;
-type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6;
-type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'mixed-digit';
+type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6 | 7 | 8;
+type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'three-digit' | 'mixed-digit' | 'mixed-two-three-digit';
 type ResolvedDigitType = Exclude<DigitTypeOverride, 'stage-default'>;
 type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
 type CompletedTrainingSummary = TrainingRewardResult & {
@@ -60,6 +61,8 @@ type GameState = {
   numberCountOverride: NumberCountOverride;
   digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
+  growthSpeedMultiplier: GrowthSpeedMultiplier;
+  coinRewardMultiplier: CoinRewardMultiplier;
   dinosaur: DinosaurState;
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
@@ -69,6 +72,7 @@ type GameState = {
   ownedCostumeIds: string[];
   inventory: InventoryItemState[];
   trainingHistory: TrainingSessionRecord[];
+  rewardedTrainingSessionIds: string[];
   progressByLevel: Record<number, LevelProgressRecord>;
   progressByStage: Record<string, StageProgressRecord>;
 };
@@ -157,6 +161,8 @@ const defaultGameState: GameState = {
   numberCountOverride: 'stage-default',
   digitTypeOverride: 'stage-default',
   operationsOverride: 'stage-default',
+  growthSpeedMultiplier: defaultGrowthSpeedMultiplier,
+  coinRewardMultiplier: defaultCoinRewardMultiplier,
   dinosaur: initialDinosaurState,
   ownedDinosaurs: [initialOwnedDinosaur],
   discoveredSpeciesIds: [initialOwnedDinosaur.speciesId],
@@ -166,6 +172,7 @@ const defaultGameState: GameState = {
   ownedCostumeIds: [],
   inventory: initialInventory,
   trainingHistory: [],
+  rewardedTrainingSessionIds: [],
   progressByLevel: {},
   progressByStage: {},
 };
@@ -187,7 +194,10 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const numberCountOverride = normalizeNumberCountOverride(state.numberCountOverride);
   const digitTypeOverride = normalizeDigitTypeOverride(state.digitTypeOverride);
   const operationsOverride = normalizeOperationsOverride(state.operationsOverride);
+  const growthSpeedMultiplier = normalizeGrowthSpeedMultiplier(state.growthSpeedMultiplier);
+  const coinRewardMultiplier = normalizeCoinRewardMultiplier(state.coinRewardMultiplier);
   const trainingHistory = normalizeTrainingHistory(state.trainingHistory);
+  const rewardedTrainingSessionIds = getArrayValue<unknown>(state.rewardedTrainingSessionIds, []).filter((id): id is string => typeof id === 'string');
   const progressByLevel = normalizeProgressByLevel(state.progressByLevel);
   const progressByStage = normalizeProgressByStage(state.progressByStage);
   const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
@@ -226,6 +236,8 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     numberCountOverride,
     digitTypeOverride,
     operationsOverride,
+    growthSpeedMultiplier,
+    coinRewardMultiplier,
     dinosaur: {
       ...defaultGameState.dinosaur,
       ...state.dinosaur,
@@ -247,6 +259,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     ownedCostumeIds,
     inventory,
     trainingHistory,
+    rewardedTrainingSessionIds,
     progressByLevel,
     progressByStage,
     userProfile,
@@ -279,8 +292,8 @@ function getPercentValue(value: number, max = 100) {
   return clampUiPercent((value / max) * 100);
 }
 
-function getExpPercent(exp: number, expToNextLevel?: number) {
-  return getPercentValue(exp, expToNextLevel ?? 0);
+function getExpProgressPercent(rawExp: number, expToNextLevel?: number) {
+  return getPercentValue(rawExp, expToNextLevel ?? 0);
 }
 
 function getUniqueSpeciesIds(speciesIds: string[]) {
@@ -479,15 +492,25 @@ function normalizeNumberCountOverride(value: unknown): NumberCountOverride {
   if (value === 'stage-default') return value;
 
   const numericValue = typeof value === 'string' ? Number(value) : value;
-  return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 ? numericValue : 'stage-default';
+  return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 || numericValue === 7 || numericValue === 8 ? numericValue : 'stage-default';
 }
 
 function normalizeDigitTypeOverride(value: unknown): DigitTypeOverride {
-  return value === 'stage-default' || value === 'one-digit' || value === 'two-digit' || value === 'mixed-digit' ? value : 'stage-default';
+  return value === 'stage-default' || value === 'one-digit' || value === 'two-digit' || value === 'three-digit' || value === 'mixed-digit' || value === 'mixed-two-three-digit' ? value : 'stage-default';
 }
 
 function normalizeOperationsOverride(value: unknown): OperationsOverride {
   return value === 'stage-default' || value === 'add' || value === 'subtract' || value === 'mixed' ? value : 'stage-default';
+}
+
+function normalizeGrowthSpeedMultiplier(value: unknown): GrowthSpeedMultiplier {
+  const numericValue = typeof value === 'string' ? Number(value) : value;
+  return numericValue === 0.7 || numericValue === 1 || numericValue === 1.3 ? numericValue : defaultGrowthSpeedMultiplier;
+}
+
+function normalizeCoinRewardMultiplier(value: unknown): CoinRewardMultiplier {
+  const numericValue = typeof value === 'string' ? Number(value) : value;
+  return numericValue === 0.7 || numericValue === 1 || numericValue === 1.3 ? numericValue : defaultCoinRewardMultiplier;
 }
 
 function normalizeTrainingHistory(value: unknown): TrainingSessionRecord[] {
@@ -794,7 +817,9 @@ function formatDigitTypeLabel(value: ResolvedDigitType) {
   const labels: Record<ResolvedDigitType, string> = {
     'one-digit': '한 자리',
     'two-digit': '두 자리',
+    'three-digit': '세 자리',
     'mixed-digit': '한 자리 + 두 자리',
+    'mixed-two-three-digit': '두·세 자리 혼합',
   };
 
   return labels[value];
@@ -948,7 +973,7 @@ export default function App() {
   const [adventureResult, setAdventureResult] = useState<AdventureRunResult | null>(null);
   const [storageFeedback, setStorageFeedback] = useState(initialLoadResult.message);
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
-  const rewardedSessionIdsRef = useRef<Set<string>>(new Set());
+  const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
@@ -1101,6 +1126,20 @@ export default function App() {
     }));
   }
 
+  function updateGrowthSpeedMultiplier(value: GrowthSpeedMultiplier) {
+    setGameState((current) => ({
+      ...current,
+      growthSpeedMultiplier: value,
+    }));
+  }
+
+  function updateCoinRewardMultiplier(value: CoinRewardMultiplier) {
+    setGameState((current) => ({
+      ...current,
+      coinRewardMultiplier: value,
+    }));
+  }
+
   function applyCorrectAnswerTrainingCost() {
     const targetDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
     const trainingEffects = getTrainingConditionEffects(targetDinosaur);
@@ -1125,17 +1164,19 @@ export default function App() {
     const completedProblemIds = new Set(completedSession.answers.filter((answerRecord) => answerRecord.isCorrect).map((answerRecord) => answerRecord.problemId));
     const correctCount = completedProblemIds.size;
     const wrongCount = completedSession.answers.filter((answerRecord) => !answerRecord.isCorrect).length;
-    const rewardSummary = calculateTrainingRewards({
+    const resultReward = calculateTrainingRewards({
       totalProblems: completedSession.problems.length,
       correctCount,
       wrongCount,
       selectedLevel: gameState.selectedLevel,
+      growthSpeedMultiplier: gameState.growthSpeedMultiplier,
+      coinRewardMultiplier: gameState.coinRewardMultiplier,
       activeDinosaurCondition: {
         stamina: activeOwnedDinosaur.stamina,
       },
     });
     const completedAt = completedSession.completedAt ?? Date.now();
-    const hatchReward = rewardSummary.hatchItems[0];
+    const hatchReward = resultReward.hatchItems[0];
     const hatchItem = hatchReward ? getHatchItemConfig(hatchReward.itemId) : null;
     const trainingRecord: TrainingSessionRecord = {
       id: `training-record-${completedSession.id}`,
@@ -1149,10 +1190,10 @@ export default function App() {
       totalProblems: completedSession.problems.length,
       correctCount,
       wrongCount,
-      accuracy: rewardSummary.accuracy,
-      earnedCoins: rewardSummary.coins,
-      earnedExp: rewardSummary.dinosaurExp,
-      earnedItems: rewardSummary.hatchItems,
+      accuracy: resultReward.accuracy,
+      earnedCoins: resultReward.coins,
+      earnedExp: resultReward.dinoExp,
+      earnedItems: resultReward.hatchItems,
       activeDinosaurId: activeOwnedDinosaur.id,
     };
 
@@ -1161,17 +1202,27 @@ export default function App() {
         ...current,
         player: {
           ...current.player,
-          coins: current.player.coins + rewardSummary.coins,
+          coins: current.player.coins + resultReward.coins,
         },
-        inventory: rewardSummary.hatchItems.reduce((inventory, item) => addInventoryQuantity(inventory, item.itemId, item.quantity), current.inventory),
+        inventory: resultReward.hatchItems.reduce((inventory, item) => addInventoryQuantity(inventory, item.itemId, item.quantity), current.inventory),
         trainingHistory: addTrainingRecordToHistory(current.trainingHistory, trainingRecord),
+        rewardedTrainingSessionIds: Array.from(new Set([...current.rewardedTrainingSessionIds, completedSession.id])).slice(-100),
         progressByLevel: updateProgressByLevel(current.progressByLevel, trainingRecord),
         progressByStage: updateProgressByStage(current.progressByStage, trainingRecord),
       };
 
       return updateSelectedOwnedDinosaur(withPlayerAndInventory, (dinosaur) => {
-        const grownDinosaur = applyDinosaurExp(dinosaur, rewardSummary.dinosaurExp);
-        const nextHappiness = clampHappiness(grownDinosaur.happiness + rewardSummary.happiness);
+        const rawExpBefore = dinosaur.exp;
+        const grownDinosaur = applyDinosaurExp(dinosaur, resultReward.dinoExp);
+        const nextHappiness = clampHappiness(grownDinosaur.happiness + resultReward.happiness);
+
+        console.log('Applied training dinosaur EXP reward.', {
+          sessionId: completedSession.id,
+          rawExpBefore,
+          awardedRawExp: resultReward.dinoExp,
+          rawExpAfter: grownDinosaur.exp,
+          levelAfter: grownDinosaur.level,
+        });
 
         return {
           ...grownDinosaur,
@@ -1182,7 +1233,7 @@ export default function App() {
     });
 
     setCompletedTrainingSummary({
-      ...rewardSummary,
+      ...resultReward,
       sessionId: completedSession.id,
       totalProblems: completedSession.problems.length,
       correctCount,
@@ -1190,9 +1241,9 @@ export default function App() {
       completedAt,
     });
     setSetCompleteRewards([
-      createDisplayReward(`코인 +${rewardSummary.coins}`, rewardSummary.coins),
-      createDisplayReward(`공룡 EXP +${rewardSummary.dinosaurExp}`, rewardSummary.dinosaurExp),
-      createDisplayReward(`공룡 기분 +${rewardSummary.happiness}`, rewardSummary.happiness),
+      createDisplayReward(`코인 +${resultReward.coins}`, resultReward.coins),
+      createDisplayReward(`공룡 EXP +${resultReward.dinoExp}`, resultReward.dinoExp),
+      createDisplayReward(`공룡 기분 +${resultReward.happiness}`, resultReward.happiness),
       ...(hatchReward ? [createDisplayReward(`${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개`, hatchReward.quantity)] : []),
     ]);
     setLastRewards([]);
@@ -1934,6 +1985,19 @@ export default function App() {
               numberCountOverride={gameState.numberCountOverride}
               digitTypeOverride={gameState.digitTypeOverride}
               operationsOverride={gameState.operationsOverride}
+              growthSpeedMultiplier={gameState.growthSpeedMultiplier}
+              coinRewardMultiplier={gameState.coinRewardMultiplier}
+              discoveredDinosaurCount={gameState.discoveredSpeciesIds.length}
+              totalDinosaurCount={dinosaurSpecies.length}
+              unlockedItemCount={new Set([
+                ...gameState.inventory.filter((item) => item.quantity > 0).map((item) => item.itemId),
+                ...gameState.ownedCostumeIds,
+                ...gameState.ownedEggs.map((egg) => egg.eggItemId),
+              ]).size}
+              totalItemCount={itemConfigs.length}
+              currentDinosaurLevel={activeDinosaur.level}
+              expProgressPercent={getExpProgressPercent(activeDinosaur.exp, activeDinosaur.expToNextLevel)}
+              currentCoins={gameState.player.coins}
               trainingHistory={gameState.trainingHistory}
               selectedLevelEvaluation={selectedLevelEvaluation}
               selectedStageEvaluation={selectedStageEvaluation}
@@ -1945,6 +2009,8 @@ export default function App() {
               onNumberCountOverride={updateNumberCountOverride}
               onDigitTypeOverride={updateDigitTypeOverride}
               onOperationsOverride={updateOperationsOverride}
+              onGrowthSpeedMultiplier={updateGrowthSpeedMultiplier}
+              onCoinRewardMultiplier={updateCoinRewardMultiplier}
               onResetSavedGameState={resetSavedGameState}
               onBluetoothNotification={handleBluetoothNotification}
             />
@@ -2348,7 +2414,7 @@ function ActiveDinoReactionPanel({
         <DinoAvatar size="small" />
       </div>
       <div className="mt-2 grid gap-1.5 rounded-[20px] border-4 border-white bg-white/80 p-2 shadow-sm">
-        <DinoTrainingMeter label="EXP" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <DinoTrainingMeter label="EXP" value={getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <DinoTrainingMeter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
         <DinoTrainingMeter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
         <p className="rounded-[16px] bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">{staminaMessage}</p>
@@ -2430,7 +2496,7 @@ function TrainingCompletePanel({
         </div>
         <div className="flex justify-between gap-3">
           <span>공룡 경험치</span>
-          <span>{summary ? `+${summary.dinosaurExp}` : '정산 중'}</span>
+          <span>{summary ? `+${summary.dinoExp}` : '정산 중'}</span>
         </div>
         <div className="flex justify-between gap-3">
           <span>행복감 변화</span>
@@ -2515,7 +2581,7 @@ function TrainingDinosaurCard({
       </p>
       <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-sm font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
       <div className="mt-4 grid gap-3">
-        <Meter label="EXP" value={getExpPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
+        <Meter label="EXP" value={getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <Meter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
         <Meter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
       </div>
@@ -2636,6 +2702,15 @@ function SettingsView({
   numberCountOverride,
   digitTypeOverride,
   operationsOverride,
+  growthSpeedMultiplier,
+  coinRewardMultiplier,
+  discoveredDinosaurCount,
+  totalDinosaurCount,
+  unlockedItemCount,
+  totalItemCount,
+  currentDinosaurLevel,
+  expProgressPercent,
+  currentCoins,
   trainingHistory,
   selectedLevelEvaluation,
   selectedStageEvaluation,
@@ -2647,6 +2722,8 @@ function SettingsView({
   onNumberCountOverride,
   onDigitTypeOverride,
   onOperationsOverride,
+  onGrowthSpeedMultiplier,
+  onCoinRewardMultiplier,
   onResetSavedGameState,
   onBluetoothNotification,
 }: {
@@ -2661,6 +2738,15 @@ function SettingsView({
   numberCountOverride: NumberCountOverride;
   digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
+  growthSpeedMultiplier: GrowthSpeedMultiplier;
+  coinRewardMultiplier: CoinRewardMultiplier;
+  discoveredDinosaurCount: number;
+  totalDinosaurCount: number;
+  unlockedItemCount: number;
+  totalItemCount: number;
+  currentDinosaurLevel: number;
+  expProgressPercent: number;
+  currentCoins: number;
   trainingHistory: TrainingSessionRecord[];
   selectedLevelEvaluation: TrainingProgressEvaluation;
   selectedStageEvaluation: TrainingProgressEvaluation;
@@ -2672,6 +2758,8 @@ function SettingsView({
   onNumberCountOverride: (value: NumberCountOverride) => void;
   onDigitTypeOverride: (value: DigitTypeOverride) => void;
   onOperationsOverride: (value: OperationsOverride) => void;
+  onGrowthSpeedMultiplier: (value: GrowthSpeedMultiplier) => void;
+  onCoinRewardMultiplier: (value: CoinRewardMultiplier) => void;
   onResetSavedGameState: () => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
 }) {
@@ -2741,6 +2829,8 @@ function SettingsView({
               <option value="4">4개</option>
               <option value="5">5개</option>
               <option value="6">6개</option>
+              <option value="7">7개</option>
+              <option value="8">8개</option>
             </select>
           </label>
           <label className="grid gap-2 text-sm font-black text-emerald-800">
@@ -2753,6 +2843,8 @@ function SettingsView({
               <option value="stage-default">{formatDigitTypeOverride('stage-default', selectedStage)}</option>
               <option value="one-digit">한 자리</option>
               <option value="two-digit">두 자리</option>
+              <option value="three-digit">세 자리</option>
+              <option value="mixed-two-three-digit">두·세 자리 혼합</option>
               <option value="mixed-digit">한 자리 + 두 자리</option>
             </select>
           </label>
@@ -2842,6 +2934,67 @@ function SettingsView({
             )}
           </div>
         </details>}
+      </section>
+      <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
+        <h3 className="text-2xl font-black text-emerald-950">보상 밸런스</h3>
+        <p className="mt-2 text-sm font-black text-slate-500">아이의 훈련량에 맞춰 공룡 성장과 코인 보상을 조절해요.</p>
+        <h4 className="mt-5 text-sm font-black text-emerald-800">공룡 성장 속도</h4>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {growthSpeedOptions.map((option) => {
+            const isSelected = growthSpeedMultiplier === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onGrowthSpeedMultiplier(option.value)}
+                className={`min-h-14 rounded-[20px] border-4 px-4 py-3 text-sm font-black transition ${
+                  isSelected
+                    ? 'border-emerald-400 bg-emerald-100 text-emerald-900 shadow-sm'
+                    : 'border-white bg-slate-50 text-slate-600 hover:bg-emerald-50'
+                }`}
+              >
+                {option.label} {option.percent}%
+              </button>
+            );
+          })}
+        </div>
+        <h4 className="mt-5 text-sm font-black text-amber-800">코인 보상량</h4>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {coinRewardOptions.map((option) => {
+            const isSelected = coinRewardMultiplier === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onCoinRewardMultiplier(option.value)}
+                className={`min-h-14 rounded-[20px] border-4 px-4 py-3 text-sm font-black transition ${
+                  isSelected
+                    ? 'border-amber-400 bg-amber-100 text-amber-900 shadow-sm'
+                    : 'border-white bg-slate-50 text-slate-600 hover:bg-amber-50'
+                }`}
+              >
+                {option.label} {option.percent}%
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-3 rounded-[18px] bg-cyan-50 px-4 py-3 text-xs font-black text-cyan-800">
+          각 설정은 공룡 EXP와 코인에만 독립 적용되며, 난이도·행복·체력·아이템에는 영향을 주지 않습니다.
+        </p>
+        <div className="mt-5">
+          <h4 className="text-base font-black text-slate-800">현재 해금 현황</h4>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <SettingChip label="공룡 도감" value={`${discoveredDinosaurCount} / ${totalDinosaurCount}`} />
+            <SettingChip label="아이템" value={`${unlockedItemCount} / ${totalItemCount}`} />
+            <SettingChip label="현재 공룡 레벨" value={`Lv.${currentDinosaurLevel}`} />
+            <SettingChip label="현재 EXP 진행률" value={`${expProgressPercent}%`} />
+            <SettingChip label="보유 코인" value={currentCoins.toLocaleString()} />
+          </div>
+        </div>
       </section>
       <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
         <h3 className="text-2xl font-black text-emerald-950">프로필</h3>
