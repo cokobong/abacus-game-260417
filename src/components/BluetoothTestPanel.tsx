@@ -221,16 +221,16 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
   const adapterUnavailable = availability === 'unavailable' || availability === 'unsupported' || !hasNavigatorBluetooth;
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <section className="grid gap-4">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
-              <Bluetooth className="h-7 w-7" />
+    <div className="grid min-w-0 gap-3 overflow-x-hidden xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid min-w-0 gap-3">
+        <div className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50 p-3 sm:p-5">
+          <div className="mb-3 flex min-w-0 items-start gap-2 sm:mb-4 sm:gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white sm:h-12 sm:w-12">
+              <Bluetooth className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-900">주산 입력 장치 연결 테스트</h3>
-              <p className="text-sm font-semibold text-slate-500">Bluetooth 주판 입력을 게임 로직과 분리해 확인합니다.</p>
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-black leading-snug text-slate-900 sm:text-xl">주산 입력 장치 연결 테스트</h3>
+              <p className="mt-1 break-words text-[13px] font-semibold leading-snug text-slate-500 sm:text-sm">Bluetooth 주판 입력을 게임 로직과 분리해 확인합니다.</p>
             </div>
           </div>
 
@@ -243,63 +243,63 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
           </div>
 
           {availabilityError && (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">
+            <div className="mt-3 break-words rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[13px] font-bold leading-snug text-amber-800 sm:mt-4 sm:p-4 sm:text-sm">
               {availabilityError}
             </div>
           )}
 
           {adapterUnavailable && (
-            <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm font-bold leading-relaxed text-orange-900">
+            <div className="mt-3 break-words rounded-2xl border border-orange-200 bg-orange-50 p-3 text-[13px] font-bold leading-snug text-orange-900 sm:mt-4 sm:p-4 sm:text-sm sm:leading-relaxed">
               현재 Chrome이 사용할 수 있는 Windows Bluetooth 어댑터가 없습니다. nRF52 Connectivity는 nRF Connect용 동글일 수 있으며, Web Bluetooth 테스트에는 일반 Bluetooth 동글 또는 내장 Bluetooth가 필요할 수 있습니다.
             </div>
           )}
 
-          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm font-bold text-sky-900">
+          <div className="mt-3 break-words rounded-2xl border border-sky-200 bg-sky-50 p-3 text-[13px] font-bold leading-snug text-sky-900 sm:mt-4 sm:p-4 sm:text-sm">
             집 PC에서는 목업 UI와 패널 동작만 확인하고, 실제 FLEDU 연결 성공 여부는 과거 연결 성공했던 Windows 노트북에서 최종 테스트 필요.
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h4 className="mb-4 text-lg font-black text-slate-900">연결 설정</h4>
+        <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+          <h4 className="mb-3 text-base font-black text-slate-900 sm:mb-4 sm:text-lg">연결 설정</h4>
           <label className="mb-3 block">
-            <span className="mb-1 block text-sm font-black text-slate-500">Service UUID</span>
+            <span className="mb-1 block text-xs font-black text-slate-500 sm:text-sm">Service UUID</span>
             <input
               value={serviceUuid}
               onChange={(event) => setServiceUuid(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm focus:border-cyan-400"
+              className="w-full min-w-0 rounded-2xl border border-slate-200 px-3 py-3 font-mono text-xs focus:border-cyan-400 sm:px-4 sm:text-sm"
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm font-black text-slate-500">Characteristic UUID</span>
+            <span className="mb-1 block text-xs font-black text-slate-500 sm:text-sm">Characteristic UUID</span>
             <input
               value={characteristicUuid}
               onChange={(event) => setCharacteristicUuid(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm focus:border-cyan-400"
+              className="w-full min-w-0 rounded-2xl border border-slate-200 px-3 py-3 font-mono text-xs focus:border-cyan-400 sm:px-4 sm:text-sm"
             />
           </label>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 sm:grid-cols-2">
             <button
               onClick={connectWithFleduFilter}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-4 text-base font-black text-white transition hover:bg-cyan-500 active:scale-[0.98]"
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-cyan-600 px-3 text-sm font-black text-white transition hover:bg-cyan-500 active:scale-[0.98] sm:min-h-14 sm:gap-2 sm:px-4 sm:text-base"
             >
               <Radio className="h-5 w-5" />
-              FLEDU 연결
+              <span className="break-words">FLEDU 연결</span>
             </button>
             <button
               onClick={connectWithAcceptAllDevices}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 text-base font-black text-white transition hover:bg-slate-700 active:scale-[0.98]"
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-slate-800 px-3 text-sm font-black text-white transition hover:bg-slate-700 active:scale-[0.98] sm:min-h-14 sm:gap-2 sm:px-4 sm:text-base"
             >
               <Search className="h-5 w-5" />
-              전체 기기 검색 테스트
+              <span className="break-words">전체 기기 검색 테스트</span>
             </button>
           </div>
         </div>
       </section>
 
-      <section className="grid content-start gap-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h4 className="mb-4 text-lg font-black text-slate-900">연결 상태</h4>
+      <section className="grid min-w-0 content-start gap-3 sm:gap-4">
+        <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+          <h4 className="mb-3 text-base font-black text-slate-900 sm:mb-4 sm:text-lg">연결 상태</h4>
           <div className="grid gap-3">
             <InfoLine label="상태" value={status} />
             <InfoLine label="기기 이름" value={deviceName || '-'} />
@@ -308,10 +308,10 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
           </div>
 
           {error && (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-black text-red-800">
+            <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 sm:mt-4 sm:p-4">
+              <div className="mb-2 flex min-w-0 items-center gap-2 text-[13px] font-black text-red-800 sm:text-sm">
                 <AlertTriangle className="h-4 w-4" />
-                연결 실패 상세
+                <span className="break-words">연결 실패 상세</span>
               </div>
               <InfoLine label="error.name" value={error.name} />
               <InfoLine label="error.message" value={error.message} />
@@ -319,31 +319,31 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
           )}
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h4 className="text-lg font-black">Notification 로그</h4>
+        <div className="min-w-0 rounded-3xl border border-slate-200 bg-slate-950 p-3 text-white shadow-sm sm:p-5">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-2 sm:mb-4 sm:gap-3">
+            <h4 className="min-w-0 break-words text-base font-black sm:text-lg">Notification 로그</h4>
             <button
               onClick={() => setLogs([])}
-              className="rounded-full border border-white/20 px-3 py-1 text-xs font-black text-slate-200 transition hover:bg-white/10"
+              className="shrink-0 rounded-full border border-white/20 px-2.5 py-1 text-xs font-black text-slate-200 transition hover:bg-white/10"
             >
               지우기
             </button>
           </div>
-          <div className="max-h-[460px] overflow-auto">
+          <div className="max-h-[460px] min-w-0 overflow-y-auto overflow-x-hidden">
             {logs.length === 0 ? (
-              <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-slate-400">
+              <p className="break-words rounded-2xl border border-white/10 bg-white/5 p-3 text-[13px] font-semibold leading-snug text-slate-400 sm:p-4 sm:text-sm">
                 아직 수신 데이터가 없습니다.
               </p>
             ) : (
               <div className="grid gap-3">
                 {logs.map((log) => (
-                  <article key={log.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 font-mono text-xs">
+                  <article key={log.id} className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3 font-mono text-[11px] leading-snug sm:p-4 sm:text-xs">
                     <p className="mb-2 font-sans text-sm font-black text-cyan-300">{log.time}</p>
-                    <p><span className="text-slate-400">raw value:</span> {log.raw}</p>
-                    <p><span className="text-slate-400">hex:</span> {log.hex}</p>
-                    <p><span className="text-slate-400">text:</span> {log.text}</p>
-                    <p><span className="text-slate-400">number:</span> {log.parsedNumber ?? '-'}</p>
-                    {log.note && <p><span className="text-slate-400">note:</span> {log.note}</p>}
+                    <p className="break-all"><span className="text-slate-400">raw value:</span> {log.raw}</p>
+                    <p className="break-all"><span className="text-slate-400">hex:</span> {log.hex}</p>
+                    <p className="break-all"><span className="text-slate-400">text:</span> {log.text}</p>
+                    <p className="break-all"><span className="text-slate-400">number:</span> {log.parsedNumber ?? '-'}</p>
+                    {log.note && <p className="break-all"><span className="text-slate-400">note:</span> {log.note}</p>}
                   </article>
                 ))}
               </div>
@@ -357,11 +357,11 @@ export function BluetoothTestPanel({ onNotification }: BluetoothTestPanelProps) 
 
 function CheckRow({ label, ok, value }: { label: string; ok: boolean; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <span className="text-sm font-black text-slate-600">{label}</span>
-      <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${ok ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
-        {ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-        {value}
+    <div className="flex min-w-0 flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
+      <span className="min-w-0 break-words text-[13px] font-black leading-snug text-slate-600 sm:text-sm">{label}</span>
+      <span className={`inline-flex max-w-full shrink items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black leading-snug ${ok ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+        {ok ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" /> : <XCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />}
+        <span className="min-w-0 break-words">{value}</span>
       </span>
     </div>
   );
@@ -369,9 +369,9 @@ function CheckRow({ label, ok, value }: { label: string; ok: boolean; value: str
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-[140px_1fr]">
-      <span className="text-sm font-black text-slate-500">{label}</span>
-      <span className="break-all text-sm font-bold text-slate-900">{value}</span>
+    <div className="grid min-w-0 gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 sm:grid-cols-[120px_minmax(0,1fr)] sm:px-4 sm:py-3">
+      <span className="min-w-0 break-words text-[13px] font-black text-slate-500 sm:text-sm">{label}</span>
+      <span className="min-w-0 break-all text-[13px] font-bold text-slate-900 sm:text-sm">{value}</span>
     </div>
   );
 }

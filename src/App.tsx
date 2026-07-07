@@ -38,6 +38,7 @@ import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type Gr
 import { trainingUiAssets } from './assets/ui/training';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
+type AppScreen = 'home' | MainTab;
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
@@ -88,6 +89,8 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
   { id: 'adventure', label: '모험', icon: MapIcon, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
   { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
 ];
+
+const visibleMainTabs = mainTabs.filter((tab) => tab.id === 'training' || tab.id === 'dino' || tab.id === 'shop' || tab.id === 'pokedex' || tab.id === 'settings');
 
 const defaultSelectedLevel = 1;
 const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
@@ -879,8 +882,8 @@ export default function App() {
       state: normalizeGameState(loaded.state),
     };
   });
-  const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>(() => (initialLoadResult.state.userProfile ? 'title' : 'onboarding'));
-  const [activeTab, setActiveTab] = useState<MainTab>('training');
+  const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>('app');
+  const [activeTab, setActiveTab] = useState<AppScreen>('home');
   const hasMountedRef = useRef(false);
   const skipNextSaveRef = useRef(false);
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
@@ -967,6 +970,7 @@ export default function App() {
   });
   const [lastBluetoothInput, setLastBluetoothInput] = useState<BluetoothNotificationPayload | null>(null);
   const [dinoView, setDinoView] = useState<DinoView>('care');
+  const [isHatcheryOpen, setIsHatcheryOpen] = useState(false);
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [hatchResult, setHatchResult] = useState<HatchResult | null>(null);
   const [selectedFoodItemId, setSelectedFoodItemId] = useState<string | null>('soft-berry');
@@ -978,8 +982,12 @@ export default function App() {
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
 
-  const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs[0], [activeTab]);
-  const allowsPageScroll = activeTab === 'shop' || activeTab === 'settings';
+  const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
+  const isHomeScreen = activeTab === 'home';
+  const isTrainingScreen = activeTab === 'training';
+  const showAppHeader = !isHomeScreen && !isTrainingScreen;
+  const showBottomNav = !isHomeScreen && !isTrainingScreen;
+  const allowsPageScroll = activeTab !== 'training';
 
   useEffect(() => {
     setCompletedTrainingSummary(null);
@@ -987,10 +995,10 @@ export default function App() {
   }, [trainingSettingsKey]);
 
   useEffect(() => {
-    if (activeTab !== 'hatchery') {
+    if (!isHatcheryOpen) {
       setHatchResult(null);
     }
-  }, [activeTab]);
+  }, [isHatcheryOpen]);
 
   useEffect(() => {
     if (!hatchResult) {
@@ -1028,7 +1036,7 @@ export default function App() {
     setAdventureFeedback('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
     setAdventureResult(null);
     setStorageFeedback('저장 데이터를 초기화하고 기본 상태로 되돌렸어요.');
-    setPhase('onboarding');
+    setPhase('app');
     console.log('Cleared local game state.');
   }
 
@@ -1178,8 +1186,6 @@ export default function App() {
       },
     });
     const completedAt = completedSession.completedAt ?? Date.now();
-    const hatchReward = resultReward.hatchItems[0];
-    const hatchItem = hatchReward ? getHatchItemConfig(hatchReward.itemId) : null;
     const trainingRecord: TrainingSessionRecord = {
       id: `training-record-${completedSession.id}`,
       completedAt: new Date(completedAt).toISOString(),
@@ -1194,48 +1200,30 @@ export default function App() {
       wrongCount,
       accuracy: resultReward.accuracy,
       earnedCoins: resultReward.coins,
-      earnedExp: resultReward.dinoExp,
-      earnedItems: resultReward.hatchItems,
+      earnedExp: 0,
+      earnedItems: [],
       activeDinosaurId: activeOwnedDinosaur.id,
     };
 
     setGameState((current) => {
-      const withPlayerAndInventory: GameState = {
+      return {
         ...current,
         player: {
           ...current.player,
           coins: current.player.coins + resultReward.coins,
         },
-        inventory: resultReward.hatchItems.reduce((inventory, item) => addInventoryQuantity(inventory, item.itemId, item.quantity), current.inventory),
         trainingHistory: addTrainingRecordToHistory(current.trainingHistory, trainingRecord),
         rewardedTrainingSessionIds: Array.from(new Set([...current.rewardedTrainingSessionIds, completedSession.id])).slice(-100),
         progressByLevel: updateProgressByLevel(current.progressByLevel, trainingRecord),
         progressByStage: updateProgressByStage(current.progressByStage, trainingRecord),
       };
-
-      return updateSelectedOwnedDinosaur(withPlayerAndInventory, (dinosaur) => {
-        const rawExpBefore = dinosaur.exp;
-        const grownDinosaur = applyDinosaurExp(dinosaur, resultReward.dinoExp);
-        const nextHappiness = clampHappiness(grownDinosaur.happiness + resultReward.happiness);
-
-        console.log('Applied training dinosaur EXP reward.', {
-          sessionId: completedSession.id,
-          rawExpBefore,
-          awardedRawExp: resultReward.dinoExp,
-          rawExpAfter: grownDinosaur.exp,
-          levelAfter: grownDinosaur.level,
-        });
-
-        return {
-          ...grownDinosaur,
-          mood: nextHappiness,
-          happiness: nextHappiness,
-        };
-      });
     });
 
     setCompletedTrainingSummary({
       ...resultReward,
+      dinoExp: 0,
+      happiness: 0,
+      hatchItems: [],
       sessionId: completedSession.id,
       totalProblems: completedSession.problems.length,
       correctCount,
@@ -1245,12 +1233,9 @@ export default function App() {
     });
     setSetCompleteRewards([
       createDisplayReward(`코인 +${resultReward.coins}`, resultReward.coins),
-      createDisplayReward(`공룡 EXP +${resultReward.dinoExp}`, resultReward.dinoExp),
-      createDisplayReward(`공룡 기분 +${resultReward.happiness}`, resultReward.happiness),
-      ...(hatchReward ? [createDisplayReward(`${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개`, hatchReward.quantity)] : []),
     ]);
     setLastRewards([]);
-    setLastTrainingEffects(hatchReward ? [`${hatchItem?.name ?? hatchReward.itemId} ${hatchReward.quantity}개를 얻었어요.`] : []);
+    setLastTrainingEffects([]);
   }
 
   function restartTrainingSet() {
@@ -1843,29 +1828,38 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 text-slate-800">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_20%_25%,rgba(255,255,255,0.9),transparent_16%),radial-gradient(circle_at_72%_20%,rgba(255,255,255,0.75),transparent_14%)]" />
-      <header className="relative z-20 shrink-0 px-3 py-2 md:px-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 rounded-[24px] border-4 border-white bg-white/82 px-3 py-2 shadow-[0_12px_30px_rgba(14,116,144,0.16)] backdrop-blur md:px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 p-0 text-slate-800 sm:p-4">
+      <div className="relative flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 shadow-[0_22px_60px_rgba(14,116,144,0.28)] sm:h-[932px] sm:max-h-[100dvh] sm:rounded-[34px] sm:border-4 sm:border-white">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_20%_25%,rgba(255,255,255,0.9),transparent_16%),radial-gradient(circle_at_72%_20%,rgba(255,255,255,0.75),transparent_14%)]" />
+      {showAppHeader && <header className="relative z-20 shrink-0 px-2 py-2">
+        <div className="mx-auto flex items-center justify-between gap-2 rounded-[22px] border-4 border-white bg-white/82 px-2 py-2 shadow-[0_12px_30px_rgba(14,116,144,0.16)] backdrop-blur">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setIsHatcheryOpen(false);
+                setActiveTab('home');
+              }}
+              className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b from-cyan-300 to-sky-400 text-white shadow-md transition active:translate-y-1"
+              aria-label="홈으로 돌아가기"
+            >
+              <ChevronLeft className="h-7 w-7" />
+            </button>
             <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-400 text-white shadow-md">
               <Baby className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-emerald-950 md:text-2xl">주산 공룡 모험</h1>
+              <h1 className="text-lg font-black text-emerald-950">주산 공룡 모험</h1>
               <p className="hidden text-sm font-black text-emerald-700/75 sm:block">주산훈련 → 보상 → 알부화와 성장</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1">
             <HeaderPill icon={Coins} label={gameState.player.coins.toLocaleString()} tone="coin" />
-            <HeaderPill icon={Star} label={`Lv. ${activeDinosaur.level}`} tone="level" />
-            <HeaderPill icon={BookOpen} label={`${gameState.selectedLevel}단계`} tone="book" />
           </div>
         </div>
-      </header>
+      </header>}
 
-      <main className={`relative z-10 mx-auto min-h-0 w-full max-w-7xl px-3 py-2 md:px-4 ${allowsPageScroll ? 'flex-1 overflow-y-auto pb-[calc(6.5rem+env(safe-area-inset-bottom))]' : 'flex-1 overflow-hidden pb-[calc(5.75rem+env(safe-area-inset-bottom))]'}`}>
-        <section className={`${activeTab === 'pokedex' || activeTab === 'training' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
+      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden px-2 py-2 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(6.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : 'flex-1 overflow-hidden pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}>
+        <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
           <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
             <activeMeta.icon className={`h-7 w-7 ${activeMeta.color}`} />
           </div>
@@ -1874,6 +1868,17 @@ export default function App() {
             <p className="hidden text-xs font-black text-emerald-700/70 md:block">터치 화면 안에서 바로 사용할 수 있게 정리했어요.</p>
           </div>
         </section>
+
+        {activeTab === 'home' && (
+          <HomeHubScreen
+            coins={gameState.player.coins}
+            activeDinosaur={activeDinosaur}
+            onNavigate={(screen) => {
+              setIsHatcheryOpen(false);
+              setActiveTab(screen);
+            }}
+          />
+        )}
 
         {activeTab === 'training' && (
           <TrainingScreen>
@@ -1893,6 +1898,7 @@ export default function App() {
               completedTrainingSummary={completedTrainingSummary}
               isSetComplete={training.isSetComplete}
               bluetoothInput={lastBluetoothInput}
+              currentCoins={gameState.player.coins}
               selectedLevelConfig={selectedLevelConfig}
               effectiveProblemCount={effectiveProblemCount}
               effectiveNumberCountLabel={effectiveNumberCountLabel}
@@ -1906,12 +1912,22 @@ export default function App() {
               onCheck={() => training.submitAnswer('manual')}
               onChooseProblem={training.chooseProblem}
               onRestartTraining={restartTrainingSet}
-              onGoToDino={() => setActiveTab('dino')}
-              onGoToHatchery={() => setActiveTab('hatchery')}
+              onGoToShop={() => {
+                setIsHatcheryOpen(false);
+                setActiveTab('shop');
+              }}
+              onGoToDino={() => {
+                setIsHatcheryOpen(false);
+                setActiveTab('home');
+              }}
+              onGoToHatchery={() => {
+                setActiveTab('dino');
+                setIsHatcheryOpen(true);
+              }}
             />
           </TrainingScreen>
         )}
-        {activeTab === 'dino' && (
+        {activeTab === 'dino' && !isHatcheryOpen && (
           <DinosaurRoomScreen
             view={dinoView}
             dinosaur={activeDinosaur}
@@ -1927,9 +1943,10 @@ export default function App() {
             onEquipCostume={equipCostume}
             onDinosaurInteraction={applyDinosaurInteraction}
             onFeed={feedDinosaur}
+            onGoToHatchery={() => setIsHatcheryOpen(true)}
           />
         )}
-        {activeTab === 'hatchery' && (
+        {activeTab === 'dino' && isHatcheryOpen && (
           <HatcheryScreen
             ownedEggs={gameState.ownedEggs}
             activeEggId={gameState.activeEggId}
@@ -1942,11 +1959,12 @@ export default function App() {
             onHatchEgg={hatchEgg}
             onGoToDex={() => {
               setHatchResult(null);
+              setIsHatcheryOpen(false);
               setActiveTab('pokedex');
             }}
             onGoToDino={() => {
               setHatchResult(null);
-              setActiveTab('dino');
+              setIsHatcheryOpen(false);
             }}
             onCloseHatchResult={() => setHatchResult(null)}
           />
@@ -1970,80 +1988,321 @@ export default function App() {
             }}
             onGoToHatchery={() => {
               setAdventureResult(null);
-              setActiveTab('hatchery');
+              setActiveTab('dino');
+              setIsHatcheryOpen(true);
             }}
           />
         )}
         {activeTab === 'settings' && (
-          <SettingsScreen>
-            <SettingsView
-              userProfile={gameState.userProfile}
-              levels={abacusLevels}
-              selectedLevel={gameState.selectedLevel}
-              selectedLevelConfig={selectedLevelConfig}
-              selectedStage={selectedStage}
-              selectedStageId={gameState.selectedStageId}
-              selectedLevelStages={selectedLevelStages}
-              problemCountOverride={gameState.problemCountOverride}
-              numberCountOverride={gameState.numberCountOverride}
-              digitTypeOverride={gameState.digitTypeOverride}
-              operationsOverride={gameState.operationsOverride}
-              growthSpeedMultiplier={gameState.growthSpeedMultiplier}
-              coinRewardMultiplier={gameState.coinRewardMultiplier}
-              discoveredDinosaurCount={gameState.discoveredSpeciesIds.length}
-              totalDinosaurCount={dinosaurSpecies.length}
-              unlockedItemCount={new Set([
-                ...gameState.inventory.filter((item) => item.quantity > 0).map((item) => item.itemId),
-                ...gameState.ownedCostumeIds,
-                ...gameState.ownedEggs.map((egg) => egg.eggItemId),
-              ]).size}
-              totalItemCount={itemConfigs.length}
-              currentDinosaurLevel={activeDinosaur.level}
-              expProgressPercent={getExpProgressPercent(activeDinosaur.exp, activeDinosaur.expToNextLevel)}
-              currentCoins={gameState.player.coins}
-              trainingHistory={gameState.trainingHistory}
-              selectedLevelEvaluation={selectedLevelEvaluation}
-              selectedStageEvaluation={selectedStageEvaluation}
-              nextTrainingRecommendation={nextTrainingRecommendation}
-              storageFeedback={storageFeedback}
-              onSelectLevel={selectTrainingLevel}
-              onSelectStage={selectTrainingStage}
-              onProblemCountOverride={updateProblemCountOverride}
-              onNumberCountOverride={updateNumberCountOverride}
-              onDigitTypeOverride={updateDigitTypeOverride}
-              onOperationsOverride={updateOperationsOverride}
-              onGrowthSpeedMultiplier={updateGrowthSpeedMultiplier}
-              onCoinRewardMultiplier={updateCoinRewardMultiplier}
-              onResetSavedGameState={resetSavedGameState}
-              onBluetoothNotification={handleBluetoothNotification}
-            />
-          </SettingsScreen>
+          <PortraitSettingsView
+            levels={abacusLevels}
+            selectedLevel={gameState.selectedLevel}
+            selectedLevelConfig={selectedLevelConfig}
+            growthSpeedMultiplier={gameState.growthSpeedMultiplier}
+            coinRewardMultiplier={gameState.coinRewardMultiplier}
+            problemCountOverride={gameState.problemCountOverride}
+            numberCountOverride={gameState.numberCountOverride}
+            digitTypeOverride={gameState.digitTypeOverride}
+            operationsOverride={gameState.operationsOverride}
+            storageFeedback={storageFeedback}
+            onSelectLevel={selectTrainingLevel}
+            onProblemCountOverride={updateProblemCountOverride}
+            onNumberCountOverride={updateNumberCountOverride}
+            onDigitTypeOverride={updateDigitTypeOverride}
+            onOperationsOverride={updateOperationsOverride}
+            onGrowthSpeedMultiplier={updateGrowthSpeedMultiplier}
+            onCoinRewardMultiplier={updateCoinRewardMultiplier}
+            onResetSavedGameState={resetSavedGameState}
+            onBluetoothNotification={handleBluetoothNotification}
+          />
         )}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 px-2 pb-[calc(0.4rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto grid max-w-5xl grid-cols-7 gap-1 rounded-[24px] border-4 border-white bg-white/90 p-1.5 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur">
-          {mainTabs.map((tab) => {
+      {showBottomNav && <nav className="absolute inset-x-0 bottom-0 z-30 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid grid-cols-5 gap-1 rounded-[24px] border-4 border-white bg-white/90 p-1.5 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur">
+          {visibleMainTabs.map((tab) => {
             const Icon = tab.icon;
             const active = tab.id === activeTab;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[18px] border-2 text-[10px] font-black transition active:translate-y-1 sm:text-xs ${
+                onClick={() => {
+                  setIsHatcheryOpen(false);
+                  setActiveTab(tab.id);
+                }}
+                className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] border-2 text-[9px] font-black transition active:translate-y-1 ${
                   active
                     ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_6px_0_rgba(15,23,42,0.16)]`
                     : 'border-transparent bg-transparent text-slate-500 hover:bg-sky-50'
                 }`}
               >
-                <Icon className={`h-6 w-6 ${active ? tab.color : 'text-slate-400'}`} />
+                <Icon className={`h-5 w-5 ${active ? tab.color : 'text-slate-400'}`} />
                 <span className={active ? 'text-slate-900' : ''}>{tab.label}</span>
               </button>
             );
           })}
         </div>
-      </nav>
+      </nav>}
+      </div>
     </div>
+  );
+}
+
+function HomeHubScreen({
+  coins,
+  activeDinosaur,
+  onNavigate,
+}: {
+  coins: number;
+  activeDinosaur: DinosaurState;
+  onNavigate: (screen: Exclude<AppScreen, 'home' | 'hatchery' | 'adventure'>) => void;
+}) {
+  const hubActions: Array<{ id: Exclude<AppScreen, 'home' | 'hatchery' | 'adventure'>; label: string; icon: typeof Play; tone: string }> = [
+    { id: 'training', label: '훈련 시작', icon: Play, tone: 'from-cyan-300 to-sky-500 text-sky-950 shadow-[0_7px_0_#0284c7]' },
+    { id: 'dino', label: '공룡 보기', icon: Baby, tone: 'from-lime-300 to-emerald-400 text-emerald-950 shadow-[0_7px_0_#059669]' },
+    { id: 'shop', label: '상점', icon: ShoppingBag, tone: 'from-amber-300 to-orange-400 text-amber-950 shadow-[0_7px_0_#d97706]' },
+    { id: 'pokedex', label: '도감', icon: BookOpen, tone: 'from-sky-300 to-blue-400 text-blue-950 shadow-[0_7px_0_#2563eb]' },
+    { id: 'settings', label: '설정', icon: Settings, tone: 'from-slate-200 to-slate-300 text-slate-800 shadow-[0_7px_0_#94a3b8]' },
+  ];
+
+  return (
+    <section className="relative grid min-h-full overflow-hidden rounded-[30px] border-4 border-white bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 px-4 pb-5 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,.8)]">
+      <div className="relative z-10 flex items-center justify-between">
+        <button className="flex h-11 w-11 items-center justify-center rounded-[16px] border-4 border-white bg-white/82 text-cyan-700 shadow-md" aria-label="소리 설정">
+          <Sparkles className="h-5 w-5" />
+        </button>
+        <div className="inline-flex min-h-11 items-center gap-1.5 rounded-full border-4 border-white bg-amber-200 px-4 text-sm font-black text-amber-950 shadow-md">
+          <Coins className="h-5 w-5" />
+          {coins.toLocaleString()}
+        </div>
+      </div>
+
+      <div className="relative z-10 flex min-h-[330px] flex-col items-center justify-center text-center">
+        <p className="rounded-full border-2 border-white bg-white/72 px-4 py-1 text-xs font-black text-emerald-700 shadow-sm">매일 조금씩 강해지는 주산 모험</p>
+        <h1 className="mt-3 text-4xl font-black leading-tight text-emerald-950 drop-shadow-sm">공룡 주산<br />훈련소</h1>
+        <div className="relative mt-2 flex h-48 w-full items-end justify-center overflow-hidden">
+          <div className="absolute bottom-0 h-24 w-64 rounded-t-[50%] bg-lime-300/70" />
+          <DinoAvatar size="large" />
+        </div>
+        <p className="mt-1 max-w-[280px] text-sm font-black leading-snug text-emerald-800/80">
+          {activeDinosaur.name}와 함께 문제를 풀고 코인을 모아 보세요.
+        </p>
+      </div>
+
+      <div className="relative z-10 grid gap-2.5">
+        {hubActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.id}
+              onClick={() => onNavigate(action.id)}
+              className={`flex min-h-14 items-center justify-center gap-3 rounded-[22px] border-4 border-white bg-gradient-to-b px-5 text-lg font-black transition active:translate-y-1 active:shadow-none ${action.tone}`}
+            >
+              <Icon className="h-6 w-6" />
+              {action.label}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function PortraitSettingsView({
+  levels,
+  selectedLevel,
+  selectedLevelConfig,
+  growthSpeedMultiplier,
+  coinRewardMultiplier,
+  problemCountOverride,
+  numberCountOverride,
+  digitTypeOverride,
+  operationsOverride,
+  storageFeedback,
+  onSelectLevel,
+  onProblemCountOverride,
+  onNumberCountOverride,
+  onDigitTypeOverride,
+  onOperationsOverride,
+  onGrowthSpeedMultiplier,
+  onCoinRewardMultiplier,
+  onResetSavedGameState,
+  onBluetoothNotification,
+}: {
+  levels: AbacusLevelConfig[];
+  selectedLevel: number;
+  selectedLevelConfig: AbacusLevelConfig | null;
+  growthSpeedMultiplier: GrowthSpeedMultiplier;
+  coinRewardMultiplier: CoinRewardMultiplier;
+  problemCountOverride?: ProblemCountOverride;
+  numberCountOverride: NumberCountOverride;
+  digitTypeOverride: DigitTypeOverride;
+  operationsOverride: OperationsOverride;
+  storageFeedback: string;
+  onSelectLevel: (level: number) => void;
+  onProblemCountOverride: (value: ProblemCountOverride | 'stage-default') => void;
+  onNumberCountOverride: (value: NumberCountOverride) => void;
+  onDigitTypeOverride: (value: DigitTypeOverride) => void;
+  onOperationsOverride: (value: OperationsOverride) => void;
+  onGrowthSpeedMultiplier: (value: GrowthSpeedMultiplier) => void;
+  onCoinRewardMultiplier: (value: CoinRewardMultiplier) => void;
+  onResetSavedGameState: () => void;
+  onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
+}) {
+  return (
+    <section className="grid min-w-0 gap-3 overflow-x-hidden pb-4">
+      <div className="min-w-0 overflow-hidden rounded-[28px] border-4 border-white bg-white/82 p-3 shadow-lg sm:p-4">
+        <p className="text-xs font-black text-slate-500">모바일 분기 설정</p>
+        <h3 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">설정</h3>
+        <p className="mt-2 break-words text-[13px] font-black leading-snug text-slate-500 sm:text-sm sm:leading-relaxed">
+          세로형 MVP에서는 꼭 필요한 항목만 먼저 보여줘요. 복잡한 개발자 설정은 기존 코드에 보존되어 있습니다.
+        </p>
+      </div>
+
+      <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <span className="text-sm font-black text-emerald-800">훈련 난이도</span>
+        <select
+          value={selectedLevel}
+          onChange={(event) => onSelectLevel(Number(event.target.value))}
+          className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-emerald-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
+        >
+          {levels.map((level) => (
+            <option key={level.level} value={level.level}>
+              {level.level}단계 · {level.title}
+            </option>
+          ))}
+        </select>
+        <span className="break-words text-xs font-black leading-snug text-slate-500">{selectedLevelConfig?.summary ?? '선택된 단계 정보가 없습니다.'}</span>
+      </label>
+
+      <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <span className="text-sm font-black text-cyan-800">세트 문제 수</span>
+        <select
+          value={problemCountOverride ? String(problemCountOverride) : 'stage-default'}
+          onChange={(event) => {
+            const value = event.target.value;
+            onProblemCountOverride(value === 'stage-default' ? 'stage-default' : (Number(value) as ProblemCountOverride));
+          }}
+          className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
+        >
+          <option value="stage-default">단계 기본값</option>
+          <option value="5">5문제</option>
+          <option value="10">10문제</option>
+          <option value="15">15문제</option>
+          <option value="20">20문제</option>
+        </select>
+      </label>
+
+      <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <span className="text-sm font-black text-emerald-800">문제 안 숫자 개수</span>
+        <select
+          value={String(numberCountOverride)}
+          onChange={(event) => onNumberCountOverride(normalizeNumberCountOverride(event.target.value))}
+          className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-emerald-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
+        >
+          <option value="stage-default">단계 기본값</option>
+          <option value="3">3개</option>
+          <option value="4">4개</option>
+          <option value="5">5개</option>
+          <option value="6">6개</option>
+          <option value="7">7개</option>
+          <option value="8">8개</option>
+        </select>
+        <span className="break-words text-xs font-black leading-snug text-slate-500">한 문제에 나오는 숫자 개수를 정합니다.</span>
+      </label>
+
+      <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <span className="text-sm font-black text-sky-800">문제 자리수</span>
+        <select
+          value={digitTypeOverride}
+          onChange={(event) => onDigitTypeOverride(normalizeDigitTypeOverride(event.target.value))}
+          className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-sky-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
+        >
+          <option value="stage-default">단계 기본값</option>
+          <option value="one-digit">한자리</option>
+          <option value="two-digit">두자리</option>
+          <option value="three-digit">세자리</option>
+        </select>
+      </label>
+
+      <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <span className="text-sm font-black text-rose-800">연산 방식</span>
+        <select
+          value={operationsOverride}
+          onChange={(event) => onOperationsOverride(normalizeOperationsOverride(event.target.value))}
+          className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-rose-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
+        >
+          <option value="stage-default">단계 기본값</option>
+          <option value="add">덧셈</option>
+          <option value="subtract">뺄셈</option>
+          <option value="mixed">덧셈 + 뺄셈 혼합</option>
+        </select>
+      </label>
+
+      <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <div className="mb-3 flex min-w-0 items-center gap-2">
+          <Bluetooth className="h-5 w-5 text-cyan-700" />
+          <h4 className="min-w-0 break-words text-sm font-black text-cyan-900">Bluetooth 주판 연결</h4>
+        </div>
+        <div className="min-w-0 overflow-x-hidden rounded-[18px] bg-white/70 p-1.5 sm:p-2">
+          <BluetoothTestPanel onNotification={onBluetoothNotification} />
+        </div>
+      </section>
+
+      <section className="grid min-w-0 gap-3 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <h4 className="text-sm font-black text-amber-800">성장 속도</h4>
+        <div className="grid grid-cols-3 gap-2">
+          {growthSpeedOptions.map((option) => {
+            const selected = growthSpeedMultiplier === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onGrowthSpeedMultiplier(option.value)}
+                className={`min-h-12 rounded-[16px] px-2 text-xs font-black transition active:translate-y-1 ${
+                  selected ? 'bg-emerald-400 text-emerald-950 shadow-[0_4px_0_#059669]' : 'bg-emerald-50 text-emerald-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="grid min-w-0 gap-3 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <h4 className="text-sm font-black text-amber-800">코인 보상 배율</h4>
+        <div className="grid grid-cols-3 gap-2">
+          {coinRewardOptions.map((option) => {
+            const selected = coinRewardMultiplier === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onCoinRewardMultiplier(option.value)}
+                className={`min-h-12 rounded-[16px] px-2 text-xs font-black transition active:translate-y-1 ${
+                  selected ? 'bg-amber-300 text-amber-950 shadow-[0_4px_0_#d97706]' : 'bg-amber-50 text-amber-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <h4 className="text-sm font-black text-slate-800">저장 데이터</h4>
+        <p className="mt-2 break-words rounded-[18px] bg-slate-50 px-3 py-2 text-xs font-black leading-snug text-slate-500">{storageFeedback}</p>
+        <button
+          type="button"
+          onClick={onResetSavedGameState}
+          className="mt-3 min-h-12 w-full rounded-[16px] bg-slate-800 px-4 text-sm font-black text-white shadow-[0_4px_0_#0f172a] transition active:translate-y-1 active:shadow-none"
+        >
+          저장 데이터 초기화
+        </button>
+      </section>
+    </section>
   );
 }
 
@@ -2063,6 +2322,7 @@ function TrainingView({
   completedTrainingSummary,
   isSetComplete,
   bluetoothInput,
+  currentCoins,
   selectedLevelConfig,
   effectiveProblemCount,
   effectiveNumberCountLabel,
@@ -2076,6 +2336,7 @@ function TrainingView({
   onCheck,
   onChooseProblem,
   onRestartTraining,
+  onGoToShop,
   onGoToDino,
   onGoToHatchery,
 }: {
@@ -2094,6 +2355,7 @@ function TrainingView({
   completedTrainingSummary: CompletedTrainingSummary | null;
   isSetComplete: boolean;
   bluetoothInput: BluetoothNotificationPayload | null;
+  currentCoins: number;
   selectedLevelConfig: AbacusLevelConfig | null;
   effectiveProblemCount: number;
   effectiveNumberCountLabel: string;
@@ -2107,6 +2369,7 @@ function TrainingView({
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
   onRestartTraining: () => void;
+  onGoToShop: () => void;
   onGoToDino: () => void;
   onGoToHatchery: () => void;
 }) {
@@ -2129,22 +2392,27 @@ function TrainingView({
           {trainingUiAssets.cornerBottomRight && <img src={trainingUiAssets.cornerBottomRight} alt="" className="absolute bottom-0 right-0 h-20 w-20 object-contain object-right-bottom" />}
           {trainingUiAssets.footprints ? <img src={trainingUiAssets.footprints} alt="" className="absolute bottom-20 right-4 h-14 w-24 rotate-12 object-contain" /> : <span className="absolute bottom-20 right-4 text-3xl">🐾</span>}
         </div>}
-        {!isSetComplete && <div className="relative mb-2 flex flex-wrap items-center gap-2 rounded-[18px] border-2 border-white/90 bg-white/78 px-2.5 py-1.5 shadow-[0_6px_18px_rgba(14,116,144,.08)]">
-          <button onClick={onGoToDino} className="min-h-10 rounded-[13px] bg-white px-3 text-xs font-black text-emerald-800 shadow-sm transition active:translate-y-1">
-            나가기
-          </button>
-          <div className="flex flex-1 flex-wrap items-center gap-2 text-xs font-black">
-            <TrainingStatusBadge fallbackClass="border-cyan-100 bg-cyan-50 text-cyan-800">문제 {Math.min(currentProblemIndex + 1, totalProblems)}/{totalProblems}</TrainingStatusBadge>
-            <TrainingStatusBadge fallbackClass="border-emerald-100 bg-emerald-50 text-emerald-800">정답 {correctCount}</TrainingStatusBadge>
-            <TrainingStatusBadge fallbackClass="border-rose-100 bg-rose-50 text-rose-700">오답 {wrongCount}</TrainingStatusBadge>
-            <div className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border-2 px-3 py-1 text-[11px] font-black shadow-sm ${bluetoothStatusTone}`}>
-              {trainingUiAssets.bluetoothWait ? <img src={trainingUiAssets.bluetoothWait} alt="" className="h-5 w-5 object-contain" /> : <Bluetooth className="h-4 w-4" />}
-              {bluetoothStatus}
+        {!isSetComplete && <div className="relative mb-2 grid gap-1.5 rounded-[18px] border-2 border-white/90 bg-white/82 px-2.5 py-1.5 shadow-[0_6px_18px_rgba(14,116,144,.08)]">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+            <button onClick={onGoToDino} className="min-h-10 rounded-[13px] bg-white px-3 text-xs font-black text-emerald-800 shadow-sm transition active:translate-y-1">
+              나가기
+            </button>
+            <div className="min-w-0 text-center text-sm font-black text-emerald-950">
+              문제 {Math.min(currentProblemIndex + 1, totalProblems)} / {totalProblems}
+            </div>
+            <div className="inline-flex min-h-10 items-center gap-1 rounded-[13px] bg-amber-100 px-2.5 text-xs font-black text-amber-950 shadow-sm">
+              <Coins className="h-4 w-4" />
+              {currentCoins.toLocaleString()}
             </div>
           </div>
-          <button className="min-h-10 rounded-[13px] border-2 border-amber-200 bg-amber-50 px-3 text-xs font-black text-amber-900 shadow-sm transition active:translate-y-1">
-            {trainingUiAssets.hintLamp && <img src={trainingUiAssets.hintLamp} alt="" className="mr-1 inline h-5 w-5 object-contain align-middle" />}힌트
-          </button>
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-1.5 text-xs font-black">
+            <TrainingStatusBadge fallbackClass="border-emerald-100 bg-emerald-50 text-emerald-800">정답 {correctCount}</TrainingStatusBadge>
+            <TrainingStatusBadge fallbackClass="border-rose-100 bg-rose-50 text-rose-700">오답 {wrongCount}</TrainingStatusBadge>
+            <div className={`inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border-2 px-2 py-1 text-[10px] font-black shadow-sm ${bluetoothStatusTone}`}>
+              {trainingUiAssets.bluetoothWait ? <img src={trainingUiAssets.bluetoothWait} alt="" className="h-4 w-4 object-contain" /> : <Bluetooth className="h-3.5 w-3.5" />}
+              <span className="break-words">{bluetoothStatus}</span>
+            </div>
+          </div>
         </div>}
 
         {isSetComplete ? (
@@ -2154,12 +2422,12 @@ function TrainingView({
               totalProblems={totalProblems}
               correctCount={correctCount}
               onRestartTraining={onRestartTraining}
+              onGoToShop={onGoToShop}
               onGoToDino={onGoToDino}
-              onGoToHatchery={onGoToHatchery}
             />
           </div>
         ) : (
-          <div className="min-h-0 flex-1 rounded-[30px] border-4 border-white bg-gradient-to-br from-[#dff5ee] via-[#fffdf3] to-[#eef9e5] p-3 shadow-[0_16px_38px_rgba(20,83,45,.16),inset_0_1px_0_rgba(255,255,255,.85)] md:p-5">
+          <div className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-[30px] border-4 border-white bg-gradient-to-br from-[#dff5ee] via-[#fffdf3] to-[#eef9e5] p-3 shadow-[0_16px_38px_rgba(20,83,45,.16),inset_0_1px_0_rgba(255,255,255,.85)] md:p-5">
             <CurrentProblemCard
               answer={answer}
               answerFeedback={answerFeedback}
@@ -2265,7 +2533,7 @@ function TrainingBoardStatusBar({
   const uniqueOwnedCount = getUniqueOwnedDinosaurs(ownedDinosaurs).length;
 
   return (
-    <div className="mt-3 grid items-center gap-2 rounded-[20px] border-2 border-white/80 bg-white/58 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)] lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,.9fr)_auto]">
+    <div className="mt-3 grid min-w-0 items-center gap-2 overflow-hidden rounded-[20px] border-2 border-white/80 bg-white/58 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)] lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,.9fr)_auto]">
       <div className="min-w-0">
         <p className="text-[10px] font-black tracking-wide text-cyan-700">현재 난이도</p>
         <p className="truncate text-xs font-black text-slate-600">{selectedLevelTitle ?? '단계 정보 확인 중'}</p>
@@ -2274,7 +2542,7 @@ function TrainingBoardStatusBar({
         </p>
         {usesFallbackGenerator && <p className="mt-0.5 text-[10px] font-black text-amber-700">임시 생성 규칙 사용 중</p>}
       </div>
-      <div className="grid min-w-0 grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-2">
+      <div className="grid min-w-0 grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-2 overflow-hidden">
         <button
           aria-label="이전 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
@@ -2287,9 +2555,9 @@ function TrainingBoardStatusBar({
           {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="함께 훈련 중인 공룡" className="h-full w-full object-contain" /> : <DinoAvatar size="small" />}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-xs font-black text-cyan-700">{dinosaur.name}와 훈련 중</p>
-          <p className="truncate text-sm font-black text-emerald-950">{reaction}</p>
-          <p className="truncate text-[10px] font-bold text-slate-500">{activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {staminaMessage}</p>
+          <p className="break-words text-xs font-black leading-snug text-cyan-700">{dinosaur.name}와 훈련 중</p>
+          <p className="break-words text-sm font-black leading-snug text-emerald-950">{reaction}</p>
+          <p className="break-words text-[10px] font-bold leading-snug text-slate-500">{activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {staminaMessage}</p>
         </div>
         <button
           aria-label="다음 훈련 공룡"
@@ -2300,13 +2568,10 @@ function TrainingBoardStatusBar({
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-      <div className="flex items-center justify-start gap-2 rounded-[16px] bg-amber-50/80 px-3 py-2 text-xs font-black text-amber-950 lg:justify-center">
+      <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 rounded-[16px] bg-amber-50/80 px-3 py-2 text-xs font-black text-amber-950 lg:justify-center">
         <span className="text-[10px] tracking-wide text-amber-700">세트 완료 보상</span>
         <TrainingRewardIcon asset={trainingUiAssets.rewardCoin} fallback={<Coins className="h-4 w-4" />} />
         <span>코인</span>
-        <span className="text-amber-600">+</span>
-        <TrainingRewardIcon asset={trainingUiAssets.rewardPebble ?? trainingUiAssets.rewardEgg} fallback={<Egg className="h-4 w-4" />} />
-        <span>아이템</span>
       </div>
     </div>
   );
@@ -2357,14 +2622,14 @@ function CurrentProblemCard({
   const expressionGap = numberCount <= 4 ? 'gap-x-5 gap-y-2' : numberCount <= 6 ? 'gap-x-3 gap-y-2' : 'gap-x-2 gap-y-1';
 
   return (
-    <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_310px]">
-      <div className="grid min-h-0 content-start gap-3">
+    <div className="grid min-h-0 min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_310px]">
+      <div className="grid min-h-0 min-w-0 content-start gap-3">
       <div className="flex min-h-[200px] items-center justify-center rounded-[24px] border-2 border-white/90 bg-[#fffdf3]/90 px-4 py-5 text-center shadow-[inset_0_0_35px_rgba(83,145,127,.08)] md:min-h-[250px]">
         <div className={`mx-auto flex max-w-5xl flex-wrap items-center justify-center font-black leading-none tracking-tight text-emerald-950 ${expressionSize} ${expressionGap}`} aria-label={problemExpression}>
           {expressionTokens.map((token, index) => <span key={`${token}-${index}`} className={/^[-+−]$/.test(token) ? 'text-emerald-600' : ''}>{token}</span>)}
         </div>
       </div>
-          <label className="grid gap-1.5 rounded-[20px] border-2 border-white/90 bg-white/72 p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+          <label className="grid min-w-0 gap-1.5 rounded-[20px] border-2 border-white/90 bg-white/72 p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
             <span className="text-[11px] font-black text-emerald-700">정답 입력</span>
             <input
               value={answer}
@@ -2372,7 +2637,7 @@ function CurrentProblemCard({
               disabled={!canSubmitAnswer}
               inputMode="numeric"
               placeholder="주판으로 답을 입력해요"
-              className="min-h-16 rounded-[16px] bg-white px-5 text-4xl font-black text-slate-900 outline-none ring-cyan-300 shadow-inner focus:bg-cyan-50 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              className="min-h-16 w-full min-w-0 rounded-[16px] bg-white px-5 text-4xl font-black text-slate-900 outline-none ring-cyan-300 shadow-inner focus:bg-cyan-50 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             />
           </label>
           <AbacusInputGuide bluetoothInput={bluetoothInput} />
@@ -2392,7 +2657,7 @@ function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolea
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   return (
-    <div className="self-start rounded-[22px] border-2 border-white/90 bg-white/62 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+    <div className="w-full min-w-0 self-start rounded-[22px] border-2 border-white/90 bg-white/62 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
       <p className="mb-2 text-center text-xs font-black text-slate-500">터치 입력</p>
       <div className="grid grid-cols-3 gap-2">
         {keys.map((key) => (
@@ -2514,24 +2779,21 @@ function TrainingCompletePanel({
   totalProblems,
   correctCount,
   onRestartTraining,
+  onGoToShop,
   onGoToDino,
-  onGoToHatchery,
 }: {
   summary: CompletedTrainingSummary | null;
   totalProblems: number;
   correctCount: number;
   onRestartTraining: () => void;
+  onGoToShop: () => void;
   onGoToDino: () => void;
-  onGoToHatchery: () => void;
 }) {
-  const hatchReward = summary?.hatchItems[0];
-  const hatchItem = hatchReward ? getHatchItemConfig(hatchReward.itemId) : null;
   const resultRows = [
     { label: '정답 수', value: `${summary?.correctCount ?? correctCount} / ${summary?.totalProblems ?? totalProblems}`, tone: 'text-emerald-700' },
     { label: '정확도', value: summary ? `${summary.accuracy}%` : '정산 중', tone: 'text-cyan-700' },
     { label: '걸린 시간', value: summary ? formatTrainingDuration(summary.elapsedMs) : '정산 중', tone: 'text-violet-700' },
     { label: '획득 코인', value: summary ? `+${summary.coins.toLocaleString()}` : '정산 중', tone: 'text-amber-600' },
-    { label: '획득 아이템', value: hatchReward ? `${hatchItem?.name ?? hatchReward.itemId} × ${hatchReward.quantity}` : summary ? '없음' : '정산 중', tone: 'text-orange-700' },
   ];
 
   return (
@@ -2555,17 +2817,17 @@ function TrainingCompletePanel({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <button onClick={onGoToDino} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-amber-300 to-orange-400 px-5 text-lg font-black text-amber-950 shadow-[0_7px_0_#d97706] transition hover:brightness-105 active:translate-y-1 active:shadow-none">
-          <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/45"><Utensils className="h-7 w-7" /></span>
-          공룡에게 먹이 주기
-        </button>
-        <button onClick={onGoToHatchery} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-lime-300 to-emerald-400 px-5 text-lg font-black text-emerald-950 shadow-[0_7px_0_#059669] transition hover:brightness-105 active:translate-y-1 active:shadow-none">
-          <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/45"><Egg className="h-7 w-7" /></span>
-          알 부화장 가기
-        </button>
-        <button onClick={onRestartTraining} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-cyan-300 to-sky-500 px-5 text-lg font-black text-sky-950 shadow-[0_7px_0_#0284c7] transition hover:brightness-105 active:translate-y-1 active:shadow-none sm:col-span-2 lg:col-span-1">
+        <button onClick={onRestartTraining} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-cyan-300 to-sky-500 px-5 text-lg font-black text-sky-950 shadow-[0_7px_0_#0284c7] transition hover:brightness-105 active:translate-y-1 active:shadow-none">
           <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/45"><Play className="h-7 w-7 fill-current" /></span>
           다시 하기
+        </button>
+        <button onClick={onGoToShop} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-amber-300 to-orange-400 px-5 text-lg font-black text-amber-950 shadow-[0_7px_0_#d97706] transition hover:brightness-105 active:translate-y-1 active:shadow-none">
+          <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/45"><ShoppingBag className="h-7 w-7" /></span>
+          상점 가기
+        </button>
+        <button onClick={onGoToDino} className="group flex min-h-24 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-lime-300 to-emerald-400 px-5 text-lg font-black text-emerald-950 shadow-[0_7px_0_#059669] transition hover:brightness-105 active:translate-y-1 active:shadow-none sm:col-span-2 lg:col-span-1">
+          <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white/45"><Utensils className="h-7 w-7" /></span>
+          우리 공룡
         </button>
       </div>
     </div>

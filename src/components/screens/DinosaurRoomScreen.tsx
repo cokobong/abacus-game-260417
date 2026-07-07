@@ -28,6 +28,7 @@ export interface DinosaurRoomScreenProps {
   onEquipCostume: (itemId: string) => void;
   onDinosaurInteraction: (changes: DinosaurInteractionChange, message: string) => void;
   onFeed: () => void;
+  onGoToHatchery?: () => void;
 }
 
 export function DinosaurRoomScreen({
@@ -45,6 +46,7 @@ export function DinosaurRoomScreen({
   onEquipCostume,
   onDinosaurInteraction,
   onFeed,
+  onGoToHatchery,
 }: DinosaurRoomScreenProps) {
   const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
   const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
@@ -102,10 +104,11 @@ export function DinosaurRoomScreen({
         <section className="rounded-[22px] border-4 border-white bg-white/84 p-3 shadow-sm">
           <p className="text-xs font-black text-emerald-700">오늘의 반응</p>
           <p className="mt-1 text-base font-black leading-relaxed text-emerald-950">{getDinosaurMoodText(dinosaur, feedback)}</p>
-          <button onClick={() => onView('playground')} className="mt-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[16px] border-4 border-white bg-gradient-to-b from-emerald-300 to-emerald-500 px-4 text-sm font-black text-white shadow-green transition active:translate-y-1">
-            <Heart className="h-4 w-4" />
-            놀이터로 이동
-          </button>
+          {onGoToHatchery && (
+            <button onClick={onGoToHatchery} className="mt-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[16px] border-4 border-white bg-gradient-to-b from-orange-300 to-amber-500 px-4 text-sm font-black text-white shadow-orange transition active:translate-y-1">
+              알 부화장
+            </button>
+          )}
         </section>
         <DinosaurStateMiniPanel dinosaur={dinosaur} />
         <CostumeEquipPanel activeOwnedDinosaur={activeOwnedDinosaur} ownedCostumes={ownedCostumes} onEquipCostume={onEquipCostume} />
