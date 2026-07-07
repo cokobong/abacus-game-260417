@@ -3,6 +3,10 @@ import { getFoodItemConfig, getItemConfig, type DinosaurStatEffect } from '../..
 import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { CostumeSlot, DinosaurState, EquippedCostumes, OwnedDinosaur } from '../../types/game';
 import { getGrowthStageLabel } from '../../utils/dinosaurGrowth';
+import petHomeBackground from '../../assets/pet/backgrounds/bg_pet_home_forest.png';
+import petGreenMain from '../../assets/pet/backgrounds/pet_green_main-removebg-preview.png';
+import petNameplatePanel from '../../assets/pet/panels/panel_pet_nameplate-removebg-preview.png';
+import petStatusPanel from '../../assets/pet/panels/panel_pet_status-removebg-preview.png';
 
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
@@ -77,7 +81,7 @@ export function DinosaurRoomScreen({
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_230px]">
+    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_280px]">
       <aside className="grid min-h-0 content-start gap-3 xl:order-1">
         <FoodInventoryPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} onFeed={onFeed} />
       </aside>
@@ -128,15 +132,24 @@ function DinosaurMainCard({
   feedback: string;
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
 }) {
+  const expPercent = getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel);
+
   return (
-    <section className="relative min-h-[clamp(460px,calc(100vh-14.5rem),610px)] overflow-hidden rounded-[34px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 shadow-inner">
-      <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-lime-400/70" />
-      <div className="absolute left-4 top-4 z-20 rounded-[18px] border-4 border-white bg-white/90 px-3 py-2 shadow-lg">
-        <p className="text-xs font-black text-amber-700">대표 공룡</p>
-        <h3 className="text-2xl font-black text-emerald-950 md:text-4xl">{dinosaur.name}</h3>
+    <section className="relative min-h-[clamp(460px,calc(100vh-14.5rem),610px)] overflow-hidden rounded-[34px] border-4 border-white bg-emerald-100 shadow-inner">
+      <img src={petHomeBackground} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-emerald-950/10" />
+      <div className="absolute left-4 top-4 z-20 aspect-[3/1] min-h-[104px] w-[min(430px,calc(100%-2rem))] overflow-hidden rounded-[24px]">
+        <img src={petNameplatePanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
+        <div className="relative z-10 px-7 py-4">
+          <p className="text-xs font-black text-amber-700">대표 공룡</p>
+          <h3 className="truncate text-3xl font-black text-emerald-950 md:text-4xl">{dinosaur.name}</h3>
+          <p className="mt-1 text-sm font-black text-emerald-800">
+            Lv. {dinosaur.level} · EXP {expPercent}% · {getGrowthStageLabel(dinosaur.growthStage)}
+          </p>
+        </div>
       </div>
-      <div className="absolute right-4 top-4 z-20 rounded-[18px] border-4 border-white bg-amber-100 px-3 py-2 text-xs font-black text-amber-900 shadow-lg">
-        {activeSpeciesName} · {getGrowthStageLabel(dinosaur.growthStage)} · Lv. {dinosaur.level}
+      <div className="absolute right-4 top-4 z-20 max-w-[260px] rounded-full bg-amber-100/88 px-4 py-2 text-xs font-black text-amber-900 shadow-lg backdrop-blur-sm">
+        {activeSpeciesName}
       </div>
       {ownedCount > 1 && (
         <>
@@ -156,10 +169,14 @@ function DinosaurMainCard({
           </button>
         </>
       )}
-      <div className="relative z-10 flex min-h-[clamp(390px,calc(100vh-18rem),520px)] items-end justify-center pb-16 pt-24">
-        <DinoAvatar size="hero" />
+      <div className="relative z-10 flex min-h-[clamp(390px,calc(100vh-18rem),520px)] items-end justify-center pb-14 pt-24">
+        <img
+          src={petGreenMain}
+          alt={dinosaur.name}
+          className="h-[clamp(320px,56vh,540px)] max-h-full max-w-[76%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
+        />
       </div>
-      <div className="absolute inset-x-4 bottom-4 z-20 rounded-[22px] border-4 border-white bg-white/92 px-4 py-3 text-center shadow-lg">
+      <div className="absolute inset-x-4 bottom-4 z-20 rounded-[22px] bg-white/76 px-4 py-3 text-center shadow-lg backdrop-blur-sm">
         <p className="text-lg font-black text-emerald-950">{feedback || `${dinosaur.name}가 기다리고 있어요!`}</p>
         <p className="mt-1 text-sm font-black leading-relaxed text-emerald-700/75">{activeSpeciesDescription}</p>
         <p className="mt-1.5 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
@@ -170,12 +187,14 @@ function DinosaurMainCard({
 
 function DinosaurStateMiniPanel({ dinosaur }: { dinosaur: DinosaurState }) {
   return (
-    <section className="rounded-[24px] border-4 border-white bg-white/78 p-3 shadow-sm">
-      <div className="mb-2 flex items-center gap-2">
+    <section className="relative aspect-[1086/1448] min-h-[330px] overflow-hidden rounded-[26px] p-6 shadow-sm">
+      <img src={petStatusPanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
+      <div className="absolute inset-1 rounded-[24px] bg-white/24" />
+      <div className="relative z-10 mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-emerald-600" />
         <h4 className="text-base font-black text-emerald-950">상태</h4>
       </div>
-      <div className="grid gap-1.5">
+      <div className="relative z-10 grid gap-2">
         <MiniMeter icon={Zap} label="경험치" value={getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <MiniMeter icon={Sparkles} label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
         <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />

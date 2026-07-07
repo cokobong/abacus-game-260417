@@ -1,6 +1,6 @@
-import { BookOpen, Egg, Heart, LockKeyhole, Map as MapIcon, Sparkles, Star, Trees, X } from 'lucide-react';
+import { CalendarDays, Compass, Lightbulb, LockKeyhole, Map as MapIcon, Smile, Star, Trees, Utensils, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { dexDinosaurImages, dexEggImages, dexHabitatImages, getDexSilhouetteImage } from '../../assets/dex';
+import { dexBookAssets, dexDinosaurImages, dexEggImages, dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage } from '../../assets/dex';
 import { dinosaurSpecies, dexTargetSpeciesCount, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
 import { getGrowthStageLabel } from '../../utils/dinosaurGrowth';
@@ -18,31 +18,31 @@ const habitatMeta: Record<DexHabitatFilter, { label: string; shortLabel: string;
     label: '전체 스티커북',
     shortLabel: '전체',
     description: '만난 공룡과 아직 숨어 있는 공룡을 한눈에 볼 수 있어요.',
-    tone: 'from-amber-100 to-lime-100 text-emerald-950',
+    tone: 'from-[#fbf4df] to-[#f2eed9] text-emerald-950',
   },
   'green-forest': {
     label: '초록 숲 친구들',
     shortLabel: '초록 숲',
     description: '나뭇잎 사이에서 조용히 반짝이는 공룡들이 살아요.',
-    tone: 'from-lime-100 to-emerald-100 text-emerald-950',
+    tone: 'from-[#fbf4df] to-[#eef2d8] text-emerald-950',
   },
   'sparkle-cave': {
     label: '반짝 동굴 친구들',
     shortLabel: '반짝 동굴',
     description: '수정빛 동굴에서 특별한 친구들이 기다려요.',
-    tone: 'from-sky-100 to-violet-100 text-violet-950',
+    tone: 'from-[#fbf4df] to-[#eeeadf] text-violet-950',
   },
   'volcano-island': {
     label: '화산섬 친구들',
     shortLabel: '화산섬',
     description: '따뜻한 돌길과 붉은 흙 위를 걷는 든든한 공룡들이에요.',
-    tone: 'from-orange-100 to-rose-100 text-orange-950',
+    tone: 'from-[#fbf4df] to-[#f3e7d7] text-orange-950',
   },
   'secret-land': {
-    label: '비밀의 땅',
+    label: '비밀의 땅 친구들',
     shortLabel: '비밀',
     description: '아직 이름 모를 발자국이 남아 있는 신비한 곳이에요.',
-    tone: 'from-slate-100 to-cyan-100 text-slate-800',
+    tone: 'from-[#fbf4df] to-[#e9ebe2] text-slate-800',
   },
 };
 
@@ -68,10 +68,10 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
   const selectedSpecies = selectedSpeciesId ? dinosaurSpecies.find((species) => species.speciesId === selectedSpeciesId) ?? null : null;
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-[32px] bg-[radial-gradient(circle_at_10%_10%,rgba(255,255,255,0.75),transparent_24%),linear-gradient(145deg,#f7efd6,#e8f4d8_48%,#dff5e9)] p-2 pb-4">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden rounded-[28px] border-4 border-white/70 bg-[linear-gradient(145deg,#f8f0dc,#f4ecd8_58%,#edf0dc)] p-2 pb-4 shadow-[0_16px_38px_rgba(83,72,48,0.12)]">
       <DexProgressHeader discoveredCount={discoveredCount} totalCount={dexTargetSpeciesCount} />
 
-      <div className="grid min-h-0 gap-3 overflow-y-auto pb-4 lg:grid-cols-[210px_minmax(0,1fr)_250px] lg:overflow-hidden">
+      <div className="grid min-h-0 gap-3 overflow-y-auto pb-4 lg:grid-cols-[240px_minmax(0,1fr)_220px] lg:overflow-hidden">
         <DexHabitatTabs activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onHabitat={setActiveHabitat} />
         <DexHabitatSection habitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
         <DexHintPanel activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} />
@@ -98,36 +98,28 @@ function DexProgressHeader({ discoveredCount, totalCount }: { discoveredCount: n
   const nextGoal = discoveredCount >= totalCount ? '도감을 모두 채웠어요!' : `${nextGoalCount}마리 만나면 다음 보상`;
 
   return (
-    <section className="relative overflow-hidden rounded-[30px] border-4 border-white bg-[linear-gradient(135deg,#fff8df,#f4edcf_52%,#dff3d2)] px-5 py-3 shadow-[0_12px_30px_rgba(73,92,53,0.18)]">
-      <div className="pointer-events-none absolute -left-5 -top-8 h-28 w-28 rounded-full bg-white/35" />
-      <div className="pointer-events-none absolute -bottom-10 right-[22%] h-24 w-24 rounded-full bg-lime-200/35" />
-      <div className="grid items-center gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(360px,1.2fr)]">
+    <section className="overflow-hidden rounded-[24px] border-2 border-white/90 bg-[#fffaf0]/94 px-4 py-2 shadow-[0_6px_18px_rgba(83,72,48,0.09)]">
+      <div className="grid items-center gap-3 lg:grid-cols-[minmax(300px,0.8fr)_minmax(430px,1.2fr)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border-4 border-white bg-amber-100 text-3xl shadow-sm">
-            <BookOpen className="h-8 w-8 text-amber-800" />
-          </div>
-          <div>
-            <h3 className="text-4xl font-black text-amber-950">공룡 도감</h3>
-            <p className="mt-1 text-sm font-black text-amber-800">공룡 친구들을 만나고 모아보세요!</p>
-          </div>
+          <img src={dexBookAssets.headerIcon} alt="공룡 도감" className="h-12 w-12 object-contain drop-shadow-sm" />
+          <div><h3 className="text-2xl font-black leading-none text-amber-950">공룡 도감</h3><p className="mt-1.5 text-xs font-black text-amber-800/65">공룡 친구들을 만나고 모아보세요!</p></div>
         </div>
-        <div className="grid items-center gap-4 rounded-[28px] border-4 border-white bg-white/86 px-5 py-3 shadow-sm md:grid-cols-[1fr_auto]">
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between gap-3 text-sm font-black text-amber-950">
-              <span className="inline-flex items-center gap-2">
-                <Egg className="h-6 w-6 text-lime-600" />
-                만난 공룡 {discoveredCount} / {totalCount}
-              </span>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">{progressPercent}%</span>
+        <div className="grid items-center gap-3 rounded-[18px] bg-[#f8f0db]/75 px-3 py-1.5 md:grid-cols-[1fr_auto]">
+          <div className="grid grid-cols-[42px_1fr] items-center gap-2.5">
+            <img src={dexBookAssets.progressEgg} alt="도감 진행" className="h-10 w-10 object-contain drop-shadow-sm" />
+            <div className="grid gap-1.5">
+            <div className="flex items-center justify-between gap-3 text-xs font-black text-amber-950">
+              <span>만난 공룡 {discoveredCount} / {totalCount}</span>
+              <span className="text-emerald-700">{progressPercent}%</span>
             </div>
-            <div className="h-4 overflow-hidden rounded-full bg-amber-100 shadow-inner">
-              <div className="h-full rounded-full bg-gradient-to-r from-lime-500 to-emerald-500 transition-all" style={{ width: `${progressPercent}%` }} />
+            <div className="h-2 overflow-hidden rounded-full bg-amber-100">
+              <div className="h-full rounded-full bg-[#8eae68] transition-all" style={{ width: `${progressPercent}%` }} />
+            </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 border-t border-amber-100 pt-3 text-sm font-black text-amber-950 md:border-l md:border-t-0 md:pl-4 md:pt-0">
-            <Star className="h-8 w-8 fill-amber-300 text-amber-400" />
-            <span className="max-w-40 leading-snug">{nextGoal}</span>
-            <span className="text-3xl">🎁</span>
+          <div className="flex items-center gap-2 border-t border-amber-200/60 pt-2 text-xs font-black text-amber-900 md:border-l md:border-t-0 md:pl-3 md:pt-0">
+            <img src={dexBookAssets.rewardGift} alt="다음 보상" className="h-10 w-10 object-contain drop-shadow-sm" />
+            <span className="max-w-36 leading-snug"><span className="block text-[10px] text-amber-700/65">다음 보상</span>{nextGoal}</span>
           </div>
         </div>
       </div>
@@ -145,7 +137,7 @@ function DexHabitatTabs({
   onHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <aside className="grid content-start gap-3 rounded-[30px] border-4 border-white bg-[#fffaf0]/90 p-3 shadow-[0_10px_24px_rgba(73,92,53,0.15)] sm:grid-cols-2 lg:grid-cols-1">
+    <aside className="relative grid content-start gap-3 overflow-hidden rounded-[26px] border-2 border-white/90 bg-[#fdf7e9]/92 p-3 pb-32 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 sm:pb-3 lg:grid-cols-1 lg:pb-32">
       {dexPageHabitats.map((habitat) => {
         const meta = habitatMeta[habitat];
         const speciesInHabitat = dinosaurSpecies.filter((species) => species.habitat === habitat);
@@ -156,25 +148,22 @@ function DexHabitatTabs({
           <button
             key={habitat}
             onClick={() => onHabitat(habitat)}
-            className={`relative grid min-h-[82px] grid-cols-[54px_1fr] items-center gap-3 rounded-[22px] border-4 px-3 text-left font-black transition active:translate-y-1 ${
-              isActive ? 'border-lime-300 bg-gradient-to-br from-lime-100 to-emerald-100 text-emerald-950 shadow-[0_5px_0_#bef264]' : 'border-white bg-white/80 text-slate-600 hover:bg-lime-50'
+            className={`relative grid min-h-[88px] grid-cols-[68px_1fr] items-center gap-3 rounded-[20px] border-2 px-3 text-left font-black transition active:translate-y-1 ${
+              isActive ? 'z-10 border-[#b8ca92] bg-[#e7efca] text-emerald-950 shadow-[0_5px_12px_rgba(86,105,58,.14)]' : 'border-white/50 bg-white/48 text-slate-600 hover:bg-white/80'
             }`}
           >
-            <span className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-[16px] border-2 border-white bg-white/70 shadow-inner">
-              <img src={dexHabitatImages[habitat]} alt="" className="h-full w-full object-cover" />
-              <span className="absolute bottom-0.5 right-0.5 text-base drop-shadow">{getHabitatEmoji(habitat)}</span>
+            <span className="relative flex h-16 w-16 items-center justify-center">
+              <img src={dexHabitatBadgeImages[habitat]} alt="" className="h-full w-full object-contain" />
             </span>
             <span>
-              <span className="block text-base">{meta.shortLabel}</span>
-              <span className="text-sm text-slate-500">{discoveredCount} / {speciesInHabitat.length}</span>
+              <span className="block text-lg leading-tight">{meta.shortLabel}</span>
+              <span className="mt-1 block text-xs text-slate-500">{discoveredCount} / {speciesInHabitat.length} 발견</span>
             </span>
-            {isActive && <span className="absolute -right-3 top-1/2 h-5 w-5 -translate-y-1/2 rotate-45 border-r-4 border-t-4 border-lime-300 bg-lime-100" />}
+            {isActive && <span className="absolute -right-4 top-1/2 h-8 w-8 -translate-y-1/2 rotate-45 border-r-2 border-t-2 border-[#b8ca92] bg-[#e7efca]" />}
           </button>
         );
       })}
-      <div className="mt-auto hidden rounded-[24px] bg-lime-100/80 p-3 text-center lg:block">
-        <div className="mx-auto flex h-20 w-20 items-end justify-center rounded-full bg-lime-200 text-5xl shadow-inner">🦕</div>
-      </div>
+      <img src={dexBookAssets.mascot} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-5 left-1/2 hidden h-36 w-36 -translate-x-1/2 object-contain drop-shadow-[0_8px_8px_rgba(68,86,48,.18)] lg:block" />
     </aside>
   );
 }
@@ -195,17 +184,16 @@ function DexHabitatSection({
   const speciesList = dinosaurSpecies.filter((species) => species.habitat === habitat);
 
   return (
-    <section className={`relative h-full min-h-0 overflow-hidden rounded-[34px] border-4 border-white bg-gradient-to-br ${meta.tone} p-4 shadow-[0_12px_28px_rgba(73,92,53,0.17)] md:p-5`}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full border-[18px] border-white/25" />
-      <div className="mb-4 flex flex-wrap items-center justify-center gap-3 text-center">
-        <Sparkles className="h-6 w-6 text-lime-700" />
-        <h4 className="text-3xl font-black">{meta.label}</h4>
-        <Sparkles className="h-6 w-6 text-lime-700" />
-        <span className="ml-auto rounded-full bg-white/82 px-4 py-2 text-sm font-black shadow-sm">
+    <section className={`relative h-full min-h-0 overflow-hidden rounded-[26px] border-2 border-white/90 bg-gradient-to-br ${meta.tone} p-3 shadow-[0_8px_22px_rgba(83,72,48,0.1)] md:p-4`}>
+      <div className="relative mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-amber-900/10 pb-2.5">
+        <img src={dexTitleOrnamentImages[habitat]} alt="" aria-hidden="true" className="ml-auto h-10 w-28 object-contain object-right opacity-90" />
+        <h4 className="whitespace-nowrap text-center text-xl font-black">{meta.label}</h4>
+        <img src={dexTitleOrnamentImages[habitat]} alt="" aria-hidden="true" className="h-10 w-28 -scale-x-100 object-contain object-right opacity-90" />
+        <span className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-white/55 px-2 py-1 text-[10px] font-black text-emerald-800/70">
           {speciesList.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length}/{speciesList.length} 발견
         </span>
       </div>
-      <div className="relative min-h-0 overflow-y-auto pb-3 lg:h-[calc(100%-4rem)]">
+      <div className="relative min-h-0 overflow-y-auto pb-3 lg:h-[calc(100%-2.75rem)]">
         <DexStickerGrid speciesList={speciesList} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={onSelectSpecies} />
       </div>
     </section>
@@ -232,36 +220,28 @@ function DexStickerGrid({
   );
 }
 
-function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
+function DexDinosaurCard({ species, isDiscovered, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
   const isPlaceholder = Boolean(species.isPlaceholder);
   const dinosaurImage = dexDinosaurImages[species.speciesId];
 
   return (
     <button
       onClick={onSelect}
-      className={`group relative min-h-[210px] overflow-hidden rounded-[24px] border-4 p-3 text-left transition hover:-translate-y-1 hover:brightness-105 active:translate-y-1 ${
-        isDiscovered ? 'rotate-[0.3deg] border-white bg-[#fffdf5] text-emerald-950 shadow-[0_8px_0_#d9e9bd,0_14px_24px_rgba(57,83,46,0.16)]' : isPlaceholder ? 'border-stone-200 bg-stone-100 text-stone-500 shadow-[0_7px_0_#d6d3d1]' : 'border-white/80 bg-stone-100/95 text-stone-500 shadow-[0_7px_0_#d6d3d1]'
+      className={`group relative min-h-[222px] overflow-hidden rounded-[22px] border-2 p-2 text-center transition hover:-translate-y-1 active:translate-y-0 ${
+        isDiscovered ? 'border-white bg-[#fffdf7] text-emerald-950 shadow-[0_7px_18px_rgba(83,72,48,0.12)]' : isPlaceholder ? 'border-stone-200/80 bg-[#eeeae0] text-stone-500 shadow-sm' : 'border-white/70 bg-[#eeeae0] text-stone-500 shadow-sm'
       }`}
     >
-      <div className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-rose-500 shadow-sm">
-        <Heart className="h-4 w-4 fill-current" />
-      </div>
-      <div className={`relative mb-3 flex h-32 items-center justify-center overflow-hidden rounded-[20px] border-4 border-white ${isDiscovered ? 'bg-gradient-to-b from-sky-100 via-lime-100 to-amber-100' : 'bg-[repeating-linear-gradient(135deg,#e7e5e4,#e7e5e4_10px,#d6d3d1_10px,#d6d3d1_20px)]'}`}>
+      {isDiscovered && <Star className="absolute right-3 top-3 z-10 h-5 w-5 fill-amber-300 text-amber-400 drop-shadow-sm" />}
+      <div className={`relative mb-2 flex h-40 items-center justify-center overflow-hidden rounded-[17px] ${isDiscovered ? 'bg-[linear-gradient(180deg,#edf3df,#f8efd9)]' : 'bg-[radial-gradient(circle_at_50%_45%,#f8f2df,transparent_44%),linear-gradient(180deg,#dedfd8,#d2d3cb)]'}`}>
         {isDiscovered && <div className="absolute bottom-2 h-5 w-4/5 rounded-[50%] bg-emerald-900/10 blur-sm" />}
         {isDiscovered ? (
-          dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full w-full object-contain object-center" /> : <DexDinoAvatar species={species} size="card" />
+          dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-[112%] w-[112%] max-w-none object-contain object-center transition-transform group-hover:scale-105" /> : <DexDinoAvatar species={species} size="card" />
         ) : (
           <DexSilhouette species={species} />
         )}
       </div>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xl font-black leading-tight">{isDiscovered ? species.displayName : '???'}</h3>
-        <Star className={`h-6 w-6 ${isDiscovered ? 'fill-amber-300 text-amber-400' : 'text-stone-300'}`} />
-      </div>
-      <p className="mt-1 text-xs font-black text-slate-500">{isDiscovered ? ownedDinosaur?.name ?? rarityLabels[species.rarity] : isPlaceholder ? '아직 준비 중이에요' : '아직 만나지 못했어요'}</p>
-      <span className={`absolute bottom-3 right-3 rounded-full px-2 py-1 text-[10px] font-black ${isDiscovered ? 'bg-lime-100 text-emerald-800' : 'bg-stone-200 text-stone-600'}`}>
-        {isDiscovered ? '발견 완료' : '미발견'}
-      </span>
+      <h3 className={`font-black leading-tight ${isDiscovered ? 'text-xl' : 'text-base tracking-[0.18em] text-stone-500'}`}>{isDiscovered ? species.displayName : '???'}</h3>
+      {isPlaceholder && <p className="mt-1 text-[10px] font-black text-stone-400">준비 중</p>}
     </button>
   );
 }
@@ -273,16 +253,17 @@ function DexHintPanel({ activeHabitat, discoveredSpeciesSet }: { activeHabitat: 
   const eggImage = undiscovered?.rarity === 'rare' ? dexEggImages.rare : dexEggImages.common;
 
   return (
-    <aside className="grid content-start gap-4 rounded-[30px] border-4 border-white bg-[#fffaf0]/90 p-4 shadow-[0_10px_24px_rgba(73,92,53,0.15)] sm:grid-cols-2 lg:grid-cols-1">
-      <div className="rotate-2 rounded-[12px] border-4 border-white bg-white p-3 text-center shadow-lg">
-        <div className="flex h-40 items-center justify-center overflow-hidden rounded-[10px] bg-gradient-to-b from-violet-100 to-amber-100">
+    <aside className="grid content-start gap-3 rounded-[24px] border-2 border-white/90 bg-[#fdf7e9]/85 p-3 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 lg:grid-cols-1">
+      <div className="rotate-1 rounded-[8px] bg-[#fffdf7] p-2.5 text-center shadow-[0_7px_16px_rgba(83,72,48,0.12)]">
+        <div className="flex h-36 items-center justify-center overflow-hidden rounded-[7px] bg-[linear-gradient(180deg,#eee8db,#f6eedc)]">
           <img src={eggImage} alt={undiscovered?.rarity === 'rare' ? '희귀 공룡 알' : '공룡 알'} className="h-full w-full object-contain object-center" />
         </div>
-        <p className="mt-3 text-sm font-black leading-relaxed text-amber-950">알을 부화시켜 더 많은 공룡을 만나보세요!</p>
+        <p className="mt-2 text-xs font-black text-amber-950">다음 친구를 기다리는 알</p>
       </div>
-      <div className="rounded-[24px] bg-lime-50 px-4 py-3 text-sm font-black text-emerald-900">
-        <p className="text-base text-emerald-950">{meta.shortLabel} 힌트</p>
-        <p className="mt-2 leading-relaxed">{undiscovered ? undiscovered.discoveryHint : '이 서식지 친구들을 모두 만났어요!'}</p>
+      <div className="relative rotate-[-1deg] rounded-[6px_18px_8px_16px] bg-[#fff4c9] px-4 pb-4 pt-5 text-sm font-black text-stone-700 shadow-sm">
+        <span className="absolute left-1/2 top-0 h-4 w-16 -translate-x-1/2 -translate-y-1/2 bg-amber-100/80" />
+        <p className="text-sm text-amber-950">{meta.shortLabel} 탐험 메모</p>
+        <p className="mt-2 line-clamp-4 leading-relaxed">{undiscovered ? undiscovered.discoveryHint : '이곳의 친구들을 모두 만났어요!'}</p>
       </div>
     </aside>
   );
@@ -305,71 +286,70 @@ function DexDetailModal({
   const dinosaurImage = dexDinosaurImages[species.speciesId];
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-emerald-950/45 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
-      <section className={`grid max-h-full min-h-0 w-full max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[32px] border-4 border-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] ${isDiscovered ? 'bg-gradient-to-b from-[#fffdf5] via-lime-50 to-sky-50' : 'bg-gradient-to-b from-stone-100 via-slate-100 to-stone-200'}`}>
-        <div className="flex justify-end px-4 pt-4">
-          <button aria-label="닫기" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[15px] bg-slate-900 text-white transition active:translate-y-1">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-        <div className="grid min-h-0 gap-4 overflow-y-auto px-5 pb-4 text-center">
-          <div className={`mx-auto flex h-52 w-full max-w-sm items-center justify-center rounded-[30px] border-4 border-white ${isDiscovered ? 'bg-gradient-to-b from-sky-100 via-lime-100 to-amber-100' : 'bg-gradient-to-b from-slate-200 to-slate-300'}`}>
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-emerald-950/50 px-3 pb-[calc(96px+env(safe-area-inset-bottom))] pt-4 backdrop-blur-md sm:px-5 sm:pt-6">
+      <section className={`relative grid max-h-full min-h-0 w-full max-w-6xl grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-[30px] border-[5px] border-white/90 shadow-[0_30px_100px_rgba(15,42,32,0.38)] sm:rounded-[40px] lg:min-h-[610px] ${isDiscovered ? 'bg-[linear-gradient(135deg,#fff9e9,#f1f4d5_48%,#e2f3d8)]' : 'bg-[linear-gradient(135deg,#f6f0df,#e6e3d8_50%,#d5ddd5)]'}`}>
+        <button aria-label="닫기" onClick={onClose} className="absolute right-3 top-3 z-30 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-white/90 text-emerald-950 shadow-lg transition hover:rotate-6 active:translate-y-1 sm:right-5 sm:top-5">
+          <X className="h-6 w-6" strokeWidth={3} />
+        </button>
+        <div className="grid min-h-0 overflow-y-auto lg:grid-cols-[1.08fr_0.92fr] lg:overflow-hidden">
+          <div className={`relative m-3 flex min-h-[300px] items-center justify-center overflow-hidden rounded-[28px] border-4 border-white/80 p-2 sm:m-5 sm:min-h-[390px] sm:rounded-[34px] lg:mr-2 lg:min-h-0 ${isDiscovered ? 'bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,225,.95),transparent_28%),linear-gradient(180deg,#dce9c9,#edf0d5_55%,#cad9ae)]' : 'bg-[radial-gradient(circle_at_50%_42%,rgba(255,253,221,.7),transparent_28%),linear-gradient(180deg,#d8ddd0,#c8cec1_55%,#b7bdae)]'}`}>
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-[radial-gradient(ellipse_at_bottom,#759e61,transparent_68%)] opacity-50" />
+            {!isDiscovered && <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-50/50 blur-3xl" />}
+            <div className={`relative z-10 flex h-full w-full items-center justify-center ${isDiscovered ? 'drop-shadow-[0_18px_14px_rgba(48,78,40,.25)]' : 'opacity-80 drop-shadow-[0_16px_18px_rgba(44,49,43,.32)]'}`}>
             {isDiscovered ? (
-              dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full w-full object-contain object-center" /> : <DexDinoAvatar species={species} size="modal" />
+              dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full max-h-[540px] w-full object-contain object-center" /> : <DexDinoAvatar species={species} size="modal" />
             ) : (
               <DexSilhouette species={species} large />
             )}
-          </div>
-          <div>
-            <p className="text-sm font-black text-emerald-700">{isDiscovered ? `${rarityLabels[species.rarity]} · ${habitatMeta[species.habitat].shortLabel}` : isPlaceholder ? `${species.lockedLabel ?? '준비 중'} · ${habitatMeta[species.habitat].shortLabel}` : '아직 비어 있는 스티커 자리'}</p>
-            <h3 className="mt-1 text-4xl font-black text-emerald-950">{isDiscovered ? species.displayName : '???'}</h3>
-          </div>
-          {isDiscovered ? (
-            <>
-              <p className="rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 text-lg font-black leading-relaxed text-emerald-900 shadow-sm">{species.dexDescription}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <DexInfoPill label="성격" value={species.personality} />
-                <DexInfoPill label="좋아하는 먹이" value={species.favoriteFoodName} />
-                <DexInfoPill label="만난 방법" value={species.foundMethodLabel} />
-                <DexInfoPill label="만난 날" value={ownedDinosaur ? formatDate(ownedDinosaur.obtainedAt) : '기록 준비 중'} />
-                {ownedDinosaur && <DexInfoPill label="성장 단계" value={`${getGrowthStageLabel(ownedDinosaur.growthStage)} · Lv. ${ownedDinosaur.level}`} />}
-                {ownedDinosaur && <DexInfoPill label="성장 상태" value={ownedDinosaur.growthStage === 'adult' || ownedDinosaur.level >= 20 ? '성장 완료' : '함께 훈련 중'} />}
-              </div>
-            </>
-          ) : isPlaceholder ? (
-            <div className="grid gap-3">
-              <p className="rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 text-lg font-black text-slate-600 shadow-sm">아직 준비 중인 도감 자리예요.</p>
-              <p className="rounded-[22px] bg-slate-100 px-4 py-3 text-base font-black leading-relaxed text-slate-700">힌트: {species.discoveryHint} {species.unlockHint}</p>
             </div>
+          </div>
+          <div className="flex min-h-0 flex-col px-5 pb-6 pt-2 sm:px-7 lg:overflow-y-auto lg:pb-6 lg:pl-6 lg:pr-8 lg:pt-8">
+            <div className="pr-12">
+              <span className="inline-flex rounded-full bg-white/75 px-3 py-1.5 text-xs font-black text-amber-800">★ {isDiscovered ? rarityLabels[species.rarity] : '수수께끼'}</span>
+              <p className="mt-5 text-xs font-black tracking-[.18em] text-emerald-700/80">DINOSAUR FIELD NOTE</p>
+              <h3 className={`mt-1 font-black leading-tight ${isDiscovered ? 'text-4xl text-emerald-950 sm:text-5xl' : 'text-3xl text-stone-700 sm:text-4xl'}`}>{isDiscovered ? species.displayName : '아직 만나지 못한 공룡이에요.'}</h3>
+              <p className={`mt-3 text-base font-bold leading-relaxed ${isDiscovered ? 'text-emerald-900/80' : 'text-stone-600'}`}>{isDiscovered ? species.dexDescription : '어떤 공룡일까요? 탐험 노트에 남은 단서를 살펴보세요.'}</p>
+            </div>
+          {isDiscovered ? (
+              <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                <DexInfoPill icon={Utensils} label="좋아하는 먹이" value={species.favoriteFoodName} tone="bg-orange-50 text-orange-700" />
+                <DexInfoPill icon={Smile} label="성격" value={species.personality} tone="bg-rose-50 text-rose-700" />
+                <DexInfoPill icon={Compass} label="만난 방법" value={species.foundMethodLabel} tone="bg-sky-50 text-sky-700" />
+                <DexInfoPill icon={CalendarDays} label="만난 날" value={ownedDinosaur ? formatDate(ownedDinosaur.obtainedAt) : '기록 준비 중'} tone="bg-violet-50 text-violet-700" />
+                {ownedDinosaur && <p className="col-span-full mt-1 text-center text-xs font-black text-emerald-800/70">{getGrowthStageLabel(ownedDinosaur.growthStage)} · Lv. {ownedDinosaur.level} · {ownedDinosaur.growthStage === 'adult' || ownedDinosaur.level >= 20 ? '성장 완료' : '쑥쑥 자라는 중'}</p>}
+              </div>
           ) : (
-            <div className="grid gap-3">
-              <p className="rounded-[22px] border-4 border-white bg-white/90 px-4 py-3 text-lg font-black text-slate-600 shadow-sm">아직 만나지 못한 공룡이에요.</p>
-              <p className="rounded-[22px] bg-sky-100 px-4 py-3 text-base font-black leading-relaxed text-sky-900">힌트: {species.discoveryHint} 알을 더 부화시키면 만날 수 있을지도 몰라요!</p>
+            <div className="relative mt-6 rotate-[-.5deg] rounded-[8px_24px_12px_22px] border border-amber-200/70 bg-[#fff7cf] px-5 pb-5 pt-7 text-left shadow-[0_12px_25px_rgba(91,80,56,.16)]">
+              <span className="absolute left-1/2 top-0 h-6 w-24 -translate-x-1/2 -translate-y-1/2 rotate-2 bg-amber-100/80 shadow-sm" />
+              <p className="flex items-center gap-2 text-lg font-black text-amber-950"><Lightbulb className="h-6 w-6 fill-amber-300 text-amber-600" /> 탐험가의 힌트 메모</p>
+              <div className="mt-4 grid gap-3 text-sm font-black leading-relaxed text-stone-700 sm:text-base"><p className="rounded-[16px] bg-white/55 px-4 py-3">✦ {species.discoveryHint}</p><p className="rounded-[16px] bg-white/55 px-4 py-3">🥚 {isPlaceholder ? species.unlockHint : '알을 더 부화시키면 만날 수 있을지도 몰라요.'}</p></div>
             </div>
           )}
+          </div>
         </div>
-        <div className="grid gap-3 border-t-4 border-white bg-white/90 p-4 text-center">
+        <div className="grid gap-3 border-t-2 border-white/80 bg-white/60 p-4 text-center backdrop-blur-sm sm:grid-cols-[minmax(0,1fr)_180px] sm:px-6">
           {isDiscovered && ownedDinosaur && (
             <button
               onClick={() => onViewOwnedDinosaur(species.speciesId)}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[22px] border-4 border-white bg-gradient-to-b from-emerald-400 to-emerald-600 px-8 text-lg font-black text-white shadow-[0_6px_0_#059669] transition active:translate-y-1 active:shadow-none"
+              className="inline-flex min-h-16 items-center justify-center gap-2 rounded-[24px] border-4 border-white bg-gradient-to-r from-violet-500 to-emerald-500 px-8 text-lg font-black text-white shadow-[0_7px_0_#4f8a69] transition hover:brightness-105 active:translate-y-1 active:shadow-none"
             >
               <Trees className="h-6 w-6" />
               우리 공룡으로 보기
             </button>
           )}
-          <button onClick={onClose} className="min-h-14 rounded-[18px] bg-slate-100 px-6 text-sm font-black text-slate-600 transition active:translate-y-1">닫기</button>
+          {!isDiscovered && <button disabled className="min-h-16 cursor-not-allowed rounded-[24px] border-4 border-white/80 bg-stone-300/80 px-6 text-base font-black text-stone-600 shadow-inner">아직 만나지 못했어요</button>}
+          <button onClick={onClose} className="min-h-16 rounded-[22px] border-4 border-white bg-[#fffaf0] px-6 text-base font-black text-emerald-900 shadow-[0_5px_0_#d9d2bd] transition hover:bg-white active:translate-y-1 active:shadow-none">닫기</button>
         </div>
       </section>
     </div>
   );
 }
 
-function DexInfoPill({ label, value }: { label: string; value: string }) {
+function DexInfoPill({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: string; tone: string }) {
   return (
-    <div className="rounded-[20px] bg-white/90 px-4 py-3 text-left shadow-sm">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-black text-emerald-950">{value}</p>
+    <div className="grid min-h-[72px] grid-cols-[38px_1fr] items-center gap-2.5 rounded-[18px] border border-white/90 bg-white/68 px-3 py-2 text-left shadow-sm">
+      <span className={`flex h-10 w-10 items-center justify-center rounded-[14px] ${tone}`}><Icon className="h-5 w-5" strokeWidth={2.5} /></span>
+      <span className="min-w-0"><span className="block text-[11px] font-black text-slate-500">{label}</span><span className="mt-0.5 block break-keep text-sm font-black leading-snug text-emerald-950 sm:text-base">{value}</span></span>
     </div>
   );
 }
