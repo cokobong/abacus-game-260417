@@ -86,7 +86,7 @@ export function HatcheryScreen({
   }
 
   return (
-    <div className="relative grid h-full min-h-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+    <div className="relative grid h-full min-h-0 gap-3 md:grid-cols-[200px_minmax(0,1fr)_220px] xl:grid-cols-[280px_minmax(0,1fr)_300px]">
       <aside className="grid min-h-0 content-start gap-3">
         <EggInventoryPanel ownedEggs={ownedEggs} activeEgg={activeEgg} onSelectEgg={onSelectEgg} />
         {showDeveloperPanels && <DeveloperHatcheryDebugPanel activeEggId={activeEggId} activeEgg={activeEgg} ownedEggs={ownedEggs} inventory={inventory} hatchResult={hatchResult} />}
@@ -188,7 +188,7 @@ function EggMainCard({
   const reaction = getEggReactionText(activeEgg, hatchCandidateResult, feedback);
 
   return (
-    <section className="relative min-h-[clamp(410px,calc(100vh-15.75rem),540px)] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-4 text-center shadow-inner">
+    <section className="relative min-h-[clamp(410px,calc(100dvh-15.75rem),540px)] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-orange-100 via-amber-100 to-cyan-100 p-4 text-center shadow-inner">
       <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-amber-300/45" />
       {eggCount > 1 && (
         <>
@@ -208,7 +208,7 @@ function EggMainCard({
           </button>
         </>
       )}
-      <div className="relative z-10 flex min-h-[clamp(350px,calc(100vh-19rem),455px)] flex-col items-center justify-center pt-8">
+      <div className="relative z-10 flex min-h-[clamp(350px,calc(100dvh-19rem),455px)] flex-col items-center justify-center pt-8">
         {activeEgg ? (
           <>
             <p className={`mb-2 rounded-full border-4 border-white px-4 py-1.5 text-sm font-black shadow-sm ${getEggCategoryBadgeTone(getOwnedEggCategory(activeEgg))}`}>{getEggCategoryLabel(getOwnedEggCategory(activeEgg))}</p>

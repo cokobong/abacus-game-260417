@@ -27,7 +27,7 @@ export interface DinosaurRoomScreenProps {
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
   onEquipCostume: (itemId: string) => void;
   onDinosaurInteraction: (changes: DinosaurInteractionChange, message: string) => void;
-  onFeed: () => void;
+  onFeed?: () => void;
   onGoToHatchery?: () => void;
 }
 
@@ -60,8 +60,8 @@ export function DinosaurRoomScreen({
         <button onClick={() => onView('care')} className="mb-2 min-h-12 rounded-full border-4 border-white bg-white/90 px-5 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
           우리 공룡으로 돌아가기
         </button>
-        <div className="grid min-h-0 gap-4 lg:grid-cols-[1fr_280px]">
-          <div className="relative flex min-h-[clamp(380px,calc(100vh-15rem),560px)] flex-col items-center justify-end overflow-hidden rounded-[32px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 text-center shadow-inner">
+        <div className="grid min-h-0 gap-4 md:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="relative flex min-h-[clamp(380px,calc(100dvh-15rem),560px)] flex-col items-center justify-end overflow-hidden rounded-[32px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-300 p-5 text-center shadow-inner">
             <div className="absolute bottom-0 left-0 right-0 h-32 rounded-t-[50%] bg-lime-400/70" />
             <DinoAvatar size="hero" />
             <h3 className="relative z-10 text-3xl font-black text-emerald-950">작은 놀이터</h3>
@@ -83,12 +83,13 @@ export function DinosaurRoomScreen({
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[220px_minmax(0,1fr)_280px]">
-      <aside className="grid min-h-0 content-start gap-3 xl:order-1">
-        <FoodInventoryPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} onFeed={onFeed} />
+    <div className="pet-screen pet-bg grid h-full min-h-0 grid-rows-[minmax(0,1fr)_21%] gap-3 overflow-hidden rounded-[30px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-3 md:grid-cols-[132px_minmax(0,1fr)_240px] xl:grid-cols-[132px_minmax(0,1fr)_260px]">
+      <aside className="pet-side-menu grid min-h-0 content-start gap-3 md:order-1">
+        <button className="pet-side-menu-button pet-side-menu-button--active min-h-20 rounded-[22px] border-4 border-white bg-gradient-to-b from-lime-300 to-emerald-500 px-2 text-sm font-black leading-tight text-emerald-950 shadow-[0_6px_0_#059669]">공룡<br />보기</button>
+        {onGoToHatchery && <button onClick={onGoToHatchery} className="pet-side-menu-button pet-hatchery-button min-h-20 rounded-[22px] border-4 border-white bg-gradient-to-b from-orange-200 to-amber-400 px-2 text-sm font-black leading-tight text-amber-950 shadow-[0_6px_0_#d97706] transition active:translate-y-1 active:shadow-none">알<br />부화장</button>}
       </aside>
 
-      <section className="game-panel min-h-0 overflow-hidden p-3 xl:order-2">
+      <section className="game-panel min-h-0 overflow-hidden p-3 md:order-2">
         <DinosaurMainCard
           dinosaur={dinosaur}
           activeOwnedDinosaur={activeOwnedDinosaur}
@@ -100,18 +101,18 @@ export function DinosaurRoomScreen({
         />
       </section>
 
-      <aside className="grid min-h-0 content-start gap-3 xl:order-3">
+      <aside className="grid min-h-0 content-start gap-3 md:order-3">
         <section className="rounded-[22px] border-4 border-white bg-white/84 p-3 shadow-sm">
           <p className="text-xs font-black text-emerald-700">오늘의 반응</p>
           <p className="mt-1 text-base font-black leading-relaxed text-emerald-950">{getDinosaurMoodText(dinosaur, feedback)}</p>
-          {onGoToHatchery && (
+          {false && onGoToHatchery && (
             <button onClick={onGoToHatchery} className="mt-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[16px] border-4 border-white bg-gradient-to-b from-orange-300 to-amber-500 px-4 text-sm font-black text-white shadow-orange transition active:translate-y-1">
               알 부화장
             </button>
           )}
         </section>
         <DinosaurStateMiniPanel dinosaur={dinosaur} />
-        <CostumeEquipPanel activeOwnedDinosaur={activeOwnedDinosaur} ownedCostumes={ownedCostumes} onEquipCostume={onEquipCostume} />
+        <FoodInventoryPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} onFeed={onFeed} />
         {showDeveloperPanels && <DeveloperDinosaurDebugPanel dinosaur={dinosaur} activeOwnedDinosaur={activeOwnedDinosaur} inventory={inventory} />}
       </aside>
     </div>
@@ -138,10 +139,10 @@ function DinosaurMainCard({
   const expPercent = getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel);
 
   return (
-    <section className="relative min-h-[clamp(460px,calc(100vh-14.5rem),610px)] overflow-hidden rounded-[34px] border-4 border-white bg-emerald-100 shadow-inner">
+    <section className="pet-dino-carousel relative h-full min-h-0 overflow-hidden rounded-[30px] bg-emerald-100 shadow-inner">
       <img src={petHomeBackground} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
       <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-emerald-950/10" />
-      <div className="absolute left-4 top-4 z-20 aspect-[3/1] min-h-[104px] w-[min(430px,calc(100%-2rem))] overflow-hidden rounded-[24px]">
+      <div className="absolute left-4 top-4 z-20 aspect-[3/1] min-h-[104px] w-[min(560px,calc(100%-2rem))] overflow-hidden rounded-[24px]">
         <img src={petNameplatePanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
         <div className="relative z-10 px-7 py-4">
           <p className="text-xs font-black text-amber-700">대표 공룡</p>
@@ -159,24 +160,24 @@ function DinosaurMainCard({
           <button
             aria-label="이전 공룡"
             onClick={() => onSelectAdjacentDinosaur(-1)}
-            className="absolute left-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+            className="pet-dino-arrow absolute left-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
           >
             <ChevronLeft className="h-10 w-10" />
           </button>
           <button
             aria-label="다음 공룡"
             onClick={() => onSelectAdjacentDinosaur(1)}
-            className="absolute right-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+            className="pet-dino-arrow absolute right-5 top-1/2 z-20 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-[24px] border-4 border-white bg-white/92 text-emerald-800 shadow-[0_6px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
           >
             <ChevronRight className="h-10 w-10" />
           </button>
         </>
       )}
-      <div className="relative z-10 flex min-h-[clamp(390px,calc(100vh-18rem),520px)] items-end justify-center pb-14 pt-24">
+      <div className="relative z-10 flex h-full min-h-0 items-end justify-center pb-10 pt-24">
         <img
           src={petGreenMain}
           alt={dinosaur.name}
-          className="h-[clamp(320px,56vh,540px)] max-h-full max-w-[76%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
+          className="pet-dino-character h-[min(92%,420px)] max-h-full max-w-[76%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
         />
       </div>
       <div className="absolute inset-x-4 bottom-4 z-20 rounded-[22px] bg-white/76 px-4 py-3 text-center shadow-lg backdrop-blur-sm">
@@ -188,9 +189,63 @@ function DinosaurMainCard({
   );
 }
 
-function DinosaurStateMiniPanel({ dinosaur }: { dinosaur: DinosaurState }) {
+function DinosaurNamePanel({ dinosaur, activeSpeciesName }: { dinosaur: DinosaurState; activeSpeciesName: string }) {
+  const expPercent = getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel);
+
   return (
-    <section className="relative aspect-[1086/1448] min-h-[330px] overflow-hidden rounded-[26px] p-6 shadow-sm">
+    <section className="pet-name-panel relative min-h-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/86 px-4 py-3 shadow-sm">
+      <img src={petNameplatePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20" />
+      <div className="relative z-10">
+        <p className="truncate text-xs font-black text-amber-700">{activeSpeciesName}</p>
+        <div className="flex items-end justify-between gap-3">
+          <h3 className="truncate text-3xl font-black leading-none text-emerald-950">{dinosaur.name}</h3>
+          <span className="shrink-0 rounded-full bg-lime-100 px-3 py-1 text-sm font-black text-emerald-800">Lv. {dinosaur.level}</span>
+        </div>
+        <div className="pet-exp-bar mt-3">
+          <div className="mb-1 flex justify-between text-xs font-black text-emerald-800">
+            <span>EXP</span>
+            <span>{dinosaur.exp} / {dinosaur.expToNextLevel}</span>
+          </div>
+          <div className="h-4 overflow-hidden rounded-full bg-emerald-100 shadow-inner">
+            <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500" style={{ width: `${expPercent}%` }} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeedPanel({
+  inventory,
+  selectedFoodItemId,
+  onFeed,
+}: {
+  inventory: InventoryItemState[];
+  selectedFoodItemId: string | null;
+  onSelectFood: (itemId: string) => void;
+  onFeed?: () => void;
+}) {
+  const selectedFood = selectedFoodItemId ? getFoodItemConfig(selectedFoodItemId) : null;
+  const selectedInventoryItem = selectedFoodItemId ? inventory.find((item) => item.itemId === selectedFoodItemId) : null;
+
+  return (
+    <section className="pet-feed-panel grid min-h-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border-4 border-white bg-amber-50/90 px-4 py-3 shadow-sm">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-amber-700">선택한 먹이</p>
+        <p className="truncate text-xl font-black text-amber-950">{selectedFood ? selectedFood.name : '먹이를 선택해주세요'}</p>
+        <p className="mt-1 truncate text-xs font-black text-amber-700">보유 {selectedInventoryItem?.quantity ?? 0}개</p>
+      </div>
+      <button onClick={onFeed} className="pet-feed-button inline-flex min-h-16 min-w-28 items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-4 text-base font-black text-white shadow-orange transition active:translate-y-1">
+        <Utensils className="h-5 w-5" />
+        먹이주기
+      </button>
+    </section>
+  );
+}
+
+function DinosaurStateMiniPanel({ dinosaur, feedback }: { dinosaur: DinosaurState; feedback?: string }) {
+  return (
+    <section className="pet-status-panel relative h-full min-h-0 overflow-hidden rounded-[26px] p-4 shadow-sm">
       <img src={petStatusPanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
       <div className="absolute inset-1 rounded-[24px] bg-white/24" />
       <div className="relative z-10 mb-3 flex items-center gap-2">
@@ -223,7 +278,7 @@ function FoodInventoryPanel({
   const selectedFood = selectedFoodItemId ? getFoodItemConfig(selectedFoodItemId) : null;
 
   return (
-    <section className="rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
+    <section className="pet-food-bag h-full min-h-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/84 p-3 shadow-lg">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-amber-700">먹이 가방</p>
@@ -236,11 +291,11 @@ function FoodInventoryPanel({
         <p className="mt-1 text-base font-black text-amber-950">{selectedFood ? selectedFood.name : '먹이를 선택해주세요.'}</p>
         <p className="mt-1 text-xs font-black text-amber-700">행복할수록 체력이 더 잘 회복돼요.</p>
       </div>
-      <button onClick={onFeed} className="mb-2 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1">
+      <button onClick={onFeed} className={`${onFeed ? 'mb-2 inline-flex' : 'hidden'} min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-4 border-white bg-gradient-to-b from-amber-300 to-orange-400 px-5 text-base font-black text-white shadow-orange transition active:translate-y-1`}>
         <Utensils className="h-5 w-5" />
         먹이 주기
       </button>
-      <div className="grid gap-2">
+      <div className="grid max-h-full grid-flow-col auto-cols-[minmax(112px,128px)] gap-2 overflow-x-auto pb-1">
         {foodItems.map(({ inventoryItem, food }) => {
           const isSelected = selectedFoodItemId === inventoryItem.itemId;
           const isDisabled = inventoryItem.quantity <= 0;
@@ -250,7 +305,7 @@ function FoodInventoryPanel({
               key={inventoryItem.itemId}
               disabled={isDisabled}
               onClick={() => onSelectFood(inventoryItem.itemId)}
-              className={`min-h-16 rounded-[18px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
+              className={`pet-food-slot ${isSelected ? 'pet-food-slot--selected' : ''} min-h-16 rounded-[18px] border-4 px-3 py-2 text-left shadow-sm transition active:translate-y-1 ${
                 isSelected ? 'border-amber-400 bg-gradient-to-b from-yellow-200 to-orange-200 text-amber-950 shadow-[0_6px_0_#f59e0b]' : 'border-white bg-gradient-to-b from-amber-100 to-orange-100'
               } ${isDisabled ? 'cursor-not-allowed opacity-45 shadow-none' : 'hover:brightness-105'}`}
             >

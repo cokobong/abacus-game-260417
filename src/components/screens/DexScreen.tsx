@@ -71,7 +71,7 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden rounded-[28px] border-4 border-white/70 bg-[linear-gradient(145deg,#f8f0dc,#f4ecd8_58%,#edf0dc)] p-2 pb-4 shadow-[0_16px_38px_rgba(83,72,48,0.12)]">
       <DexProgressHeader discoveredCount={discoveredCount} totalCount={dexTargetSpeciesCount} />
 
-      <div className="grid min-h-0 gap-3 overflow-y-auto pb-4 lg:grid-cols-[240px_minmax(0,1fr)_220px] lg:overflow-hidden">
+      <div className="grid min-h-0 gap-3 overflow-y-auto pb-4 md:grid-cols-[180px_minmax(0,1fr)_180px] md:overflow-hidden xl:grid-cols-[240px_minmax(0,1fr)_220px]">
         <DexHabitatTabs activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onHabitat={setActiveHabitat} />
         <DexHabitatSection habitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
         <DexHintPanel activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} />
@@ -99,7 +99,7 @@ function DexProgressHeader({ discoveredCount, totalCount }: { discoveredCount: n
 
   return (
     <section className="overflow-hidden rounded-[24px] border-2 border-white/90 bg-[#fffaf0]/94 px-4 py-2 shadow-[0_6px_18px_rgba(83,72,48,0.09)]">
-      <div className="grid items-center gap-3 lg:grid-cols-[minmax(300px,0.8fr)_minmax(430px,1.2fr)]">
+      <div className="grid items-center gap-3 md:grid-cols-[minmax(240px,0.8fr)_minmax(280px,1.2fr)]">
         <div className="flex items-center gap-3">
           <img src={dexBookAssets.headerIcon} alt="공룡 도감" className="h-12 w-12 object-contain drop-shadow-sm" />
           <div><h3 className="text-2xl font-black leading-none text-amber-950">공룡 도감</h3><p className="mt-1.5 text-xs font-black text-amber-800/65">공룡 친구들을 만나고 모아보세요!</p></div>
@@ -137,7 +137,7 @@ function DexHabitatTabs({
   onHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <aside className="relative grid content-start gap-3 overflow-hidden rounded-[26px] border-2 border-white/90 bg-[#fdf7e9]/92 p-3 pb-32 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 sm:pb-3 lg:grid-cols-1 lg:pb-32">
+    <aside className="relative grid content-start gap-3 overflow-hidden rounded-[26px] border-2 border-white/90 bg-[#fdf7e9]/92 p-3 pb-32 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 sm:pb-3 md:grid-cols-1 md:pb-32">
       {dexPageHabitats.map((habitat) => {
         const meta = habitatMeta[habitat];
         const speciesInHabitat = dinosaurSpecies.filter((species) => species.habitat === habitat);
@@ -163,7 +163,7 @@ function DexHabitatTabs({
           </button>
         );
       })}
-      <img src={dexBookAssets.mascot} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-5 left-1/2 hidden h-36 w-36 -translate-x-1/2 object-contain drop-shadow-[0_8px_8px_rgba(68,86,48,.18)] lg:block" />
+      <img src={dexBookAssets.mascot} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-5 left-1/2 hidden h-36 w-36 -translate-x-1/2 object-contain drop-shadow-[0_8px_8px_rgba(68,86,48,.18)] md:block" />
     </aside>
   );
 }
@@ -193,7 +193,7 @@ function DexHabitatSection({
           {speciesList.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length}/{speciesList.length} 발견
         </span>
       </div>
-      <div className="relative min-h-0 overflow-y-auto pb-3 lg:h-[calc(100%-2.75rem)]">
+      <div className="relative min-h-0 overflow-y-auto pb-3 md:h-[calc(100%-2.75rem)]">
         <DexStickerGrid speciesList={speciesList} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={onSelectSpecies} />
       </div>
     </section>
@@ -235,7 +235,7 @@ function DexDinosaurCard({ species, isDiscovered, onSelect }: { key?: string; sp
       <div className={`relative mb-2 flex h-40 items-center justify-center overflow-hidden rounded-[17px] ${isDiscovered ? 'bg-[linear-gradient(180deg,#edf3df,#f8efd9)]' : 'bg-[radial-gradient(circle_at_50%_45%,#f8f2df,transparent_44%),linear-gradient(180deg,#dedfd8,#d2d3cb)]'}`}>
         {isDiscovered && <div className="absolute bottom-2 h-5 w-4/5 rounded-[50%] bg-emerald-900/10 blur-sm" />}
         {isDiscovered ? (
-          dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-[112%] w-[112%] max-w-none object-contain object-center transition-transform group-hover:scale-105" /> : <DexDinoAvatar species={species} size="card" />
+          dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full w-full scale-110 object-contain object-center transition-transform group-hover:scale-[1.15]" /> : <DexDinoAvatar species={species} size="card" />
         ) : (
           <DexSilhouette species={species} />
         )}
@@ -253,7 +253,7 @@ function DexHintPanel({ activeHabitat, discoveredSpeciesSet }: { activeHabitat: 
   const eggImage = undiscovered?.rarity === 'rare' ? dexEggImages.rare : dexEggImages.common;
 
   return (
-    <aside className="grid content-start gap-3 rounded-[24px] border-2 border-white/90 bg-[#fdf7e9]/85 p-3 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 lg:grid-cols-1">
+    <aside className="grid content-start gap-3 rounded-[24px] border-2 border-white/90 bg-[#fdf7e9]/85 p-3 shadow-[0_8px_20px_rgba(83,72,48,0.09)] sm:grid-cols-2 md:grid-cols-1">
       <div className="rotate-1 rounded-[8px] bg-[#fffdf7] p-2.5 text-center shadow-[0_7px_16px_rgba(83,72,48,0.12)]">
         <div className="flex h-36 items-center justify-center overflow-hidden rounded-[7px] bg-[linear-gradient(180deg,#eee8db,#f6eedc)]">
           <img src={eggImage} alt={undiscovered?.rarity === 'rare' ? '희귀 공룡 알' : '공룡 알'} className="h-full w-full object-contain object-center" />

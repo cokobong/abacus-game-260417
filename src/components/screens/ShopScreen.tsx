@@ -117,7 +117,7 @@ function ShopItemGrid({
             <span>희귀알을 모두 열려면 총 {totalRareEggFragmentRequirement}개가 필요해요.</span>
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
           {eggItems.map((item) => (
             <ShopEggCompactCard key={item.id} item={item} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} onSelect={() => onSelectItem(item.id)} />
           ))}
@@ -127,7 +127,7 @@ function ShopItemGrid({
   }
 
   return (
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
       {items.map((item) => (
         <ShopItemCard key={item.id} item={item} coins={coins} inventory={inventory} ownedDinosaurs={ownedDinosaurs} ownedEggs={ownedEggs} ownedCostumeIds={ownedCostumeIds} onSelect={() => onSelectItem(item.id)} />
       ))}
@@ -284,7 +284,7 @@ function ShopItemDetailModal({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-3 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4 backdrop-blur-sm sm:px-4 sm:pt-6">
-      <section className="grid max-h-full min-h-0 w-full max-w-lg grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-white via-violet-50 to-cyan-50 shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+      <section className="grid max-h-full min-h-0 w-full max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[28px] border-4 border-white bg-gradient-to-b from-white via-violet-50 to-cyan-50 shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
         <div className="flex justify-end px-3 pt-3">
           <button aria-label="닫기" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-slate-900 text-white transition active:translate-y-1">
             <X className="h-6 w-6" />

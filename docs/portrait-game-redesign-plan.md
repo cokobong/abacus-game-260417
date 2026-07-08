@@ -1,10 +1,18 @@
-# Portrait Mobile Game Redesign Plan
+# Tablet Portrait Game Redesign Plan
 
 ## 1. Redesign Goals
 
-This branch redesigns the project from a landscape web/tablet UI into a portrait mobile game UI. The first implementation target remains the web browser, but the layout should be structured so it can later move toward a mobile app shell without rewriting the core screens.
+This branch redesigns the project from a landscape web/tablet UI into a tablet portrait game UI. The first implementation target remains the web browser, but the layout should be structured so it can later move toward a mobile or tablet app shell without rewriting the core screens.
 
-The target aspect ratio is portrait 9:16. On desktop browsers, the app should appear as a centered mobile game frame rather than a full-width web dashboard. The visual direction should closely follow casual kids mobile game references: layered background art, character art, panel images, button art, and large touch targets.
+The target aspect ratio is tablet portrait 3:4 / iPad portrait. On desktop browsers, the app should appear as a centered iPad portrait game frame rather than a full-width web dashboard. The visual direction should closely follow casual kids tablet game references: layered background art, character art, panel images, button art, and large touch targets.
+
+Important terminology:
+
+- `tablet portrait` means the device is upright, with height greater than width.
+- The target aspect ratio is width:height = 3:4.
+- This is not tablet landscape.
+- This is not a full-width desktop web layout.
+- The app should appear as a centered iPad-like portrait frame inside the browser.
 
 This branch should reduce visible features, not add more. Existing game systems and data should be preserved where possible, while complex or non-MVP surfaces are hidden from the UI. The goal is a clearer loop: train, earn coins, buy items, care for dinosaurs, hatch and collect.
 
@@ -12,15 +20,17 @@ The UI should move away from generic CSS card layouts. Screens should be compose
 
 ## 2. Target Screen Standard
 
-- Primary aspect ratio: portrait 9:16
-- Reference design sizes: `430x932` or `390x844`
-- High-resolution asset production size: `1080x1920`
-- App container max width: around `430px`
+- Primary aspect ratio: tablet portrait 3:4 / iPad portrait
+- Width is always smaller than height in the primary frame.
+- Reference design sizes: `768x1024`, `820x1093`, `834x1112`, or `1024x1366`
+- High-resolution asset production size: `1536x2048` or another 3:4 tablet scale
+- App container max width: around `820px`
 - App height: `100dvh`
-- Desktop behavior: center the portrait app frame in the browser
-- Mobile behavior: fill the viewport vertically while respecting safe areas
+- Desktop behavior: center the tablet portrait app frame in the browser
+- Tablet behavior: prioritize the 768-834px portrait width range
+- Phone behavior: remain usable where possible, but phone layout is a secondary goal
 
-The first technical target should be a `PortraitAppShell` or equivalent wrapper that constrains the current app into a mobile frame. This allows existing systems to continue running while screens are replaced one by one.
+The first technical target should be a `PortraitAppShell`, `TabletAppShell`, or equivalent wrapper that constrains the current app into a 3:4 tablet portrait frame. This allows existing systems to continue running while screens are replaced one by one.
 
 ## 3. Bottom Tab Structure
 
@@ -158,12 +168,12 @@ First pass scope:
 - Shows silhouettes for undiscovered dinosaurs
 - Shows collection status by habitat, region, or rarity
 - Hatched dinosaurs are registered here
-- Layout should be portrait mobile, not desktop grid-first
+- Layout should be tablet portrait first, not desktop grid-first or phone-width first
 
 ### Settings
 
 - Fifth bottom tab in the portrait MVP
-- Uses a compact mobile-friendly list, not the full desktop settings layout
+- Uses a compact tablet-friendly list, not the full desktop settings layout
 - Keeps essential training controls visible:
   - digit size: one-digit, two-digit, three-digit
   - number count inside a problem: 3 to 8
@@ -195,7 +205,7 @@ The UI should feel like a portrait casual dinosaur game.
 
 Key direction:
 
-- Portrait mobile game screen
+- Tablet portrait game screen
 - Large layered background art
 - Character-centered screens
 - Image-based panels and buttons
@@ -279,14 +289,26 @@ The first implementation should hide before deleting. Deletion can happen after 
 - Define Hatchery as My Dinosaur child screen.
 - Hide Playground, Adventure, Hatchery tab, and other temporary tabs.
 
-### Step 2: Portrait App Frame
+### Step 2: Tablet Portrait App Frame
 
-- Create the portrait app frame.
-- Use a centered `max-width` around `430px`.
+- Create the tablet portrait app frame.
+- Use a centered `max-width` around `820px`.
 - Use `height: 100dvh`.
-- Keep PC browser display as a mobile app frame.
+- Prefer `aspect-ratio: 3 / 4` where it can fit the browser viewport cleanly.
+- Keep PC browser display as an iPad portrait app frame.
 - Recommended initial screen: My Dinosaur.
 - Training can remain reachable from the bottom tab.
+
+All primary screens will be redesigned around this tablet portrait baseline:
+
+- Home
+- Training
+- My Dinosaur
+- Shop
+- Dex
+- Settings
+
+Phone support remains a later responsive pass, not the first design target.
 
 ### Step 3: My Dinosaur Portrait Screen
 
@@ -306,7 +328,7 @@ The first implementation should hide before deleting. Deletion can happen after 
 
 ### Step 5: Shop Simplification
 
-- Rebuild Shop as a mobile shop.
+- Rebuild Shop as a tablet portrait shop.
 - Group items into clear categories.
 - Include food, recovery items, costumes, egg fragments.
 - Keep purchases tied to the existing inventory and coin systems.
@@ -324,7 +346,7 @@ Before large UI changes, make small structural changes that reduce risk.
 Recommended file order:
 
 1. `src/App.tsx`
-   - Introduce portrait app shell constraints.
+   - Introduce tablet portrait app shell constraints.
    - Reduce visible bottom tabs to Training, My Dinosaur, Shop, Dex.
    - Set My Dinosaur as the recommended initial tab for this branch.
    - Route Hatchery as a child state under My Dinosaur instead of a bottom tab.
@@ -335,7 +357,7 @@ Recommended file order:
    - Hide Playground, Adventure, Hatchery, and other temporary tabs from visible tabs.
 
 3. `src/components/screens/DinosaurRoomScreen.tsx`
-   - Treat this as the first full portrait screen conversion.
+   - Treat this as the first full tablet portrait screen conversion.
    - Add Hatchery child entry action.
    - Keep feeding, inventory, and selected dinosaur data intact.
 
@@ -366,7 +388,7 @@ Recommended file order:
 ## 16. Open Decisions
 
 - Whether My Dinosaur or Training should be the default first tab. Recommendation: My Dinosaur, because it creates emotional context before training.
-- Whether Settings should expose full desktop settings or a compact mobile list. Recommendation: expose Settings as the fifth bottom tab, but keep it compact for MVP.
+- Whether Settings should expose full desktop settings or a compact tablet list. Recommendation: expose Settings as the fifth bottom tab, but keep it compact for MVP.
 - Whether egg fragments live as regular inventory items or a separate fragment record. Recommendation: use inventory items first, then split later only if the economy becomes more complex.
 - Whether normal eggs can be bought directly. Recommendation: allow normal eggs directly, require fragments for rare/specific eggs.
 
@@ -376,7 +398,7 @@ Recommended file order:
 - New playground interactions
 - Complex gacha probability system
 - Event/quest reward system
-- Native mobile packaging
+- Native mobile/tablet packaging
 - Full redesign of every screen in the first commit
 
-The first success criterion is a clear, portrait, mobile-game-shaped loop using existing logic: My Dinosaur, Training, Shop, Dex, and Hatchery as a child screen.
+The first success criterion is a clear tablet portrait game loop using existing logic: My Dinosaur, Training, Shop, Dex, and Hatchery as a child screen.

@@ -29,6 +29,9 @@ npm run dev
 ```
 
 개발 서버를 실행하는 명령어다. `package.json` 기준으로 Vite가 3000번 포트에서 실행된다.
+로컬 접속 주소는 `http://localhost:3000`으로 통일한다.
+`vite.config.ts`의 `strictPort: true` 설정으로 3000번 포트가 사용 중이면 다른 포트로 자동 이동하지 않고 에러를 낸다.
+이 경우 기존 3000번 포트 프로세스를 종료한 뒤 `npm run dev`를 다시 실행한다.
 
 ```bash
 npm run build

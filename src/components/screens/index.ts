@@ -1,4 +1,5 @@
 export { TrainingScreen } from './TrainingScreen';
+export { HomeScreen } from './HomeScreen';
 export { DinosaurRoomScreen } from './DinosaurRoomScreen';
 export { PlaygroundScreen } from './PlaygroundScreen';
 export { HatcheryScreen } from './HatcheryScreen';
