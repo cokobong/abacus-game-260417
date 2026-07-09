@@ -36,7 +36,7 @@ export const rewardConfig: RewardConfig = {
     coins: 30,
     hatchProgress: 0,
     dinosaurMood: 0,
-    dinoExp: 15,
+    dinoExp: 0,
   },
   hatchItemRewardOnSetComplete: 'hatch-warm-stone',
   hatchItemQuantityOnSetComplete: 1,

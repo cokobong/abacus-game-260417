@@ -16,6 +16,7 @@ interface BaseItemConfig {
 
 export interface FoodItemConfig extends BaseItemConfig {
   category: 'food';
+  expValue: number;
   effect: DinosaurStatEffect;
 }
 
@@ -70,7 +71,9 @@ export interface ShopCategoryConfig {
 }
 
 export const fallbackFoodEffect: DinosaurStatEffect = {
-  stamina: 10,
+  exp: 5,
+  mood: 1,
+  stamina: 3,
 };
 
 export const shopCategoryConfigs: ShopCategoryConfig[] = [
@@ -91,8 +94,10 @@ export const itemConfigs: ItemConfig[] = [
     price: 50,
     description: '체력을 회복하는 든든한 기본 사료예요.',
     sortOrder: 1,
+    expValue: 10,
     effect: {
-      stamina: 20,
+      mood: 2,
+      stamina: 5,
     },
   },
   {
@@ -102,8 +107,10 @@ export const itemConfigs: ItemConfig[] = [
     price: 80,
     description: '체력을 조금 회복하는 말랑한 열매예요.',
     sortOrder: 2,
+    expValue: 5,
     effect: {
-      stamina: 10,
+      mood: 2,
+      stamina: 3,
     },
   },
   {
@@ -113,8 +120,10 @@ export const itemConfigs: ItemConfig[] = [
     price: 30,
     description: '가볍게 체력을 회복하는 기본 사료예요.',
     sortOrder: 3,
+    expValue: 5,
     effect: {
-      stamina: 10,
+      mood: 1,
+      stamina: 3,
     },
   },
   {
@@ -124,8 +133,88 @@ export const itemConfigs: ItemConfig[] = [
     price: 150,
     description: '체력을 많이 회복하는 특별 간식이에요.',
     sortOrder: 4,
+    expValue: 20,
     effect: {
-      stamina: 30,
+      mood: 4,
+      stamina: 8,
+    },
+  },
+  {
+    id: 'fish-bite',
+    name: '생선',
+    category: 'food',
+    price: 70,
+    description: '담백한 생선 간식이에요.',
+    sortOrder: 5,
+    expValue: 8,
+    effect: {
+      mood: 2,
+      stamina: 4,
+    },
+  },
+  {
+    id: 'berry-basket',
+    name: '열매 바구니',
+    category: 'food',
+    price: 120,
+    description: '여러 가지 열매를 담은 사료예요.',
+    sortOrder: 6,
+    expValue: 12,
+    effect: {
+      mood: 3,
+      stamina: 5,
+    },
+  },
+  {
+    id: 'strong-meat',
+    name: '튼튼 고기',
+    category: 'food',
+    price: 140,
+    description: '든든하게 힘을 채워주는 고기예요.',
+    sortOrder: 7,
+    expValue: 15,
+    effect: {
+      mood: 2,
+      stamina: 7,
+    },
+  },
+  {
+    id: 'sweet-berry',
+    name: '달콤 열매',
+    category: 'food',
+    price: 100,
+    description: '공룡이 좋아하는 달콤한 열매예요.',
+    sortOrder: 8,
+    expValue: 10,
+    effect: {
+      mood: 4,
+      stamina: 4,
+    },
+  },
+  {
+    id: 'energy-leaf',
+    name: '에너지 잎',
+    category: 'food',
+    price: 110,
+    description: '가볍게 활력을 채워주는 잎사귀예요.',
+    sortOrder: 9,
+    expValue: 11,
+    effect: {
+      mood: 2,
+      stamina: 6,
+    },
+  },
+  {
+    id: 'special-snack',
+    name: '특별 간식',
+    category: 'food',
+    price: 220,
+    description: '조금 더 특별한 날에 주는 간식이에요.',
+    sortOrder: 10,
+    expValue: 30,
+    effect: {
+      mood: 5,
+      stamina: 10,
     },
   },
   {
@@ -171,13 +260,14 @@ export const itemConfigs: ItemConfig[] = [
   },
   {
     id: 'rare-egg-fragment',
-    name: '희귀알 조각',
-    category: 'dinosaur',
-    price: 0,
-    description: '모험에서 발견한 반짝이는 조각이에요. 희귀알마다 필요한 개수가 달라요.',
-    sortOrder: 21,
-    rarity: 'rare',
-    unlockType: 'egg_fragment',
+    name: '희귀조각',
+    category: 'hatchItem',
+    price: 260,
+    description: '희귀 알을 여는 데 필요한 반짝이는 조각이에요.',
+    sortOrder: 43,
+    effect: {
+      hatchProgress: 0,
+    },
   },
   {
     id: 'rare-spark-egg',
@@ -249,6 +339,28 @@ export const itemConfigs: ItemConfig[] = [
     requiredFragmentId: 'rare-egg-fragment',
     requiredFragmentAmount: 20,
     requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 20 }],
+  },
+  {
+    id: 'ocean-blue-egg',
+    name: '바다빛 알',
+    category: 'egg',
+    price: 700,
+    description: '바다빛을 닮은 특별한 알이에요.',
+    sortOrder: 35,
+    rarity: 'special',
+    eggType: 'special',
+    eggCategory: 'special',
+  },
+  {
+    id: 'legend-egg',
+    name: '전설 알',
+    category: 'egg',
+    price: 1200,
+    description: '아주 특별한 공룡을 기대하게 만드는 전설 알이에요.',
+    sortOrder: 36,
+    rarity: 'special',
+    eggType: 'special',
+    eggCategory: 'special',
   },
   {
     id: 'hatch-warm-stone',

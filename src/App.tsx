@@ -33,7 +33,7 @@ import { clearGameState, loadGameState, saveGameState } from './utils/gameStorag
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
 import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
-import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getGrowthStageLabel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
+import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
 import { trainingUiAssets } from './assets/ui/training';
 
@@ -58,6 +58,7 @@ type CompletedTrainingSummary = TrainingRewardResult & {
 type GameState = {
   userProfile: UserProfile | null;
   player: { coins: number };
+  selectedDinosaurId: string;
   selectedLevel: number;
   selectedStageId: string;
   problemCountOverride?: ProblemCountOverride;
@@ -98,10 +99,10 @@ const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?
 const initialDinosaurState: DinosaurState = {
   id: 'dino-tiny-tyranno',
   name: '용감한 티라노',
-  level: 3,
-  exp: 44,
-  expToNextLevel: getExpToNextLevel(3),
-  growthStage: getGrowthStageForLevel(3),
+  level: 4,
+  exp: 9,
+  expToNextLevel: getExpToNextLevel(4),
+  growthStage: getGrowthStageForLevel(4),
   mood: 74,
   happiness: 74,
   stamina: 81,
@@ -160,6 +161,7 @@ const showSettingsAdvancedPanels = true;
 const defaultGameState: GameState = {
   userProfile: null,
   player: { coins: 1240 },
+  selectedDinosaurId: initialOwnedDinosaur.id,
   selectedLevel: defaultSelectedLevel,
   selectedStageId: defaultSelectedStageId,
   problemCountOverride: undefined,
@@ -185,7 +187,7 @@ const defaultGameState: GameState = {
 function normalizeGameState(state: Partial<GameState>): GameState {
   const rawUserProfile = isRecord(state.userProfile) ? state.userProfile : null;
   const legacyActiveDinosaurId = typeof (state as Partial<GameState> & { activeDinosaurId?: unknown }).activeDinosaurId === 'string' ? (state as Partial<GameState> & { activeDinosaurId?: string }).activeDinosaurId : undefined;
-  const selectedDinosaurId = typeof rawUserProfile?.selectedDinosaurId === 'string' ? rawUserProfile.selectedDinosaurId : legacyActiveDinosaurId;
+  const selectedDinosaurId = typeof state.selectedDinosaurId === 'string' ? state.selectedDinosaurId : typeof rawUserProfile?.selectedDinosaurId === 'string' ? rawUserProfile.selectedDinosaurId : legacyActiveDinosaurId;
   const ownedDinosaurs = getUniqueOwnedDinosaurs(getArrayValue(state.ownedDinosaurs, defaultGameState.ownedDinosaurs));
   const discoveredSpeciesIds = normalizeDiscoveredSpeciesIds([...getArrayValue(state.discoveredSpeciesIds, defaultGameState.discoveredSpeciesIds), ...ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
   const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, selectedDinosaurId);
@@ -236,6 +238,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
       coins: playerCoins,
     },
     selectedLevel,
+    selectedDinosaurId: selectedDinosaur?.id ?? selectedDinosaurId ?? initialOwnedDinosaur.id,
     selectedStageId,
     problemCountOverride,
     numberCountOverride,
@@ -347,7 +350,7 @@ function normalizeOwnedDinosaurSpecies(dinosaur: unknown): OwnedDinosaur | null 
   const normalizedName = speciesId !== dinosaur.speciesId && rawName === dinosaur.speciesId ? species.defaultName : rawName || species.defaultName;
   const rawEquippedCostumes = isRecord(dinosaur.equippedCostumes) ? dinosaur.equippedCostumes : {};
 
-  return {
+  const normalizedDinosaur: OwnedDinosaur = {
     id: typeof dinosaur.id === 'string' ? dinosaur.id : `owned-${speciesId}-restored`,
     speciesId,
     name: normalizedName,
@@ -364,6 +367,8 @@ function normalizeOwnedDinosaurSpecies(dinosaur: unknown): OwnedDinosaur | null 
     obtainedAt: normalizeNumber(dinosaur.obtainedAt, Date.now()),
     equippedCostumes: rawEquippedCostumes,
   };
+
+  return applyDinosaurExp(normalizedDinosaur, 0);
 }
 
 function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg[] {
@@ -518,6 +523,11 @@ function normalizeCoinRewardMultiplier(value: unknown): CoinRewardMultiplier {
   return numericValue === 0.7 || numericValue === 1 || numericValue === 1.3 ? numericValue : defaultCoinRewardMultiplier;
 }
 
+function getAdjustedFoodExp(baseExp: number, growthSpeedMultiplier: GrowthSpeedMultiplier) {
+  if (baseExp <= 0) return 0;
+  return Math.max(1, Math.round(baseExp * growthSpeedMultiplier));
+}
+
 function normalizeTrainingHistory(value: unknown): TrainingSessionRecord[] {
   return Array.isArray(value) ? (value.filter((item) => item && typeof item === 'object') as TrainingSessionRecord[]).slice(0, maxTrainingHistoryRecords) : [];
 }
@@ -648,6 +658,10 @@ function getSelectedOwnedDinosaur(ownedDinosaurs: OwnedDinosaur[], selectedDinos
   return ownedDinosaurs.find((dinosaur) => dinosaur.id === selectedDinosaurId) ?? ownedDinosaurs[0] ?? null;
 }
 
+function getSelectedDinosaurId(state: Pick<GameState, 'selectedDinosaurId' | 'userProfile'>) {
+  return state.selectedDinosaurId ?? state.userProfile?.selectedDinosaurId ?? null;
+}
+
 function ownedDinosaurToDinosaurState(dinosaur: OwnedDinosaur): DinosaurState {
   const level = Math.max(1, dinosaur.level ?? 1);
   const maxStamina = dinosaur.maxStamina ?? getMaxStaminaForLevel(level);
@@ -669,7 +683,7 @@ function ownedDinosaurToDinosaurState(dinosaur: OwnedDinosaur): DinosaurState {
 
 function updateSelectedOwnedDinosaur(state: GameState, updater: (dinosaur: OwnedDinosaur) => OwnedDinosaur): GameState {
   const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(state.ownedDinosaurs);
-  const selectedDinosaur = getSelectedOwnedDinosaur(uniqueOwnedDinosaurs, state.userProfile?.selectedDinosaurId);
+  const selectedDinosaur = getSelectedOwnedDinosaur(uniqueOwnedDinosaurs, getSelectedDinosaurId(state));
   if (!selectedDinosaur) return state;
 
   const updatedDinosaur = updater(selectedDinosaur);
@@ -679,6 +693,7 @@ function updateSelectedOwnedDinosaur(state: GameState, updater: (dinosaur: Owned
     ...state,
     dinosaur: ownedDinosaurToDinosaurState(updatedDinosaur),
     ownedDinosaurs,
+    selectedDinosaurId: updatedDinosaur.id,
     userProfile: state.userProfile
       ? {
           ...state.userProfile,
@@ -904,7 +919,7 @@ export default function App() {
   const hasMountedRef = useRef(false);
   const skipNextSaveRef = useRef(false);
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
-  const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
+  const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, getSelectedDinosaurId(gameState)) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
   const [trainingRunId, setTrainingRunId] = useState(0);
@@ -1004,7 +1019,7 @@ export default function App() {
   const isTrainingScreen = activeTab === 'training';
   const showAppHeader = !isHomeScreen && !isTrainingScreen;
   const showBottomNav = !isHomeScreen && !isTrainingScreen;
-  const allowsPageScroll = activeTab !== 'training';
+  const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop';
 
   useEffect(() => {
     setCompletedTrainingSummary(null);
@@ -1091,6 +1106,7 @@ export default function App() {
     setGameState({
       ...defaultGameState,
       userProfile,
+      selectedDinosaurId: starterDinosaur.id,
       dinosaur: ownedDinosaurToDinosaurState(starterDinosaur),
       ownedDinosaurs: [starterDinosaur],
       discoveredSpeciesIds: [starterDinosaur.speciesId],
@@ -1168,7 +1184,7 @@ export default function App() {
   }
 
   function applyCorrectAnswerTrainingCost() {
-    const targetDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, gameState.userProfile?.selectedDinosaurId) ?? initialOwnedDinosaur;
+    const targetDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, getSelectedDinosaurId(gameState)) ?? initialOwnedDinosaur;
     const trainingEffects = getTrainingConditionEffects(targetDinosaur);
 
     setGameState((current) =>
@@ -1309,6 +1325,8 @@ export default function App() {
     const foodConfig = getFoodItemConfig(inventoryItem.itemId);
     const effect = foodConfig?.effect ?? fallbackFoodEffect;
     const foodName = foodConfig?.name ?? inventoryItem.itemId;
+    const baseFoodExp = foodConfig?.expValue ?? effect.exp ?? fallbackFoodEffect.exp ?? 0;
+    const adjustedFoodExp = activeOwnedDinosaur.level >= 20 ? 0 : getAdjustedFoodExp(baseFoodExp, gameState.growthSpeedMultiplier);
 
     if (!foodConfig) {
       console.warn('Food item config missing. Applying fallback effect.', {
@@ -1318,13 +1336,18 @@ export default function App() {
     }
 
     let remainingQuantity = inventoryItem.quantity;
+    let gainedExp = 0;
+    let didLevelUp = false;
     setGameState((current) => {
       const currentInventoryItem = current.inventory.find((item) => item.itemId === inventoryItem.itemId);
       remainingQuantity = Math.max(0, (currentInventoryItem?.quantity ?? 0) - 1);
-      const selectedDinosaur = getSelectedOwnedDinosaur(getUniqueOwnedDinosaurs(current.ownedDinosaurs), current.userProfile?.selectedDinosaurId);
+      const selectedDinosaur = getSelectedOwnedDinosaur(getUniqueOwnedDinosaurs(current.ownedDinosaurs), getSelectedDinosaurId(current));
+      const currentBaseFoodExp = foodConfig?.expValue ?? effect.exp ?? fallbackFoodEffect.exp ?? 0;
+      const currentAdjustedFoodExp = selectedDinosaur && selectedDinosaur.level < 20 ? getAdjustedFoodExp(currentBaseFoodExp, current.growthSpeedMultiplier) : 0;
       const adjustedEffect = selectedDinosaur
         ? {
             ...effect,
+            exp: currentAdjustedFoodExp,
             stamina: getAdjustedStaminaRecovery(effect.stamina ?? 0, selectedDinosaur.happiness),
           }
         : effect;
@@ -1332,6 +1355,8 @@ export default function App() {
       return {
         ...updateSelectedOwnedDinosaur(current, (dinosaur) => {
           const grownDinosaur = adjustedEffect.exp ? applyDinosaurExp(dinosaur, adjustedEffect.exp) : dinosaur;
+          gainedExp = adjustedEffect.exp ?? 0;
+          didLevelUp = grownDinosaur.level > dinosaur.level;
           const nextHappiness = clampHappiness(grownDinosaur.happiness + (adjustedEffect.mood ?? 0));
 
           return {
@@ -1351,7 +1376,9 @@ export default function App() {
     const recoveredStamina = getAdjustedStaminaRecovery(effect.stamina ?? 0, activeHappiness);
     const multiplier = getStaminaRecoveryMultiplier(activeHappiness);
     const recoveryMessage = `체력 +${recoveredStamina}${multiplier > 1 ? ` (행복 보너스 x${multiplier})` : ''}`;
-    setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${recoveryMessage}` : `${foodName}를 먹었어요! ${recoveryMessage} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
+    const expMessage = adjustedFoodExp > 0 ? `EXP +${gainedExp || adjustedFoodExp}` : '성장 완료';
+    const levelMessage = didLevelUp ? ' 레벨이 올랐어요!' : '';
+    setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage}` : `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
   }
 
   function purchaseItem(itemId: string) {
@@ -1589,6 +1616,7 @@ export default function App() {
         ownedEggs: nextOwnedEggs,
         activeEggId: nextActiveEgg?.id ?? null,
         dinosaur: ownedDinosaurToDinosaurState(newDinosaur),
+        selectedDinosaurId: newDinosaur.id,
         userProfile: current.userProfile
           ? {
               ...current.userProfile,
@@ -1630,7 +1658,7 @@ export default function App() {
       const ownedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
       if (ownedDinosaurs.length === 0) return current;
 
-      const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, current.userProfile?.selectedDinosaurId) ?? ownedDinosaurs[0];
+      const selectedDinosaur = getSelectedOwnedDinosaur(ownedDinosaurs, getSelectedDinosaurId(current)) ?? ownedDinosaurs[0];
       const selectedIndex = Math.max(0, ownedDinosaurs.findIndex((dinosaur) => dinosaur.id === selectedDinosaur.id));
       const nextIndex = (selectedIndex + direction + ownedDinosaurs.length) % ownedDinosaurs.length;
       const nextDinosaur = ownedDinosaurs[nextIndex];
@@ -1639,6 +1667,7 @@ export default function App() {
         ...current,
         dinosaur: ownedDinosaurToDinosaurState(nextDinosaur),
         ownedDinosaurs,
+        selectedDinosaurId: nextDinosaur.id,
         userProfile: current.userProfile
           ? {
               ...current.userProfile,
@@ -1660,6 +1689,7 @@ export default function App() {
         ...current,
         dinosaur: ownedDinosaurToDinosaurState(nextDinosaur),
         ownedDinosaurs,
+        selectedDinosaurId: nextDinosaur.id,
         userProfile: current.userProfile
           ? {
               ...current.userProfile,
@@ -1712,6 +1742,17 @@ export default function App() {
             ...current.egg,
             ...(activeEggToEggState(activeEgg) ?? {}),
             lastHatchMessage: '상점에서 부화 아이템을 구매하거나 훈련 세트를 완료해보세요.',
+          },
+        };
+      }
+
+      if (item.effect.hatchProgress <= 0) {
+        return {
+          ...current,
+          egg: {
+            ...current.egg,
+            ...(activeEggToEggState(activeEgg) ?? {}),
+            lastHatchMessage: `${item.name}은 희귀 알 구매 재료예요. 상점에서 희귀 알을 열 때 사용돼요.`,
           },
         };
       }
@@ -1865,8 +1906,8 @@ export default function App() {
               <Baby className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-emerald-950">주산 공룡 모험</h1>
-              <p className="hidden text-sm font-black text-emerald-700/75 sm:block">주산훈련 → 보상 → 알부화와 성장</p>
+              <h1 className="text-lg font-black text-emerald-950">{activeTab === 'dino' ? '우리 공룡' : '주산 공룡 모험'}</h1>
+              {activeTab !== 'dino' && <p className="hidden text-sm font-black text-emerald-700/75 sm:block">주산훈련 → 보상 → 알부화와 성장</p>}
             </div>
           </div>
           <div className="flex min-w-0 items-center gap-1">
@@ -1875,8 +1916,8 @@ export default function App() {
         </div>
       </header>}
 
-      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(6.75rem+env(safe-area-inset-bottom))] md:pb-[calc(7.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : 'flex-1 overflow-hidden pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}>
-        <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
+      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : `flex-1 overflow-hidden ${showBottomNav ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}`}>
+        <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' || activeTab === 'dino' || activeTab === 'shop' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
           <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
             <activeMeta.icon className={`h-7 w-7 ${activeMeta.color}`} />
           </div>
@@ -1991,9 +2032,31 @@ export default function App() {
           />
         )}
         {activeTab === 'shop' && (
-          <ShopScreen coins={gameState.player.coins} feedback={shopFeedback} inventory={gameState.inventory} ownedDinosaurs={gameState.ownedDinosaurs} ownedEggs={gameState.ownedEggs} ownedCostumeIds={gameState.ownedCostumeIds} onPurchase={purchaseItem} />
+          <ShopScreen
+            coins={gameState.player.coins}
+            feedback={shopFeedback}
+            inventory={gameState.inventory}
+            ownedDinosaurs={gameState.ownedDinosaurs}
+            ownedEggs={gameState.ownedEggs}
+            ownedCostumeIds={gameState.ownedCostumeIds}
+            onPurchase={purchaseItem}
+            onGoToDino={() => {
+              setIsHatcheryOpen(false);
+              setActiveTab('dino');
+            }}
+          />
         )}
-        {activeTab === 'pokedex' && <DexScreen ownedDinosaurs={gameState.ownedDinosaurs} discoveredSpeciesIds={gameState.discoveredSpeciesIds} onViewOwnedDinosaur={viewOwnedDinosaurFromDex} />}
+        {activeTab === 'pokedex' && (
+          <DexScreen
+            ownedDinosaurs={gameState.ownedDinosaurs}
+            discoveredSpeciesIds={gameState.discoveredSpeciesIds}
+            onViewOwnedDinosaur={viewOwnedDinosaurFromDex}
+            onGoToHatchery={() => {
+              setActiveTab('dino');
+              setIsHatcheryOpen(true);
+            }}
+          />
+        )}
         {activeTab === 'adventure' && (
           <PlaygroundScreen
             activeDinosaur={activeDinosaur}
@@ -2039,8 +2102,8 @@ export default function App() {
         )}
       </main>
 
-      {showBottomNav && <nav className="absolute inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.45rem+env(safe-area-inset-bottom))] md:px-5 md:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto grid grid-cols-5 gap-1.5 rounded-[24px] border-4 border-white bg-white/90 p-1.5 shadow-[0_-12px_34px_rgba(14,116,144,0.2)] backdrop-blur md:gap-2 md:p-2">
+      {showBottomNav && <nav className="bottom-nav-wrapper absolute inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.35rem+env(safe-area-inset-bottom))] md:px-5 md:pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <div className="bottom-nav mx-auto grid grid-cols-5 gap-1 rounded-[18px] border-[3px] border-white bg-white/90 p-1 shadow-[0_-8px_22px_rgba(14,116,144,0.18)] backdrop-blur md:gap-1.5 md:p-1.5">
           {visibleMainTabs.map((tab) => {
             const Icon = tab.icon;
             const active = tab.id === activeTab;
@@ -2051,13 +2114,13 @@ export default function App() {
                   setIsHatcheryOpen(false);
                   setActiveTab(tab.id);
                 }}
-                className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] border-2 text-[9px] font-black transition active:translate-y-1 md:min-h-20 md:text-xs ${
+                className={`bottom-nav-item flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[13px] border text-[8px] font-black transition active:translate-y-0.5 md:min-h-14 md:text-[10px] ${
                   active
-                    ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_6px_0_rgba(15,23,42,0.16)]`
+                    ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_4px_0_rgba(15,23,42,0.14)]`
                     : 'border-transparent bg-transparent text-slate-500 hover:bg-sky-50'
                 }`}
               >
-                <Icon className={`h-5 w-5 md:h-6 md:w-6 ${active ? tab.color : 'text-slate-400'}`} />
+                <Icon className={`h-4 w-4 md:h-5 md:w-5 ${active ? tab.color : 'text-slate-400'}`} />
                 <span className={active ? 'text-slate-900' : ''}>{tab.label}</span>
               </button>
             );
@@ -2915,11 +2978,10 @@ function TrainingDinosaurCard({
         <DinoAvatar size="small" />
       </div>
       <p className="mt-3 rounded-full bg-amber-100 px-4 py-2 text-center text-sm font-black text-amber-800">
-        {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]} · {getGrowthStageLabel(dinosaur.growthStage)} · Lv. {dinosaur.level}
+        {activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {rarityLabels[activeOwnedDinosaur.rarity]}
       </p>
       <p className="mt-2 rounded-full bg-violet-100 px-4 py-2 text-center text-sm font-black text-violet-800">착용: {formatEquippedCostumes(activeOwnedDinosaur.equippedCostumes)}</p>
       <div className="mt-4 grid gap-3">
-        <Meter label="EXP" value={getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel)} tone="from-cyan-400 to-sky-500" />
         <Meter label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
         <Meter label="체력" value={getPercentValue(dinosaur.stamina, dinosaur.maxStamina)} tone="from-emerald-400 to-lime-500" />
       </div>
@@ -3046,8 +3108,6 @@ function SettingsView({
   totalDinosaurCount,
   unlockedItemCount,
   totalItemCount,
-  currentDinosaurLevel,
-  expProgressPercent,
   currentCoins,
   trainingHistory,
   selectedLevelEvaluation,
@@ -3082,8 +3142,6 @@ function SettingsView({
   totalDinosaurCount: number;
   unlockedItemCount: number;
   totalItemCount: number;
-  currentDinosaurLevel: number;
-  expProgressPercent: number;
   currentCoins: number;
   trainingHistory: TrainingSessionRecord[];
   selectedLevelEvaluation: TrainingProgressEvaluation;
@@ -3325,11 +3383,9 @@ function SettingsView({
         </p>
         <div className="mt-5">
           <h4 className="text-base font-black text-slate-800">현재 해금 현황</h4>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <SettingChip label="공룡 도감" value={`${discoveredDinosaurCount} / ${totalDinosaurCount}`} />
             <SettingChip label="아이템" value={`${unlockedItemCount} / ${totalItemCount}`} />
-            <SettingChip label="현재 공룡 레벨" value={`Lv.${currentDinosaurLevel}`} />
-            <SettingChip label="현재 EXP 진행률" value={`${expProgressPercent}%`} />
             <SettingChip label="보유 코인" value={currentCoins.toLocaleString()} />
           </div>
         </div>

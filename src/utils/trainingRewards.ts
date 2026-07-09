@@ -1,4 +1,4 @@
-import { rewardConfig, type CoinRewardMultiplier } from '../config/rewardConfig';
+import type { CoinRewardMultiplier } from '../config/rewardConfig';
 import type { GrowthSpeedMultiplier } from '../config/growthConfig';
 
 export interface TrainingRewardInput {
@@ -33,32 +33,23 @@ function getRewardMultiplier(accuracy: number) {
   return 0.6;
 }
 
-export function calculateTrainingRewards({ totalProblems, correctCount, wrongCount, growthSpeedMultiplier, coinRewardMultiplier }: TrainingRewardInput): TrainingRewardResult {
+export function calculateTrainingRewards({ correctCount, wrongCount, growthSpeedMultiplier, coinRewardMultiplier }: TrainingRewardInput): TrainingRewardResult {
   const totalAttempts = correctCount + wrongCount;
   const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
   const rewardMultiplier = getRewardMultiplier(accuracy);
   const baseCoins = Math.max(0, Math.round((correctCount * 3 + 10) * rewardMultiplier));
   const adjustedCoins = Math.round(baseCoins * coinRewardMultiplier);
-  const baseDinoExp = totalProblems > 0 ? rewardConfig.setComplete.dinoExp : 0;
-  const adjustedDinoExp = Math.round(baseDinoExp * growthSpeedMultiplier);
 
   return {
     baseCoins,
     coinRewardMultiplier,
     coins: adjustedCoins,
-    baseDinoExp,
+    baseDinoExp: 0,
     growthSpeedMultiplier,
-    // Raw EXP points awarded once per completed set. Accuracy, per-answer
-    // rewards, happiness, and item rewards must not alter this value.
-    dinoExp: adjustedDinoExp,
-    happiness: Math.max(0, Math.round(2 * rewardMultiplier)),
+    dinoExp: 0,
+    happiness: 0,
     accuracy,
     rewardMultiplier,
-    hatchItems: [
-      {
-        itemId: rewardConfig.hatchItemRewardOnSetComplete,
-        quantity: rewardConfig.hatchItemQuantityOnSetComplete,
-      },
-    ],
+    hatchItems: [],
   };
 }

@@ -58,6 +58,33 @@ const eggCategoryUnlockHint: Record<DinosaurEggCategory, string> = {
   rare: '희귀알을 부화시키면 만날 수 있어요.',
 };
 
+const kidFriendlyDexDescriptions: Record<Id, string> = {
+  'tiny-tyranno': '티라노사우루스는 힘이 세고 용감한 친구예요. 친구를 지킬 때는 든든하지만, 맛있는 고기를 보면 금방 웃어요.',
+  'baby-tricera': '트리케라는 큰 뿔로 친구들을 지켜주는 든든한 공룡이에요. 천천히 생각하고, 한 번 마음먹으면 끝까지 해내요.',
+  'plate-stego': '스테고는 등에 멋진 골판이 있는 차분한 공룡이에요. 햇볕 아래에서 쉬며 친구들을 조용히 지켜봐요.',
+  parasaurolophus: '파라사우롤로푸스는 노래하듯 부드러운 소리를 내는 친구예요. 기분 좋은 멜로디로 모두를 편안하게 해줘요.',
+  'armor-ankylo': '안킬로는 단단한 갑옷을 입은 것처럼 튼튼한 공룡이에요. 느리지만 꾸준해서 친구들이 믿고 따라요.',
+  leafcera: '리프케라는 잎사귀처럼 예쁜 뿔을 가진 신비한 친구예요. 숲길을 살금살금 걸으며 작은 새싹을 돌봐요.',
+  'long-brachio': '브라키오는 긴 목으로 높은 나뭇잎도 쉽게 먹어요. 느긋하고 상냥해서 작은 친구들에게 인기가 많아요.',
+  allosaurus: '알로사우루스는 달리기를 좋아하는 날쌘 공룡이에요. 빨리 움직이지만 친구를 놀라게 하지 않으려고 조심해요.',
+  pachycephalosaurus: '파키케팔로는 동그란 머리가 자랑인 씩씩한 친구예요. 작은 일에도 포기하지 않고 다시 도전해요.',
+  dilophosaurus: '딜로포사우루스는 반짝이는 동굴을 궁금해하는 호기심 많은 공룡이에요. 새로운 것을 보면 눈이 반짝반짝 빛나요.',
+  iguanodon: '이구아노돈은 차분하게 생각하는 똑똑한 친구예요. 천천히 걸으며 좋은 길을 찾아내는 걸 잘해요.',
+  crystalo: '크리스탈로는 수정처럼 반짝이는 꼬리를 가진 특별한 공룡이에요. 어두운 동굴에서도 친구들에게 길을 알려줘요.',
+  carnotaurus: '카르노타우루스는 당당하게 걷는 씩씩한 공룡이에요. 처음 보는 길도 용기 내어 한 걸음씩 나아가요.',
+  kentrosaurus: '켄트로사우루스는 뾰족한 가시를 가진 꼼꼼한 친구예요. 친구들이 다치지 않게 주변을 살피는 걸 좋아해요.',
+  dimetrodon: '디메트로돈은 등에 멋진 돛을 펼친 느긋한 친구예요. 따뜻한 햇살을 받으며 쉬는 시간을 좋아해요.',
+  spinosaurus: '스피노사우루스는 물가를 좋아하는 집중력 좋은 공룡이에요. 조용히 물결을 바라보며 생각을 모아요.',
+  therizinosaurus: '테리지노사우루스는 긴 손을 가진 섬세한 친구예요. 나뭇잎을 조심조심 골라 친구들과 나누어 먹어요.',
+  volcanodon: '불카노돈은 따뜻한 불꽃빛을 품은 열정적인 공룡이에요. 마음이 뜨거워서 친구를 응원하는 걸 좋아해요.',
+  pteranodon: '프테라노돈은 하늘을 나는 걸 좋아하는 날쌘 친구예요. 멀리까지 날아가 새로운 길을 찾아와요.',
+  diplodocus: '디플로도쿠스는 길고 부드러운 꼬리를 가진 온화한 공룡이에요. 느릿느릿 걸어도 언제나 친구 곁에 있어요.',
+  'swift-raptor': '벨로시랩터는 번개처럼 빠르게 달리는 재빠른 친구예요. 장난을 좋아하지만 약속은 꼭 지켜요.',
+  plesiosaurus: '플레시오사우루스는 물 위를 우아하게 헤엄치는 친구예요. 잔잔한 물결처럼 부드럽게 친구들을 도와줘요.',
+  mosasaurus: '모사사우루스는 깊은 바다를 씩씩하게 헤엄치는 대담한 친구예요. 넓은 바다에서도 길을 잃지 않아요.',
+  starano: '스타라노는 별빛 날개를 가진 조용하고 신중한 공룡이에요. 밤하늘을 보며 친구들의 소원을 들어줘요.',
+};
+
 const speciesDrafts: Array<{
   speciesId: Id;
   displayName: string;
@@ -107,8 +134,8 @@ export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) =>
   name: species.defaultName,
   habitatOrder: habitatOrderById[species.habitat],
   starterSelectable: species.starterSelectable ?? false,
-  description: species.description ?? `${species.displayName}은 주산훈련 모험에서 만날 수 있는 공룡이에요.`,
-  dexDescription: species.dexDescription ?? `${species.displayName}은 도감 ${species.collectionOrder}번째 슬롯의 공룡이에요.`,
+  description: kidFriendlyDexDescriptions[species.speciesId] ?? species.description ?? `${species.displayName}은 주산훈련 모험에서 만날 수 있는 공룡이에요.`,
+  dexDescription: kidFriendlyDexDescriptions[species.speciesId] ?? species.dexDescription ?? `${species.displayName}은 도감 ${species.collectionOrder}번째 슬롯의 공룡이에요.`,
   discoveryHint: species.discoveryHint ?? `${species.displayName}의 발자국이 도감에 남아 있어요.`,
   foundMethodLabel: species.starterSelectable ? '첫 공룡으로 선택 가능' : eggCategoryFoundMethod[species.eggCategory],
   unlockHint: species.starterSelectable ? '첫 공룡으로 고르거나 일반알에서 만날 수 있어요.' : eggCategoryUnlockHint[species.eggCategory],
