@@ -1,5 +1,22 @@
 import { Baby, Coins, Egg, Fish, Leaf, Package, Plus, ShoppingBag, Sparkles, Utensils } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import {
+  shopBackground,
+  shopBuyButtonDefault,
+  shopBuyButtonDisabled,
+  shopBuyButtonPressed,
+  shopFoodMeat,
+  shopIconCategoryEggDefault,
+  shopIconCategoryEggSelected,
+  shopIconCategoryFoodDefault,
+  shopIconCategoryFoodSelected,
+  shopIconCategoryHatchDefault,
+  shopIconCategoryHatchSelected,
+  shopItemCard,
+  shopPriceChip,
+  shopStatusChip,
+  shopTitleBanner,
+} from '../../assets/shop';
 import { getEggRequiredFragments, itemConfigs, type ItemConfig } from '../../config/itemConfig';
 import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { canBuyEggItem } from '../../utils/hatchCandidates';
@@ -18,10 +35,10 @@ export interface ShopScreenProps {
   onGoToDino: () => void;
 }
 
-const shopCategories: Array<{ id: ShopCategoryId; label: string; Icon: typeof Utensils }> = [
-  { id: 'food', label: '음식', Icon: Utensils },
-  { id: 'egg', label: '알', Icon: Egg },
-  { id: 'hatchItem', label: '부화 아이템', Icon: Sparkles },
+const shopCategories: Array<{ id: ShopCategoryId; label: string; defaultIcon: string; selectedIcon: string }> = [
+  { id: 'food', label: '음식', defaultIcon: shopIconCategoryFoodDefault, selectedIcon: shopIconCategoryFoodSelected },
+  { id: 'egg', label: '알', defaultIcon: shopIconCategoryEggDefault, selectedIcon: shopIconCategoryEggSelected },
+  { id: 'hatchItem', label: '부화 아이템', defaultIcon: shopIconCategoryHatchDefault, selectedIcon: shopIconCategoryHatchSelected },
 ];
 
 const shopCatalog: Record<ShopCategoryId, string[]> = {
@@ -65,15 +82,17 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
   );
 
   return (
-    <section className="shop-screen relative mx-auto grid h-full min-h-0 w-full max-w-[860px] grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-[30px] border-4 border-white bg-[linear-gradient(180deg,#bdf4ff_0%,#dbf7c6_48%,#ffe7ae_100%)] p-2.5 text-emerald-950 shadow-[0_18px_45px_rgba(14,116,144,0.16)] md:p-3">
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-[radial-gradient(circle_at_16%_70%,rgba(34,197,94,.2),transparent_24%),radial-gradient(circle_at_80%_62%,rgba(251,191,36,.24),transparent_26%)]" />
-      <div className="pointer-events-none absolute left-10 top-24 h-14 w-20 rounded-t-full bg-emerald-300/45" />
-      <div className="pointer-events-none absolute right-14 top-32 h-10 w-16 rounded-t-full bg-lime-300/50" />
+    <section
+      className="shop-screen relative mx-auto grid h-full min-h-0 w-full max-w-[860px] grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-[30px] bg-cover bg-center p-2.5 text-emerald-950 md:p-3"
+      style={{ backgroundImage: `url(${shopBackground})` }}
+    >
 
       <header className="shop-header relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="shop-title-sign justify-self-start rounded-[20px] border-[4px] border-amber-800 bg-gradient-to-b from-amber-300 to-orange-400 px-6 py-2.5 text-center shadow-[0_5px_0_#92400e]">
-          <h2 className="text-[clamp(1.45rem,3dvh,2.05rem)] font-black leading-none text-amber-950">상점</h2>
-        </div>
+        <img
+          src={shopTitleBanner}
+          alt="상점"
+          className="shop-title-sign h-auto w-[clamp(132px,19vw,210px)] justify-self-start object-contain"
+        />
 
         <div className="shop-coin-bar flex min-h-14 items-center gap-2 rounded-full border-[4px] border-white bg-gradient-to-b from-amber-100 to-yellow-300 px-4 shadow-[0_5px_0_rgba(180,83,9,0.28)]">
           <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-white shadow-inner">
@@ -96,7 +115,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
       </header>
 
       <div className="shop-category-tabs relative z-10 mx-auto mt-2 grid w-full max-w-[720px] grid-cols-3 gap-2 rounded-[22px] border-4 border-white bg-white/70 p-1.5 shadow-sm">
-        {shopCategories.map(({ id, label, Icon }) => {
+        {shopCategories.map(({ id, label, defaultIcon, selectedIcon }) => {
           const isActive = activeCategory === id;
           return (
             <button
@@ -109,7 +128,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
               }`}
             >
               <span className="flex items-center justify-center gap-2">
-                <Icon className="h-5 w-5" />
+                <img src={isActive ? selectedIcon : defaultIcon} alt="" className="h-8 w-8 object-contain" />
                 {label}
               </span>
             </button>
@@ -117,13 +136,13 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
         })}
       </div>
 
-      <section className="shop-content-panel relative z-10 mt-2 grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[26px] border-4 border-white bg-[#fff7df]/92 p-2.5 shadow-[0_10px_24px_rgba(120,53,15,0.13)]">
-        <div className="mb-2 grid min-h-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1">
-          <p className="truncate text-xs font-black text-orange-900">{feedback || getCategoryLead(activeCategory)}</p>
-          <p className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-black text-emerald-800">{visibleItems.length}개 상품</p>
+      <section className="shop-content-panel relative z-10 mt-2 grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[24px] border-2 border-white/90 bg-[rgba(255,250,232,0.86)] px-2 py-1.5 shadow-[0_8px_20px_rgba(80,90,40,0.14)] backdrop-blur-[2px]">
+        <div className="mb-1 grid min-h-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 px-0.5">
+          <p className="truncate text-[11px] font-black text-orange-900">{feedback || getCategoryLead(activeCategory)}</p>
+          <p className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-black text-emerald-800">{visibleItems.length}개 상품</p>
         </div>
         <div className="shop-product-grid min-h-0 overflow-hidden">
-          <div className="grid h-full grid-cols-4 grid-rows-2 gap-2.5">
+          <div className="grid h-full grid-cols-4 content-start items-start gap-x-1 gap-y-[10px]">
             {visibleItems.map((item) => (
               <ShopProductCard
                 key={item.id}
@@ -164,36 +183,64 @@ function ShopProductCard({
 }) {
   const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const Icon = getItemIcon(item);
+  const [isPressed, setIsPressed] = useState(false);
   const isRareEgg = item.category === 'egg' && isRareEggItem(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
 
   return (
-    <article className="shop-product-card grid min-h-0 grid-rows-[46px_auto_auto_30px] rounded-[18px] border-[3px] border-white bg-gradient-to-b from-white to-orange-50 p-2 text-center shadow-[0_5px_0_rgba(180,83,9,0.16)]">
-      <div className={`mx-auto grid h-11 w-11 place-items-center rounded-[14px] border-[3px] border-white text-2xl shadow-inner ${getItemTone(item)}`}>
-        <span aria-hidden="true">{itemEmojiById[item.id]}</span>
-        {!itemEmojiById[item.id] && <Icon className="h-6 w-6" />}
+    <article className="shop-product-card relative aspect-[3/4] min-h-0 w-full overflow-hidden text-center">
+      <img src={shopItemCard} alt="" className="pointer-events-none absolute inset-0 h-full w-full scale-[1.14] object-cover" />
+
+      <div className="shop-item-card__icon absolute left-1/2 top-[5%] grid h-[28%] w-[50%] -translate-x-1/2 place-items-center overflow-hidden text-[clamp(1.5rem,4dvh,2.75rem)]">
+        {item.id === 'basic-meat' ? (
+          <img src={shopFoodMeat} alt="" className="h-full w-full object-contain" />
+        ) : (
+          <>
+            <span aria-hidden="true">{itemEmojiById[item.id]}</span>
+            {!itemEmojiById[item.id] && <Icon className="h-1/2 w-1/2" />}
+          </>
+        )}
+        <span className="shop-item-card__owned-badge absolute right-0.5 top-0.5 z-10 min-w-[20px] rounded-full border-2 border-white bg-amber-200/95 px-1.5 py-0.5 text-[clamp(8px,1.15vw,11px)] font-black leading-none text-amber-950 shadow-[0_2px_4px_rgba(120,53,15,0.24)]">
+          x{status.ownedQuantity}
+        </span>
       </div>
 
-      <div className="min-w-0">
-        <h3 className="truncate text-[13px] font-black leading-tight text-slate-950">{item.name}</h3>
-        <p className="mt-1 truncate text-[10px] font-black text-slate-500">{status.ownedLabel}</p>
+      <div className="shop-item-card__name absolute inset-x-[9%] top-[34%] flex h-[10%] min-w-0 items-center justify-center">
+        <h3 className="w-full truncate text-[clamp(10px,1.75vw,15px)] font-black leading-tight text-slate-950">{item.name}</h3>
       </div>
 
-      <div className="grid gap-0.5">
-        <p className="mx-auto inline-flex max-w-full items-center justify-center gap-1 truncate rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-950">
-          {isRareEgg ? <Package className="h-3.5 w-3.5 text-violet-600" /> : <Coins className="h-3.5 w-3.5 text-amber-600" />}
+      <div className="shop-item-card__price absolute left-1/2 top-[45%] h-[12%] w-[72%] -translate-x-1/2 overflow-hidden">
+        <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <p className="relative z-10 flex h-full items-center justify-center gap-1 truncate px-[16%] text-[clamp(9px,1.5vw,13px)] font-black text-amber-950">
+          {isRareEgg ? <Package className="h-4 w-4 shrink-0 text-violet-600" /> : <Coins className="h-4 w-4 shrink-0 text-amber-600" />}
           {isRareEgg && requiredFragment ? `${fragmentQuantity}/${requiredFragment.amount}` : item.price.toLocaleString()}
         </p>
-        <p className={`truncate rounded-full px-2 py-0.5 text-[9px] font-black ${status.canBuy ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'}`}>{status.actionLabel}</p>
+      </div>
+
+      <div className="shop-item-card__status absolute left-1/2 top-[58%] h-[11%] w-[78%] -translate-x-1/2 overflow-hidden">
+        <img src={shopStatusChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <p className={`relative z-10 flex h-full items-center justify-center truncate px-2 text-[clamp(9px,1.35vw,12px)] font-black ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
+          {status.actionLabel}
+        </p>
       </div>
 
       <button
+        type="button"
         onClick={onPurchase}
         disabled={!status.canBuy}
-        className="shop-buy-button mt-0.5 rounded-[12px] border-2 border-white bg-gradient-to-b from-emerald-300 to-green-500 text-[11px] font-black text-emerald-950 shadow-[0_3px_0_#047857] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none"
+        onPointerDown={() => status.canBuy && setIsPressed(true)}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerCancel={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
+        aria-label="구매하기"
+        className="shop-item-card__buy shop-buy-button absolute bottom-[7%] left-1/2 h-[14%] w-[82%] -translate-x-1/2 overflow-hidden bg-transparent p-0 disabled:cursor-not-allowed"
       >
-        구매하기
+        <img
+          src={!status.canBuy ? shopBuyButtonDisabled : isPressed ? shopBuyButtonPressed : shopBuyButtonDefault}
+          alt=""
+          className="shop-item-card__buy-image pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+        />
       </button>
     </article>
   );
@@ -217,7 +264,7 @@ function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItem
   const canBuy = canBuyEggMore && !hasEggInCategory && !eggSoldOut && (isRareEgg ? hasEnoughFragments : hasEnoughCoins);
 
   return {
-    ownedLabel: item.category === 'egg' && hasEggInCategory ? '부화장에 있음' : `보유 x${ownedQuantity}`,
+    ownedQuantity,
     actionLabel: hasEggInCategory ? '이미 보유' : eggSoldOut ? '품절' : isRareEgg ? (hasEnoughFragments ? '조각 충분' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족',
     canBuy,
   };
@@ -242,14 +289,6 @@ function getItemIcon(item: ItemConfig) {
   if (item.category === 'egg') return Egg;
   if (item.category === 'hatchItem') return Sparkles;
   return ShoppingBag;
-}
-
-function getItemTone(item: ItemConfig) {
-  if (item.category === 'food') return 'bg-gradient-to-b from-amber-100 to-orange-100 text-orange-600';
-  if (item.category === 'egg') return 'bg-gradient-to-b from-yellow-100 to-orange-100 text-orange-500';
-  if (item.id === 'rare-egg-fragment') return 'bg-gradient-to-b from-violet-100 to-fuchsia-100 text-violet-600';
-  if (item.category === 'hatchItem') return 'bg-gradient-to-b from-cyan-100 to-lime-100 text-cyan-700';
-  return 'bg-gradient-to-b from-slate-100 to-slate-200 text-slate-500';
 }
 
 function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
