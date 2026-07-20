@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Baby,
   Bluetooth,
@@ -13,7 +13,6 @@ import {
   ShoppingBag,
   Sparkles,
   Star,
-  Utensils,
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
@@ -36,6 +35,8 @@ import { calculateTrainingRewards, type TrainingRewardResult } from './utils/tra
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
 import { trainingUiAssets } from './assets/ui/training';
+import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingDinoCheer, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
+import homeCoinBar from './assets/home/home_coin_bar.png?url';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type AppScreen = 'home' | MainTab;
@@ -1916,7 +1917,7 @@ export default function App() {
         </div>
       </header>}
 
-      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : `flex-1 overflow-hidden ${showBottomNav ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}`}>
+      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen || isTrainingScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : `flex-1 overflow-hidden ${showBottomNav ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}`}>
         <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' || activeTab === 'dino' || activeTab === 'shop' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
           <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
             <activeMeta.icon className={`h-7 w-7 ${activeMeta.color}`} />
@@ -2466,8 +2467,8 @@ function TrainingView({
   const mascotMessage = getTrainingMascotMessage({ answer, isSetComplete, submissionResult });
 
   return (
-    <div className="training-screen h-full min-h-0">
-      <section className="game-panel relative flex h-full min-h-0 flex-col overflow-hidden p-3 md:p-5">
+    <div className="training-screen h-full min-h-0" style={{ backgroundImage: `url(${trainingBackground})` }}>
+      <section className="training-stage relative flex h-full min-h-0 flex-col overflow-hidden p-3 md:p-5">
         {!isSetComplete && <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] opacity-20">
           {trainingUiAssets.cornerTopLeft && <img src={trainingUiAssets.cornerTopLeft} alt="" className="absolute left-0 top-0 h-20 w-20 object-contain object-left-top" />}
           {trainingUiAssets.cornerTopRight && <img src={trainingUiAssets.cornerTopRight} alt="" className="absolute right-0 top-0 h-20 w-20 object-contain object-right-top" />}
@@ -2483,14 +2484,22 @@ function TrainingView({
             <div className="training-progress-sign min-w-[220px] max-w-[400px] justify-self-center rounded-[14px] bg-[#f6d89d] px-4 py-2 text-center text-base font-black text-amber-950 shadow-[inset_0_-3px_0_rgba(120,53,15,.18)]">
               문제 {Math.min(currentProblemIndex + 1, totalProblems)} / {totalProblems}
             </div>
-            <div className="training-coin-bar inline-flex min-h-11 justify-self-end items-center gap-1.5 rounded-[14px] bg-amber-100 px-3 text-sm font-black text-amber-950 shadow-sm">
-              <Coins className="h-4 w-4" />
-              {currentCoins.toLocaleString()}
+            <div className="training-coin-bar">
+              <img src={homeCoinBar} alt="" className="training-coin-bar__image" aria-hidden="true" />
+              <span className="training-coin-bar__value">{currentCoins.toLocaleString()}</span>
             </div>
           </div>
           <div className="training-score-summary mx-auto grid h-[clamp(48px,7dvh,62px)] w-[82%] max-w-[520px] grid-cols-2 gap-3">
-            <TrainingStatusBadge className="training-correct-badge border-emerald-100 bg-emerald-50 text-emerald-800">정답 {correctCount}</TrainingStatusBadge>
-            <TrainingStatusBadge className="training-wrong-badge border-orange-100 bg-orange-50 text-orange-700">오답 {wrongCount}</TrainingStatusBadge>
+            <TrainingStatusBadge asset={trainingStatusCorrectBanner} className="training-correct-badge">
+              <span className="training-status-banner__icon" aria-hidden="true">✓</span>
+              <span className="training-status-banner__label">정답</span>
+              <strong className="training-status-banner__value">{correctCount}</strong>
+            </TrainingStatusBadge>
+            <TrainingStatusBadge asset={trainingStatusWrongBanner} className="training-wrong-badge">
+              <span className="training-status-banner__icon" aria-hidden="true">✕</span>
+              <span className="training-status-banner__label">오답</span>
+              <strong className="training-status-banner__value">{wrongCount}</strong>
+            </TrainingStatusBadge>
           </div>
           <div className={`mx-auto inline-flex min-h-7 max-w-full items-center gap-1 rounded-full border-2 px-3 py-1 text-[10px] font-black shadow-sm ${bluetoothStatusTone}`}>
               {trainingUiAssets.bluetoothWait ? <img src={trainingUiAssets.bluetoothWait} alt="" className="h-4 w-4 object-contain" /> : <Bluetooth className="h-3.5 w-3.5" />}
@@ -2510,7 +2519,7 @@ function TrainingView({
             />
           </div>
         ) : (
-          <div className="relative z-10 mt-3 min-h-0 min-w-0 flex-1 overflow-hidden rounded-[30px] border-4 border-white bg-gradient-to-br from-[#dff5ee] via-[#fffdf3] to-[#eef9e5] p-3 shadow-[0_16px_38px_rgba(20,83,45,.16),inset_0_1px_0_rgba(255,255,255,.85)] md:p-4">
+          <div className="training-workspace relative z-10 mt-3 min-h-0 min-w-0 flex-1 overflow-hidden p-3 md:p-4">
             <CurrentProblemCard
               answer={answer}
               bluetoothInput={bluetoothInput}
@@ -2557,9 +2566,9 @@ function TrainingView({
 
 function TrainingStatusBadge({ asset, className, children }: { asset?: string; className: string; children: ReactNode }) {
   return (
-    <span className={`relative flex min-h-11 min-w-0 items-center justify-center overflow-hidden rounded-[18px] border-2 px-4 py-2 shadow-sm ${asset ? 'border-transparent bg-transparent text-slate-800' : className}`}>
-      {asset && <img src={asset} alt="" className="absolute inset-0 h-full w-full object-fill" />}
-      <span className={`relative z-10 text-base font-black ${asset ? 'pl-3' : ''}`}>{children}</span>
+    <span className={asset ? `training-status-banner ${className}` : `relative flex min-h-11 min-w-0 items-center justify-center overflow-hidden rounded-[18px] border-2 px-4 py-2 shadow-sm ${className}`}>
+      {asset && <img src={asset} alt="" className="training-status-banner__image" aria-hidden="true" />}
+      <span className={asset ? 'training-status-banner__content' : 'relative z-10 text-base font-black'}>{children}</span>
     </span>
   );
 }
@@ -2660,6 +2669,9 @@ function CurrentProblemCard({
   onCheck: () => void;
   problemExpression: string;
 }) {
+  const expressionElementRef = useRef<HTMLDivElement>(null);
+  const [expressionFit, setExpressionFit] = useState({ sizeIndex: 0, wrap: false });
+
   function appendDigit(digit: string) {
     if (!canSubmitAnswer) return;
     onAnswer(`${answer}${digit}`);
@@ -2671,42 +2683,97 @@ function CurrentProblemCard({
   }
 
   const expressionTokens = problemExpression.match(/\d+|[+−-]/g) ?? [problemExpression];
-  const numberValues = problemExpression.match(/-?\d+/g) ?? [];
-  const numberCount = numberValues.length;
-  const hasThreeDigitNumber = numberValues.some((value) => Math.abs(Number(value)) >= 100);
-  const expressionSize = numberCount <= 4 && !hasThreeDigitNumber
-    ? 'text-[clamp(3.8rem,8dvh,6.6rem)]'
-    : numberCount <= 6
-      ? 'text-[clamp(3.1rem,6.5dvh,5.3rem)]'
-      : 'text-[clamp(2.45rem,5.2dvh,4.25rem)]';
-  const expressionGap = numberCount <= 4 ? 'gap-x-6 gap-y-3' : numberCount <= 6 ? 'gap-x-4 gap-y-2' : 'gap-x-3 gap-y-1.5';
+  const answerSize = answer.length <= 3
+    ? 'training-answer-input--short'
+    : answer.length <= 5
+      ? 'training-answer-input--medium'
+      : 'training-answer-input--long';
+  const expressionSizes = [
+    'training-problem-board__expression--hero',
+    'training-problem-board__expression--large',
+    'training-problem-board__expression--seven-items',
+    'training-problem-board__expression--long',
+    'training-problem-board__expression--small',
+  ];
+  const expressionSize = expressionSizes[expressionFit.sizeIndex];
+
+  useLayoutEffect(() => {
+    setExpressionFit({ sizeIndex: 0, wrap: false });
+  }, [problemExpression]);
+
+  useLayoutEffect(() => {
+    const expressionElement = expressionElementRef.current;
+    if (!expressionElement) return;
+
+    const hasHorizontalOverflow = expressionElement.scrollWidth > expressionElement.clientWidth + 1;
+    const hasVerticalOverflow = expressionElement.scrollHeight > expressionElement.clientHeight + 1;
+    const lineCount = new Set(
+      Array.from(expressionElement.children, (child) => (child as HTMLElement).offsetTop),
+    ).size;
+
+    if (!expressionFit.wrap && hasHorizontalOverflow) {
+      if (expressionFit.sizeIndex < 2) {
+        setExpressionFit((current) => ({ ...current, sizeIndex: current.sizeIndex + 1 }));
+      } else {
+        setExpressionFit((current) => ({ ...current, wrap: true }));
+      }
+      return;
+    }
+
+    if (expressionFit.wrap && (hasHorizontalOverflow || hasVerticalOverflow || lineCount > 2) && expressionFit.sizeIndex < expressionSizes.length - 1) {
+      setExpressionFit((current) => ({ ...current, sizeIndex: current.sizeIndex + 1 }));
+    }
+  }, [expressionFit, expressionSizes.length]);
+
+  useEffect(() => {
+    const expressionElement = expressionElementRef.current;
+    if (!expressionElement) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setExpressionFit({ sizeIndex: 0, wrap: false });
+    });
+    resizeObserver.observe(expressionElement);
+    return () => resizeObserver.disconnect();
+  }, [problemExpression]);
 
   return (
-    <div className="grid h-full min-h-0 min-w-0 grid-rows-[31%_20%_minmax(0,1fr)] gap-3 overflow-hidden">
-      <section className="training-problem-board mx-auto flex h-full w-[90%] max-w-[680px] min-w-0 flex-col items-center justify-center rounded-[28px] border-4 border-white/95 bg-[#fff7df]/95 px-5 py-4 text-center shadow-[0_10px_0_rgba(180,83,9,.18),inset_0_0_38px_rgba(83,145,127,.1)]">
-        <p className="training-problem-prompt mb-3 text-base font-black text-emerald-700 md:text-lg">다음을 계산해 보세요!</p>
-        <div className={`training-problem-expression mx-auto flex max-w-full flex-wrap items-center justify-center font-black leading-none text-emerald-950 ${expressionSize} ${expressionGap}`} aria-label={problemExpression}>
-          {expressionTokens.map((token, index) => <span key={`${token}-${index}`} className={/^[-+−]$/.test(token) ? 'text-emerald-600' : ''}>{token}</span>)}
+    <div className="grid h-full min-h-0 min-w-0 grid-rows-[36%_18%_minmax(0,1fr)] gap-3 overflow-hidden">
+      <section className="training-problem-board" aria-label="계산 문제">
+        <img src={trainingProblemBoard} alt="" className="training-problem-board__image" aria-hidden="true" />
+        <div className="training-problem-board__content">
+          <p className="training-problem-board__instruction">다음을 계산해 보세요!</p>
+          <div
+            ref={expressionElementRef}
+            className={`training-problem-board__expression ${expressionSize} ${expressionFit.wrap ? 'training-problem-board__expression--wrap' : ''}`}
+            aria-label={problemExpression}
+          >
+            {expressionTokens.map((token, index) => (
+              <span key={`${token}-${index}`} className={/^[-+−]$/.test(token) ? 'text-emerald-600' : ''}>{token}</span>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="training-answer-row mx-auto grid w-[82%] max-w-[600px] min-h-0 grid-cols-[minmax(0,1fr)_clamp(108px,24%,144px)] items-stretch gap-3">
-        <label className="training-answer-panel grid min-w-0 gap-2 rounded-[24px] border-[3px] border-white/90 bg-white/80 p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
-            <span className="text-sm font-black text-emerald-700">정답을 입력하세요!</span>
+      <section className="training-answer-row mx-auto grid w-[86%] max-w-[640px] min-h-0 grid-cols-[minmax(0,1fr)_clamp(132px,28%,175px)] items-stretch gap-2">
+        <label className="training-answer-panel">
+          <img src={trainingAnswerPanel} alt="" className="training-answer-panel__image" aria-hidden="true" />
+          <span className="training-answer-panel__content">
+            <span className="training-answer-panel__instruction">정답을 입력하세요!</span>
             <input
               value={answer}
               onChange={(event) => onAnswer(event.target.value.replace(/[^\d-]/g, ''))}
               disabled={!canSubmitAnswer}
               inputMode="numeric"
               placeholder="?"
-              className="training-answer-input h-full min-h-0 w-full min-w-0 rounded-[18px] bg-white px-5 text-center text-[clamp(2.4rem,5dvh,4.7rem)] font-black text-slate-900 shadow-inner outline-none ring-cyan-300 focus:bg-cyan-50 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              className={`training-answer-input ${answerSize}`}
             />
-          </label>
-        <div className="training-mascot-feedback grid min-w-0 grid-rows-[minmax(0,1fr)_auto] items-end rounded-[24px] border-[3px] border-white/90 bg-lime-50/80 p-2 shadow-sm">
-          <div className="training-mascot flex min-h-0 items-end justify-center overflow-hidden">
-            {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="응원하는 공룡" className="h-full max-h-[118px] w-full object-contain object-bottom" /> : <DinoAvatar size="small" />}
+          </span>
+        </label>
+        <div className="training-mascot-feedback">
+          <div className="training-mascot">
+            <img src={trainingDinoCheer} alt="응원하는 공룡" className="training-mascot__image" />
           </div>
-          <p className="training-feedback-bubble rounded-[16px] bg-white px-2 py-1.5 text-center text-sm font-black leading-tight text-emerald-900 shadow-sm">{mascotMessage}</p>
+          <p className="training-feedback-bubble">{mascotMessage}</p>
         </div>
       </section>
 
@@ -2722,38 +2789,45 @@ function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolea
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   return (
-    <div className="training-keypad mx-auto h-full w-[78%] max-w-[540px] min-w-0 rounded-[24px] border-2 border-white/90 bg-white/62 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)] md:p-3">
-      <div className="grid h-full grid-cols-3 grid-rows-4 gap-2 md:gap-2.5">
+    <div className="training-keypad">
+      <img src={trainingKeypadPanel} alt="" className="training-keypad__image" aria-hidden="true" />
+      <div className="training-keypad__grid">
         {keys.map((key) => (
           <button
             key={key}
             disabled={disabled}
             onClick={() => onDigit(key)}
-            className="training-key min-h-0 rounded-[18px] bg-[#fff8df] text-[clamp(1.55rem,3.1dvh,2.4rem)] font-black text-slate-900 shadow-[0_4px_0_#d8c48c] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45"
+            className="training-key training-key-number"
           >
-            {key}
+            <img src={trainingKeyDefault} alt="" className="training-key-number__image training-key-number__image--default" aria-hidden="true" />
+            <img src={trainingKeyPressed} alt="" className="training-key-number__image training-key-number__image--pressed" aria-hidden="true" />
+            <span className="training-key-number__label">{key}</span>
           </button>
         ))}
         <button
           disabled={disabled}
           onClick={onDelete}
-          className="training-key training-key-delete min-h-0 rounded-[18px] bg-amber-300 px-2 text-sm font-black text-amber-950 shadow-[0_4px_0_#d97706] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 md:text-base"
+          className="training-key training-key-number training-key-delete"
         >
-          삭제
+          <img src={trainingKeyDelete} alt="" className="training-key-number__image" aria-hidden="true" />
+          <span className="training-key-delete__label">삭제</span>
         </button>
         <button
           disabled={disabled}
           onClick={() => onDigit('0')}
-          className="training-key min-h-0 rounded-[18px] bg-[#fff8df] text-[clamp(1.55rem,3.1dvh,2.4rem)] font-black text-slate-900 shadow-[0_4px_0_#d8c48c] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45"
+          className="training-key training-key-number"
         >
-          0
+          <img src={trainingKeyDefault} alt="" className="training-key-number__image training-key-number__image--default" aria-hidden="true" />
+          <img src={trainingKeyPressed} alt="" className="training-key-number__image training-key-number__image--pressed" aria-hidden="true" />
+          <span className="training-key-number__label">0</span>
         </button>
         <button
           disabled={disabled}
           onClick={onSubmit}
-          className="training-key training-key-submit min-h-0 rounded-[18px] bg-emerald-500 px-2 text-sm font-black text-white shadow-[0_4px_0_#047857] transition active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 md:text-base"
+          className="training-key training-key-number training-key-submit"
         >
-          입력
+          <img src={trainingKeySubmit} alt="" className="training-key-number__image" aria-hidden="true" />
+          <span className="training-key-submit__label">입력</span>
         </button>
       </div>
     </div>
@@ -2874,58 +2948,50 @@ function TrainingCompletePanel({
   ];
 
   return (
-    <div className="training-result-screen training-result-bg relative mx-auto grid h-full min-h-0 w-full max-w-[680px] grid-rows-[26%_minmax(0,1fr)_20%_6%] gap-3 overflow-hidden px-1 pb-1 text-emerald-950">
-      <div className="training-result-celebration pointer-events-none absolute inset-0 overflow-hidden">
-        <span className="absolute left-[12%] top-[8%] h-3 w-3 rotate-12 rounded-sm bg-amber-300" />
-        <span className="absolute right-[16%] top-[13%] h-3 w-6 -rotate-12 rounded-full bg-cyan-300" />
-        <span className="absolute left-[20%] top-[30%] h-2.5 w-5 rotate-45 rounded-full bg-lime-300" />
-        <span className="absolute right-[10%] top-[34%] h-3 w-3 rounded-full bg-rose-300" />
-      </div>
+    <section className="training-complete-popup">
+      <img src={trainingCompletePopupPanel} alt="" aria-hidden="true" className="training-complete-popup__background" />
 
-      <section className="training-result-title-board relative flex min-h-0 flex-col items-center justify-center overflow-hidden rounded-[30px] border-4 border-white bg-[linear-gradient(135deg,#a7f3d0,#67e8f9_52%,#fde68a)] px-5 py-4 text-center shadow-[0_12px_30px_rgba(14,116,144,.15)]">
-        <div className="pointer-events-none absolute -left-8 -top-10 h-28 w-28 rounded-full bg-white/25" />
-        <div className="pointer-events-none absolute -bottom-12 right-8 h-32 w-32 rounded-full bg-white/20" />
-        <div className="relative mx-auto flex min-h-[74px] w-[86%] max-w-[440px] items-center justify-center rounded-[24px] border-2 border-dashed border-white/80 bg-white/30 px-6">
-          <h4 className="training-result-title text-[clamp(2.2rem,5dvh,3.6rem)] font-black leading-none text-emerald-950 drop-shadow-sm">훈련 완료!</h4>
-        </div>
-        <p className="training-result-subtitle relative mt-3 text-lg font-black text-emerald-900">{subtitle}</p>
-      </section>
+      <div className="training-complete-popup__content">
+        <header className="training-complete-popup__header">
+          <img src={trainingCompleteTitleBadge} alt="" aria-hidden="true" className="training-complete-popup__title-badge" />
+          <h4 className="sr-only">훈련 완료!</h4>
+          <p className="training-complete-popup__subtitle">{subtitle}</p>
+        </header>
 
-      <section className="grid min-h-0 grid-cols-[minmax(0,1fr)_clamp(118px,24%,150px)] gap-3">
-        <div className="training-result-panel min-h-0 overflow-hidden rounded-[26px] border-4 border-white bg-white/88 px-4 py-2 shadow-[0_8px_24px_rgba(15,118,110,.1)]">
-          {resultRows.map((row, index) => (
-            <div key={row.label} className={`training-result-row flex min-h-0 items-center justify-between gap-3 py-2 ${index > 0 ? 'border-t-2 border-slate-100' : ''}`}>
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="training-result-row-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] bg-emerald-50 text-sm font-black text-emerald-700">{row.icon}</span>
-                <span className="training-result-row-label truncate text-sm font-black text-slate-500">{row.label}</span>
-              </span>
-              <span className={`training-result-row-value text-lg font-black ${row.className}`}>{row.value}</span>
-            </div>
-          ))}
-        </div>
-        <div className="training-result-mascot grid min-h-0 grid-rows-[minmax(0,1fr)_auto] items-end rounded-[26px] border-4 border-white bg-lime-50/85 p-2 shadow-sm">
-          <div className="flex min-h-0 items-end justify-center overflow-hidden">
-            {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="응원하는 공룡" className="h-full max-h-[170px] w-full object-contain object-bottom" /> : <DinoAvatar size="small" />}
+        <section className="training-complete-popup__body">
+          <div className="training-result-panel">
+            {resultRows.map((row) => (
+              <div key={row.label} className="training-result-row">
+                <span className="training-result-row__heading">
+                  <span className="training-result-row-icon">{row.icon}</span>
+                  <span className="training-result-row-label">{row.label}</span>
+                </span>
+                <span className={`training-result-row-value ${row.className}`}>{row.value}</span>
+              </div>
+            ))}
           </div>
-          <p className="training-result-speech-bubble rounded-[16px] bg-white px-2 py-2 text-center text-sm font-black leading-tight text-emerald-900 shadow-sm">{mascotMessage}</p>
-        </div>
-      </section>
+          <div className="training-result-mascot">
+            <div className="training-result-mascot__image-wrap">
+              {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="응원하는 공룡" className="training-result-mascot__image" /> : <DinoAvatar size="small" />}
+            </div>
+            <p className="training-result-speech-bubble">{mascotMessage}</p>
+          </div>
+        </section>
 
-      <section className="training-result-actions grid min-h-0 grid-cols-2 gap-4">
-        <button onClick={onGoToDino} className="training-result-feed-button group flex min-h-0 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-lime-300 to-emerald-400 px-4 text-base font-black text-emerald-950 shadow-[0_7px_0_#059669] transition hover:brightness-105 active:translate-y-1 active:shadow-none md:text-lg">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-white/45"><Utensils className="h-7 w-7" /></span>
-          <span className="min-w-0 leading-tight">공룡에게<br />먹이 주기</span>
-        </button>
-        <button onClick={onRestartTraining} className="training-result-retry-button group flex min-h-0 items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-br from-cyan-300 to-sky-500 px-4 text-base font-black text-sky-950 shadow-[0_7px_0_#0284c7] transition hover:brightness-105 active:translate-y-1 active:shadow-none md:text-lg">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-white/45"><Play className="h-7 w-7 fill-current" /></span>
-          <span className="min-w-0 leading-tight">다시<br />하기</span>
-        </button>
-      </section>
+        <section className="training-result-actions">
+          <button type="button" onClick={onGoToDino} className="training-result-action training-result-feed-button" aria-label="공룡에게 먹이 주기">
+            <img src={trainingCompleteFeedButton} alt="" aria-hidden="true" className="training-result-action__image" />
+          </button>
+          <button type="button" onClick={onRestartTraining} className="training-result-action training-result-retry-button" aria-label="다시하기">
+            <img src={trainingCompleteRetryButton} alt="" aria-hidden="true" className="training-result-action__image" />
+          </button>
+        </section>
 
-      <p className="training-result-tip flex min-h-0 items-center justify-center rounded-[18px] bg-white/58 px-3 text-center text-[11px] font-black leading-tight text-emerald-800">
-        연습을 꾸준히 하면 더 빨라질 수 있어요!
-      </p>
-    </div>
+        <p className="training-result-tip">
+          연습을 꾸준히 하면 더 빨라질 수 있어요!
+        </p>
+      </div>
+    </section>
   );
 }
 

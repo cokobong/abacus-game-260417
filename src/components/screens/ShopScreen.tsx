@@ -1,11 +1,10 @@
-import { Baby, Coins, Egg, Fish, Leaf, Package, Plus, ShoppingBag, Sparkles, Utensils } from 'lucide-react';
+import { Baby, Coins, Package, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   shopBackground,
   shopBuyButtonDefault,
   shopBuyButtonDisabled,
   shopBuyButtonPressed,
-  shopFoodMeat,
   shopIconCategoryEggDefault,
   shopIconCategoryEggSelected,
   shopIconCategoryFoodDefault,
@@ -13,6 +12,24 @@ import {
   shopIconCategoryHatchDefault,
   shopIconCategoryHatchSelected,
   shopItemCard,
+  shopItemEggForestRare,
+  shopItemEggGreen,
+  shopItemEggLegendary,
+  shopItemEggOcean,
+  shopItemEggSparkle,
+  shopItemEggVolcanoRare,
+  shopItemFoodDinoCookie,
+  shopItemFoodFish,
+  shopItemFoodFruitBasket,
+  shopItemFoodLeaf,
+  shopItemFoodMeat,
+  shopItemFoodSoftBerry,
+  shopItemFoodSweetBerry,
+  shopItemFoodToughMeat,
+  shopItemHatchRareFragment,
+  shopItemHatchSparkleEnergy,
+  shopItemHatchWarmBlanket,
+  shopItemHatchWarmStone,
   shopPriceChip,
   shopStatusChip,
   shopTitleBanner,
@@ -47,27 +64,25 @@ const shopCatalog: Record<ShopCategoryId, string[]> = {
   hatchItem: ['hatch-warm-stone', 'hatch-warm-blanket', 'hatch-spark-energy', 'rare-egg-fragment'],
 };
 
-const itemEmojiById: Record<string, string> = {
-  'basic-meat': '🥩',
-  'soft-berry': '🍓',
-  'leaf-snack': '🍃',
-  'fish-bite': '🐟',
-  'dino-cookie': '🍪',
-  'berry-basket': '🧺',
-  'strong-meat': '🍖',
-  'sweet-berry': '🫐',
-  'energy-leaf': '🌿',
-  'special-snack': '⭐',
-  'green-starter-egg': '🥚',
-  'rare-spark-egg': '✨',
-  'green-forest-rare-egg': '🌲',
-  'volcano-island-rare-egg': '🌋',
-  'ocean-blue-egg': '🌊',
-  'legend-egg': '👑',
-  'hatch-warm-stone': '🪨',
-  'hatch-warm-blanket': '🧣',
-  'hatch-spark-energy': '💫',
-  'rare-egg-fragment': '💎',
+const shopItemAssets: Record<string, string> = {
+  'basic-meat': shopItemFoodMeat,
+  'soft-berry': shopItemFoodSoftBerry,
+  'leaf-snack': shopItemFoodLeaf,
+  'dino-cookie': shopItemFoodDinoCookie,
+  'fish-bite': shopItemFoodFish,
+  'berry-basket': shopItemFoodFruitBasket,
+  'strong-meat': shopItemFoodToughMeat,
+  'sweet-berry': shopItemFoodSweetBerry,
+  'green-starter-egg': shopItemEggGreen,
+  'rare-spark-egg': shopItemEggSparkle,
+  'green-forest-rare-egg': shopItemEggForestRare,
+  'volcano-island-rare-egg': shopItemEggVolcanoRare,
+  'ocean-blue-egg': shopItemEggOcean,
+  'legend-egg': shopItemEggLegendary,
+  'hatch-warm-stone': shopItemHatchWarmStone,
+  'hatch-warm-blanket': shopItemHatchWarmBlanket,
+  'hatch-spark-energy': shopItemHatchSparkleEnergy,
+  'rare-egg-fragment': shopItemHatchRareFragment,
 };
 
 export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase, onGoToDino }: ShopScreenProps) {
@@ -114,22 +129,22 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
         </button>
       </header>
 
-      <div className="shop-category-tabs relative z-10 mx-auto mt-2 grid w-full max-w-[720px] grid-cols-3 gap-2 rounded-[22px] border-4 border-white bg-white/70 p-1.5 shadow-sm">
+      <div className="shop-category-tabs relative z-10 mx-auto mt-2 grid w-full max-w-[720px] grid-cols-3 gap-2 rounded-[24px] border-4 border-white bg-white/70 p-2 shadow-sm">
         {shopCategories.map(({ id, label, defaultIcon, selectedIcon }) => {
           const isActive = activeCategory === id;
           return (
             <button
               key={id}
               onClick={() => setActiveCategory(id)}
-              className={`min-h-11 rounded-[16px] border-[3px] text-sm font-black transition active:translate-y-1 ${
+              className={`min-h-[clamp(3.5rem,7.2dvh,4rem)] rounded-[18px] border-[3px] px-2 py-2 text-[clamp(0.9375rem,2.1dvh,1.125rem)] font-bold leading-tight transition active:translate-y-1 ${
                 isActive
                   ? 'border-white bg-gradient-to-b from-emerald-300 to-lime-400 text-emerald-950 shadow-[0_4px_0_#059669]'
                   : 'border-transparent bg-white/82 text-slate-500 hover:bg-lime-50'
               }`}
             >
-              <span className="flex items-center justify-center gap-2">
-                <img src={isActive ? selectedIcon : defaultIcon} alt="" className="h-8 w-8 object-contain" />
-                {label}
+              <span className="flex h-full items-center justify-center gap-[clamp(0.25rem,1vw,0.75rem)]">
+                <img src={isActive ? selectedIcon : defaultIcon} alt="" className="h-[clamp(2.25rem,5dvh,2.75rem)] w-[clamp(2.25rem,5dvh,2.75rem)] shrink-0 object-contain" />
+                <span>{label}</span>
               </span>
             </button>
           );
@@ -182,7 +197,7 @@ function ShopProductCard({
   onPurchase: () => void;
 }) {
   const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
-  const Icon = getItemIcon(item);
+  const itemAsset = shopItemAssets[item.id];
   const [isPressed, setIsPressed] = useState(false);
   const isRareEgg = item.category === 'egg' && isRareEggItem(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
@@ -190,37 +205,30 @@ function ShopProductCard({
 
   return (
     <article className="shop-product-card relative aspect-[3/4] min-h-0 w-full overflow-hidden text-center">
-      <img src={shopItemCard} alt="" className="pointer-events-none absolute inset-0 h-full w-full scale-[1.14] object-cover" />
+      <img src={shopItemCard} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
 
-      <div className="shop-item-card__icon absolute left-1/2 top-[5%] grid h-[28%] w-[50%] -translate-x-1/2 place-items-center overflow-hidden text-[clamp(1.5rem,4dvh,2.75rem)]">
-        {item.id === 'basic-meat' ? (
-          <img src={shopFoodMeat} alt="" className="h-full w-full object-contain" />
-        ) : (
-          <>
-            <span aria-hidden="true">{itemEmojiById[item.id]}</span>
-            {!itemEmojiById[item.id] && <Icon className="h-1/2 w-1/2" />}
-          </>
-        )}
+      <div className="shop-item-card__icon absolute left-[8%] top-[3%] grid h-[40%] w-[84%] place-items-center overflow-hidden">
+        {itemAsset && <img src={itemAsset} alt="" className="h-[82%] w-[82%] object-contain" />}
         <span className="shop-item-card__owned-badge absolute right-0.5 top-0.5 z-10 min-w-[20px] rounded-full border-2 border-white bg-amber-200/95 px-1.5 py-0.5 text-[clamp(8px,1.15vw,11px)] font-black leading-none text-amber-950 shadow-[0_2px_4px_rgba(120,53,15,0.24)]">
           x{status.ownedQuantity}
         </span>
       </div>
 
-      <div className="shop-item-card__name absolute inset-x-[9%] top-[34%] flex h-[10%] min-w-0 items-center justify-center">
-        <h3 className="w-full truncate text-[clamp(10px,1.75vw,15px)] font-black leading-tight text-slate-950">{item.name}</h3>
+      <div className="shop-item-card__name absolute inset-x-[5%] top-[41%] flex h-[8%] min-w-0 items-center justify-center">
+        <h3 className="line-clamp-2 w-full text-[clamp(10px,1.6vw,14.5px)] font-black leading-[1.05] text-slate-950">{item.name}</h3>
       </div>
 
-      <div className="shop-item-card__price absolute left-1/2 top-[45%] h-[12%] w-[72%] -translate-x-1/2 overflow-hidden">
-        <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
-        <p className="relative z-10 flex h-full items-center justify-center gap-1 truncate px-[16%] text-[clamp(9px,1.5vw,13px)] font-black text-amber-950">
-          {isRareEgg ? <Package className="h-4 w-4 shrink-0 text-violet-600" /> : <Coins className="h-4 w-4 shrink-0 text-amber-600" />}
+      <div className="shop-item-card__price absolute left-1/2 top-[49%] h-[17%] w-[88%] -translate-x-1/2 overflow-hidden">
+        <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+        <p className="relative z-10 flex h-full items-center justify-center gap-1.5 truncate px-[15%] text-[clamp(14px,2.25vw,20px)] font-extrabold text-amber-950">
+          {isRareEgg ? <Package className="h-[clamp(22px,2.8dvh,26px)] w-[clamp(22px,2.8dvh,26px)] shrink-0 text-violet-600" /> : <Coins className="h-[clamp(22px,2.8dvh,26px)] w-[clamp(22px,2.8dvh,26px)] shrink-0 text-amber-600" />}
           {isRareEgg && requiredFragment ? `${fragmentQuantity}/${requiredFragment.amount}` : item.price.toLocaleString()}
         </p>
       </div>
 
-      <div className="shop-item-card__status absolute left-1/2 top-[58%] h-[11%] w-[78%] -translate-x-1/2 overflow-hidden">
-        <img src={shopStatusChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
-        <p className={`relative z-10 flex h-full items-center justify-center truncate px-2 text-[clamp(9px,1.35vw,12px)] font-black ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
+      <div className="shop-item-card__status absolute left-1/2 top-[67%] h-[8%] w-[66%] -translate-x-1/2 overflow-hidden">
+        <img src={shopStatusChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+        <p className={`relative z-10 flex h-full items-center justify-center truncate px-2 text-[clamp(9px,1.3vw,12px)] font-black ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
           {status.actionLabel}
         </p>
       </div>
@@ -234,12 +242,12 @@ function ShopProductCard({
         onPointerCancel={() => setIsPressed(false)}
         onPointerLeave={() => setIsPressed(false)}
         aria-label="구매하기"
-        className="shop-item-card__buy shop-buy-button absolute bottom-[7%] left-1/2 h-[14%] w-[82%] -translate-x-1/2 overflow-hidden bg-transparent p-0 disabled:cursor-not-allowed"
+        className="shop-item-card__buy shop-buy-button absolute bottom-[3%] left-1/2 aspect-[3/1] h-auto w-[88%] -translate-x-1/2 overflow-hidden bg-transparent p-0 disabled:cursor-not-allowed"
       >
         <img
           src={!status.canBuy ? shopBuyButtonDisabled : isPressed ? shopBuyButtonPressed : shopBuyButtonDefault}
           alt=""
-          className="shop-item-card__buy-image pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+          className="shop-item-card__buy-image pointer-events-none absolute inset-0 h-full w-full object-fill object-center"
         />
       </button>
     </article>
@@ -278,17 +286,6 @@ function getOwnedQuantity(item: ItemConfig, inventory: InventoryItemState[], own
 
 function getOwnedInventoryQuantity(inventory: InventoryItemState[], itemId: string) {
   return inventory.find((item) => item.itemId === itemId)?.quantity ?? 0;
-}
-
-function getItemIcon(item: ItemConfig) {
-  if (item.category === 'food') {
-    if (item.id.includes('leaf')) return Leaf;
-    if (item.id.includes('fish')) return Fish;
-    return Utensils;
-  }
-  if (item.category === 'egg') return Egg;
-  if (item.category === 'hatchItem') return Sparkles;
-  return ShoppingBag;
 }
 
 function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
