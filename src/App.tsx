@@ -1014,6 +1014,7 @@ export default function App() {
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
+  const isFeedingRef = useRef(false);
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
   const isHomeScreen = activeTab === 'home';
@@ -1299,6 +1300,8 @@ export default function App() {
   }
 
   function feedDinosaur() {
+    if (isFeedingRef.current) return;
+
     const inventoryIds = gameState.inventory.map((item) => item.itemId);
     if (!selectedFoodItemId) {
       setDinoFeedback('먹이를 먼저 선택해주세요.');
@@ -1322,6 +1325,8 @@ export default function App() {
       setDinoFeedback('선택한 먹이가 없어요. 다른 먹이를 선택해주세요.');
       return;
     }
+
+    isFeedingRef.current = true;
 
     const foodConfig = getFoodItemConfig(inventoryItem.itemId);
     const effect = foodConfig?.effect ?? fallbackFoodEffect;
@@ -1380,6 +1385,9 @@ export default function App() {
     const expMessage = adjustedFoodExp > 0 ? `EXP +${gainedExp || adjustedFoodExp}` : '성장 완료';
     const levelMessage = didLevelUp ? ' 레벨이 올랐어요!' : '';
     setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage}` : `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
+    window.setTimeout(() => {
+      isFeedingRef.current = false;
+    }, 250);
   }
 
   function purchaseItem(itemId: string) {

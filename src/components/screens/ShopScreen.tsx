@@ -1,4 +1,4 @@
-import { Baby, Coins, Package, Plus } from 'lucide-react';
+import { Coins, Package, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   shopBackground,
@@ -11,6 +11,7 @@ import {
   shopIconCategoryFoodSelected,
   shopIconCategoryHatchDefault,
   shopIconCategoryHatchSelected,
+  shopFoodItemImages,
   shopItemCard,
   shopItemEggForestRare,
   shopItemEggGreen,
@@ -18,18 +19,11 @@ import {
   shopItemEggOcean,
   shopItemEggSparkle,
   shopItemEggVolcanoRare,
-  shopItemFoodDinoCookie,
-  shopItemFoodFish,
-  shopItemFoodFruitBasket,
-  shopItemFoodLeaf,
-  shopItemFoodMeat,
-  shopItemFoodSoftBerry,
-  shopItemFoodSweetBerry,
-  shopItemFoodToughMeat,
   shopItemHatchRareFragment,
   shopItemHatchSparkleEnergy,
   shopItemHatchWarmBlanket,
   shopItemHatchWarmStone,
+  shopMyDinoButton,
   shopPriceChip,
   shopStatusChip,
   shopTitleBanner,
@@ -59,20 +53,13 @@ const shopCategories: Array<{ id: ShopCategoryId; label: string; defaultIcon: st
 ];
 
 const shopCatalog: Record<ShopCategoryId, string[]> = {
-  food: ['basic-meat', 'soft-berry', 'leaf-snack', 'fish-bite', 'dino-cookie', 'berry-basket', 'strong-meat', 'sweet-berry'],
+  food: Object.keys(shopFoodItemImages),
   egg: ['green-starter-egg', 'rare-spark-egg', 'green-forest-rare-egg', 'volcano-island-rare-egg', 'ocean-blue-egg', 'legend-egg'],
   hatchItem: ['hatch-warm-stone', 'hatch-warm-blanket', 'hatch-spark-energy', 'rare-egg-fragment'],
 };
 
 const shopItemAssets: Record<string, string> = {
-  'basic-meat': shopItemFoodMeat,
-  'soft-berry': shopItemFoodSoftBerry,
-  'leaf-snack': shopItemFoodLeaf,
-  'dino-cookie': shopItemFoodDinoCookie,
-  'fish-bite': shopItemFoodFish,
-  'berry-basket': shopItemFoodFruitBasket,
-  'strong-meat': shopItemFoodToughMeat,
-  'sweet-berry': shopItemFoodSweetBerry,
+  ...shopFoodItemImages,
   'green-starter-egg': shopItemEggGreen,
   'rare-spark-egg': shopItemEggSparkle,
   'green-forest-rare-egg': shopItemEggForestRare,
@@ -102,7 +89,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
       style={{ backgroundImage: `url(${shopBackground})` }}
     >
 
-      <header className="shop-header relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <header className="shop-header relative z-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[clamp(0.25rem,1vw,0.75rem)]">
         <img
           src={shopTitleBanner}
           alt="상점"
@@ -119,11 +106,13 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
           </span>
         </div>
 
-        <button onClick={onGoToDino} className="shop-my-dino-button justify-self-end rounded-[20px] border-[4px] border-white bg-gradient-to-b from-lime-200 to-emerald-300 px-3 py-2 text-sm font-black text-emerald-950 shadow-[0_5px_0_#059669] transition active:translate-y-1 active:shadow-none">
-          <span className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-white/75">
-              <Baby className="h-5 w-5 text-emerald-700" />
-            </span>
+        <button
+          onClick={onGoToDino}
+          aria-label="내 공룡"
+          className="shop-my-dino-button relative aspect-[1538/550] w-[clamp(146px,22vw,176px)] max-w-full justify-self-end overflow-hidden bg-transparent p-0 transition active:translate-y-1"
+        >
+          <img src={shopMyDinoButton} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+          <span className="pointer-events-none absolute bottom-[12%] left-[38%] right-[7%] top-[10%] flex items-center justify-center whitespace-nowrap text-[clamp(0.8125rem,1.9vw,1.125rem)] font-black leading-none text-white drop-shadow-[0_2px_1px_rgba(3,84,63,0.9)]">
             내 공룡
           </span>
         </button>
@@ -247,7 +236,7 @@ function ShopProductCard({
         <img
           src={!status.canBuy ? shopBuyButtonDisabled : isPressed ? shopBuyButtonPressed : shopBuyButtonDefault}
           alt=""
-          className="shop-item-card__buy-image pointer-events-none absolute inset-0 h-full w-full object-fill object-center"
+          className="shop-item-card__buy-image pointer-events-none absolute inset-0 h-full w-full object-contain object-center"
         />
       </button>
     </article>

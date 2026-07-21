@@ -6,20 +6,43 @@ export { default as shopStatusChip } from './panels/shop_status_chip.png';
 export { default as shopBuyButtonDefault } from './buttons/shop_btn_buy_default.png';
 export { default as shopBuyButtonPressed } from './buttons/shop_btn_buy_pressed.png';
 export { default as shopBuyButtonDisabled } from './buttons/shop_btn_buy_disabled.png';
+export { default as shopMyDinoButton } from './buttons/shop_btn_my_dino.png';
 export { default as shopIconCategoryFoodDefault } from './categories/shop_icon_category_food_default.png';
 export { default as shopIconCategoryFoodSelected } from './categories/shop_icon_category_food_selected.png';
 export { default as shopIconCategoryEggDefault } from './categories/shop_icon_category_egg_default.png';
 export { default as shopIconCategoryEggSelected } from './categories/shop_icon_category_egg_selected.png';
 export { default as shopIconCategoryHatchDefault } from './categories/shop_icon_category_hatch_default.png';
 export { default as shopIconCategoryHatchSelected } from './categories/shop_icon_category_hatch_selected.png';
-export { default as shopItemFoodMeat } from './items/food/shop_item_food_meat.png';
-export { default as shopItemFoodSoftBerry } from './items/food/shop_item_food_soft_berry.png';
-export { default as shopItemFoodLeaf } from './items/food/shop_item_food_leaf.png';
-export { default as shopItemFoodDinoCookie } from './items/food/shop_item_food_dino_cookie.png';
-export { default as shopItemFoodFish } from './items/food/shop_item_food_fish.png';
-export { default as shopItemFoodFruitBasket } from './items/food/shop_item_food_fruit_basket.png';
-export { default as shopItemFoodToughMeat } from './items/food/shop_item_food_tough_meat.png';
-export { default as shopItemFoodSweetBerry } from './items/food/shop_item_food_sweet_berry.png';
+import shopItemFoodMeat from './items/food/shop_item_food_meat.png';
+import shopItemFoodSoftBerry from './items/food/shop_item_food_soft_berry.png';
+import shopItemFoodLeaf from './items/food/shop_item_food_leaf.png';
+import shopItemFoodDinoCookie from './items/food/shop_item_food_dino_cookie.png';
+import shopItemFoodFish from './items/food/shop_item_food_fish.png';
+import shopItemFoodFruitBasket from './items/food/shop_item_food_fruit_basket.png';
+import shopItemFoodToughMeat from './items/food/shop_item_food_tough_meat.png';
+import shopItemFoodSweetBerry from './items/food/shop_item_food_sweet_berry.png';
+
+export {
+  shopItemFoodMeat,
+  shopItemFoodSoftBerry,
+  shopItemFoodLeaf,
+  shopItemFoodDinoCookie,
+  shopItemFoodFish,
+  shopItemFoodFruitBasket,
+  shopItemFoodToughMeat,
+  shopItemFoodSweetBerry,
+};
+
+export const shopFoodItemImages: Readonly<Record<string, string>> = {
+  'basic-meat': shopItemFoodMeat,
+  'soft-berry': shopItemFoodSoftBerry,
+  'leaf-snack': shopItemFoodLeaf,
+  'dino-cookie': shopItemFoodDinoCookie,
+  'fish-bite': shopItemFoodFish,
+  'berry-basket': shopItemFoodFruitBasket,
+  'strong-meat': shopItemFoodToughMeat,
+  'sweet-berry': shopItemFoodSweetBerry,
+};
 export { default as shopItemEggGreen } from './items/eggs/shop_item_egg_green.png';
 export { default as shopItemEggSparkle } from './items/eggs/shop_item_egg_sparkle.png';
 export { default as shopItemEggForestRare } from './items/eggs/shop_item_egg_forest_rare.png';

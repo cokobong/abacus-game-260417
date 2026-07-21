@@ -1,0 +1,15 @@
+export { default as myDinoTitlePanel } from './mydino_title_panel.png';
+export { default as myDinoListButtonDefault } from './mydino_btn_dino_list_default.png';
+export { default as myDinoListButtonPressed } from './mydino_btn_dino_list_pressed.png';
+export { default as myDinoHatcheryButtonDefault } from './mydino_btn_hatchery_default.png';
+export { default as myDinoHatcheryButtonPressed } from './mydino_btn_hatchery_pressed.png';
+export { default as myDinoGrowthPanel } from './mydino_growth_panel.png';
+export { default as myDinoNameExpPanel } from './mydino_name_exp_panel.png';
+export { default as myDinoOwnedFoodPanel } from './mydino_owned_food_panel.png';
+export { default as myDinoFeedButtonDefault } from './mydino_btn_feed_default.png';
+export { default as myDinoFeedButtonPressed } from './mydino_btn_feed_pressed.png';
+export { default as myDinoFeedButtonDisabled } from './mydino_btn_feed_disabled.png';
+export { default as myDinoFoodBagPanel } from './mydino_food_bag_panel.png';
+export { default as myDinoFoodSlotDefault } from './mydino_food_slot_default.png';
+export { default as myDinoFoodSlotSelected } from './mydino_food_slot_selected.png';
+export { default as myDinoFoodSlotDisabled } from './mydino_food_slot_disabled.png';

@@ -1,17 +1,32 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart, Lock, Sparkles, Utensils, Zap } from 'lucide-react';
-import { getFoodItemConfig, getItemsByCategory, type FoodItemConfig } from '../../config/itemConfig';
+import { useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { ChevronLeft, ChevronRight, Heart, Sparkles, Zap } from 'lucide-react';
+import { getItemsByCategory, type FoodItemConfig } from '../../config/itemConfig';
 import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { DinosaurState, OwnedDinosaur } from '../../types/game';
 import petHomeBackground from '../../assets/pet/backgrounds/bg_pet_home_forest.png';
 import petGreenMain from '../../assets/pet/backgrounds/pet_green_main-removebg-preview.png';
-import petNameplatePanel from '../../assets/pet/panels/panel_pet_nameplate-removebg-preview.png';
-import petStatusPanel from '../../assets/pet/panels/panel_pet_status-removebg-preview.png';
+import {
+  myDinoFeedButtonDefault,
+  myDinoFeedButtonDisabled,
+  myDinoFeedButtonPressed,
+  myDinoFoodBagPanel,
+  myDinoFoodSlotDefault,
+  myDinoFoodSlotDisabled,
+  myDinoFoodSlotSelected,
+  myDinoGrowthPanel,
+  myDinoHatcheryButtonDefault,
+  myDinoHatcheryButtonPressed,
+  myDinoListButtonDefault,
+  myDinoListButtonPressed,
+  myDinoNameExpPanel,
+  myDinoOwnedFoodPanel,
+  myDinoTitlePanel,
+} from '../../assets/pet/mydino';
+import { shopFoodItemImages } from '../../assets/shop';
 
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
-const showDeveloperPanels = false;
 
 export interface DinosaurRoomScreenProps {
   view: DinoView;
@@ -47,26 +62,37 @@ export function DinosaurRoomScreen({
   const activeSpeciesName = activeSpecies?.displayName ?? activeSpecies?.name ?? '공룡 친구';
 
   return (
-    <div className="pet-screen pet-bg relative grid h-full min-h-0 grid-rows-[8%_52%_18%_22%] gap-2 overflow-hidden rounded-[30px] border-4 border-white bg-emerald-100 p-2">
+    <div className="pet-screen pet-bg relative grid h-full min-h-0 grid-rows-[clamp(52px,8dvh,78px)_minmax(0,1fr)_clamp(98px,14dvh,132px)_clamp(150px,24dvh,220px)] gap-1.5 overflow-hidden rounded-[30px] border-4 border-white bg-emerald-100 p-2 sm:gap-2">
       <img src={petHomeBackground} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-lime-100/5 to-emerald-950/10" />
 
       <header className="pet-header relative z-10 flex min-h-0 items-center justify-center">
-        <div className="rounded-[18px] border-4 border-white bg-white/72 px-5 py-2 text-lg font-black text-emerald-950 shadow-sm">우리 공룡</div>
+        <div className="relative aspect-[1709/566] h-full max-h-[78px] w-auto max-w-[62%]">
+          <img src={myDinoTitlePanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
+          <h2 className="absolute inset-x-[12%] bottom-[18%] top-[17%] flex items-center justify-center text-[clamp(1rem,3dvh,1.65rem)] font-black leading-none text-[#6b3b17] drop-shadow-[0_1px_0_rgba(255,255,255,.85)]">
+            우리 공룡
+          </h2>
+        </div>
       </header>
 
-      <section className="pet-main-zone relative z-10 grid min-h-0 grid-cols-[0.16fr_0.54fr_0.30fr] gap-2">
+      <section className="pet-main-zone relative z-10 grid min-h-0 grid-cols-[clamp(68px,14vw,100px)_minmax(0,1fr)_clamp(112px,25vw,198px)] gap-1.5 sm:gap-2">
         <aside className="pet-side-menu grid min-h-0 content-start gap-2 pt-1">
-          <button className="pet-side-menu-button pet-side-menu-button--active min-h-14 rounded-[17px] border-[3px] border-white bg-gradient-to-b from-lime-300 to-emerald-500 px-1.5 text-[12px] font-black leading-tight text-emerald-950 shadow-[0_5px_0_#059669]">
-            공룡<br />보기
-          </button>
+          <AssetButton
+            label="공룡 보기"
+            defaultAsset={myDinoListButtonDefault}
+            pressedAsset={myDinoListButtonPressed}
+            className="w-full"
+            textClassName="left-[34%] right-[7%] text-[clamp(0.625rem,1.8vw,0.875rem)] text-white"
+          />
           {onGoToHatchery && (
-            <button
+            <AssetButton
+              label="알 부화장"
+              defaultAsset={myDinoHatcheryButtonDefault}
+              pressedAsset={myDinoHatcheryButtonPressed}
               onClick={onGoToHatchery}
-              className="pet-side-menu-button pet-hatchery-button min-h-14 rounded-[17px] border-[3px] border-white bg-gradient-to-b from-orange-200 to-amber-400 px-1.5 text-[12px] font-black leading-tight text-amber-950 shadow-[0_5px_0_#d97706] transition active:translate-y-1 active:shadow-none"
-            >
-              알<br />부화장
-            </button>
+              className="w-full"
+              textClassName="left-[34%] right-[7%] text-[clamp(0.625rem,1.8vw,0.875rem)] text-amber-950"
+            />
           )}
         </aside>
 
@@ -79,16 +105,13 @@ export function DinosaurRoomScreen({
         </aside>
       </section>
 
-      <section className="pet-info-zone relative z-10 flex min-h-0 items-center justify-center">
-        <div className="pet-info-action-group flex w-max max-w-full items-stretch justify-center gap-3">
-          <DinosaurNamePanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
-          <FeedPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
-        </div>
+      <section className="pet-info-zone relative z-10 grid min-h-0 grid-cols-[minmax(0,1.1fr)_minmax(126px,.9fr)] items-center gap-1.5 sm:gap-2">
+        <DinosaurNamePanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
+        <FeedPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
       </section>
 
       <section className="pet-food-bag-zone relative z-10 min-h-0">
-        <FoodBagPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} onFeed={onFeed} />
-        {showDeveloperPanels && <DeveloperDinosaurDebugPanel dinosaur={dinosaur} activeOwnedDinosaur={activeOwnedDinosaur} inventory={inventory} />}
+        <FoodBagPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} />
       </section>
     </div>
   );
@@ -110,18 +133,20 @@ function DinosaurStage({
       {canSwitchDinosaur && (
         <>
           <button
+            type="button"
             aria-label="이전 공룡"
             onClick={() => onSelectAdjacentDinosaur(-1)}
-            className="pet-dino-arrow pet-dino-arrow--prev absolute left-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-[17px] border-4 border-white bg-white/88 text-emerald-800 shadow-[0_5px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+            className="pet-dino-arrow pet-dino-arrow--prev absolute left-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[14px] border-3 border-white bg-white/88 text-emerald-800 shadow-[0_4px_0_#86efac] transition active:translate-y-[calc(-50%+3px)] active:shadow-none sm:left-2 sm:h-11 sm:w-11"
           >
-            <ChevronLeft className="h-7 w-7" />
+            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
           </button>
           <button
+            type="button"
             aria-label="다음 공룡"
             onClick={() => onSelectAdjacentDinosaur(1)}
-            className="pet-dino-arrow pet-dino-arrow--next absolute right-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-[17px] border-4 border-white bg-white/88 text-emerald-800 shadow-[0_5px_0_#86efac] transition active:translate-y-[calc(-50%+4px)] active:shadow-none"
+            className="pet-dino-arrow pet-dino-arrow--next absolute right-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[14px] border-3 border-white bg-white/88 text-emerald-800 shadow-[0_4px_0_#86efac] transition active:translate-y-[calc(-50%+3px)] active:shadow-none sm:right-2 sm:h-11 sm:w-11"
           >
-            <ChevronRight className="h-7 w-7" />
+            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
           </button>
         </>
       )}
@@ -130,7 +155,7 @@ function DinosaurStage({
         <img
           src={petGreenMain}
           alt={dinosaur.name}
-          className="pet-dino-image relative z-10 max-h-[82%] max-w-[95%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
+          className="pet-dino-image relative z-10 max-h-[86%] max-w-[96%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
         />
       </div>
     </section>
@@ -141,22 +166,24 @@ function DinosaurNamePanel({ dinosaur, activeSpeciesName }: { dinosaur: Dinosaur
   const expPercent = getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel);
 
   return (
-    <section className="pet-name-panel relative h-[86px] w-[300px] overflow-hidden rounded-[18px] border-[3px] border-white bg-white/86 px-3 py-2 shadow-sm">
-      <img src={petNameplatePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20" />
-      <div className="relative z-10 flex h-full min-h-0 flex-col justify-center">
-        <p className="truncate text-[11px] font-black text-amber-700">{activeSpeciesName}</p>
-        <div className="mt-1 flex items-end justify-between gap-2">
-          <h3 className="truncate text-[clamp(1rem,2vw,1.25rem)] font-black leading-none text-emerald-950">{dinosaur.name}</h3>
-          <span className="shrink-0 rounded-full bg-lime-100 px-2 py-0.5 text-[11px] font-black text-emerald-800">Lv. {dinosaur.level}</span>
+    <section className="pet-name-panel relative h-full min-h-0 overflow-hidden">
+      <img src={myDinoNameExpPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+      <div className="absolute inset-x-[9%] bottom-[43%] top-[20%] flex min-w-0 items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[clamp(0.55rem,1.45vw,0.75rem)] font-black text-amber-700">{activeSpeciesName}</p>
+          <h3 className="truncate text-[clamp(0.85rem,2.2vw,1.25rem)] font-black leading-tight text-emerald-950">{dinosaur.name}</h3>
         </div>
-        <div className="pet-exp-bar mt-1.5">
-          <div className="mb-0.5 flex justify-between text-[10px] font-black text-emerald-800">
-            <span>EXP</span>
-            <span>{dinosaur.exp} / {dinosaur.expToNextLevel}</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-emerald-100 shadow-inner">
-            <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500" style={{ width: `${expPercent}%` }} />
-          </div>
+      </div>
+      <div className="absolute bottom-[10%] left-[10%] top-[70%] flex w-[17%] items-center justify-center text-[clamp(0.58rem,1.7vw,0.82rem)] font-black text-emerald-900">
+        Lv.{dinosaur.level}
+      </div>
+      <div className="absolute bottom-[9%] left-[29%] right-[10%] top-[69%] flex min-w-0 flex-col justify-center">
+        <div className="flex justify-between gap-2 text-[clamp(0.5rem,1.25vw,0.68rem)] font-black text-emerald-800">
+          <span>EXP</span>
+          <span>{dinosaur.exp}/{dinosaur.expToNextLevel}</span>
+        </div>
+        <div className="mt-0.5 h-[clamp(5px,1dvh,9px)] overflow-hidden rounded-full bg-emerald-100 shadow-inner">
+          <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500" style={{ width: `${expPercent}%` }} />
         </div>
       </div>
     </section>
@@ -172,25 +199,44 @@ function FeedPanel({
   selectedFoodItemId: string | null;
   onFeed?: () => void;
 }) {
-  const selectedFood = selectedFoodItemId ? getFoodItemConfig(selectedFoodItemId) : null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedFood = selectedFoodItemId ? getShopFoodItems().find((food) => food.id === selectedFoodItemId) ?? null : null;
   const selectedInventoryItem = selectedFoodItemId ? inventory.find((item) => item.itemId === selectedFoodItemId) : null;
   const quantity = selectedInventoryItem?.quantity ?? 0;
-  const canFeed = Boolean(selectedFood && quantity > 0 && onFeed);
+  const selectedFoodImage = selectedFood ? shopFoodItemImages[selectedFood.id] : undefined;
+  const canFeed = Boolean(selectedFood && quantity > 0 && onFeed && !isSubmitting);
+
+  const handleFeed = () => {
+    if (!canFeed || !onFeed) return;
+    setIsSubmitting(true);
+    onFeed();
+    window.setTimeout(() => setIsSubmitting(false), 250);
+  };
 
   return (
-    <section className="pet-feed-panel grid h-[86px] w-[133px] content-center gap-1 rounded-[18px] border-[3px] border-white bg-amber-50/92 px-2 py-2 shadow-sm">
-      <div className="min-w-0 text-center">
-        <p className="text-[10px] font-black text-amber-700">보유 사료</p>
-        <p className="truncate text-sm font-black text-amber-950">{selectedFood ? `${selectedFood.name} x${quantity}` : '사료 선택'}</p>
+    <section className="pet-feed-panel grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-1">
+      <div className="relative min-h-0 overflow-hidden">
+        <img src={myDinoOwnedFoodPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+        <div className="absolute bottom-[13%] left-[9%] top-[17%] flex w-[27%] items-center justify-center">
+          {selectedFoodImage && <img src={selectedFoodImage} alt="" className="h-full w-full object-contain" />}
+        </div>
+        <div className="absolute bottom-[51%] left-[40%] right-[8%] top-[17%] flex min-w-0 items-center justify-center text-center text-[clamp(0.56rem,1.45vw,0.78rem)] font-black leading-tight text-amber-950">
+          <span className="line-clamp-2">{selectedFood ? selectedFood.name : '사료를 선택하세요'}</span>
+        </div>
+        <div className="absolute bottom-[13%] left-[40%] right-[8%] top-[55%] flex items-center justify-center text-[clamp(0.58rem,1.5vw,0.82rem)] font-black text-orange-800">
+          {selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}
+        </div>
       </div>
-      <button
-        onClick={onFeed}
+      <AssetButton
+        label="먹이주기"
+        defaultAsset={myDinoFeedButtonDefault}
+        pressedAsset={myDinoFeedButtonPressed}
+        disabledAsset={myDinoFeedButtonDisabled}
         disabled={!canFeed}
-        className="pet-feed-button inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-[14px] border-[3px] border-white bg-gradient-to-b from-amber-300 to-orange-400 px-2 text-xs font-black text-white shadow-orange transition active:translate-y-1 disabled:cursor-not-allowed disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none"
-      >
-        <Utensils className="h-5 w-5" />
-        먹이주기
-      </button>
+        onClick={handleFeed}
+        className="mx-auto w-[min(100%,170px)]"
+        textClassName="inset-x-[12%] text-[clamp(0.72rem,1.8vw,1rem)] text-white"
+      />
     </section>
   );
 }
@@ -201,21 +247,20 @@ function DinosaurStatusPanel({ dinosaur }: { dinosaur: DinosaurState }) {
   const statusMessage = getGrowthStatusMessage(dinosaur.level, staminaPercent);
 
   return (
-    <section className="pet-status-panel relative h-full min-h-0 overflow-hidden rounded-[24px] p-3 shadow-sm">
-      <img src={petStatusPanel} alt="" className="absolute inset-0 h-full w-full object-fill opacity-95" />
-      <div className="absolute inset-1 rounded-[22px] bg-white/28" />
-      <div className="relative z-10 flex h-full min-h-0 flex-col justify-start pt-1">
-        <div className="mb-2 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-emerald-600" />
-          <h4 className="text-base font-black text-emerald-950">성장 상태</h4>
+    <section className="pet-status-panel relative h-full min-h-0 overflow-visible">
+      <img src={myDinoGrowthPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+      <div className="absolute bottom-[11%] left-[16%] right-[14%] top-[14%] flex min-h-0 flex-col">
+        <div className="flex h-[13%] items-center justify-center gap-1 text-[clamp(0.62rem,1.65vw,0.92rem)] font-black text-[#6b3b17]">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+          <h4>성장 상태</h4>
         </div>
-        <div className="grid gap-2">
+        <div className="grid min-h-0 flex-1 grid-rows-[repeat(3,minmax(0,1fr))_minmax(0,1.45fr)] gap-[2px] pt-1">
           <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
           <MiniMeter icon={Zap} label="체력" value={staminaPercent} tone="from-emerald-400 to-lime-500" />
           <MiniMeter icon={Sparkles} label="성장" value={growthPercent} tone="from-cyan-400 to-sky-500" />
-          <div className="rounded-[14px] bg-white/78 px-2.5 py-2 shadow-sm">
-            <p className="text-[11px] font-black text-emerald-700">상태메시지</p>
-            <p className="mt-1 text-xs font-black leading-snug text-emerald-950">{statusMessage}</p>
+          <div className="flex min-h-0 flex-col justify-center px-[6%] py-0.5 text-center">
+            <p className="text-[clamp(0.46rem,1.1vw,0.62rem)] font-black text-emerald-700">상태 메시지</p>
+            <p className="line-clamp-2 text-[clamp(0.5rem,1.25vw,0.68rem)] font-black leading-tight text-emerald-950">{statusMessage}</p>
           </div>
         </div>
       </div>
@@ -231,113 +276,90 @@ function FoodBagPanel({
   inventory: InventoryItemState[];
   selectedFoodItemId: string | null;
   onSelectFood: (itemId: string) => void;
-  onFeed?: () => void;
 }) {
-  const visibleSlotCount = 5;
-  const targetSlotCount = 10;
-  const [firstVisibleSlotIndex, setFirstVisibleSlotIndex] = useState(0);
-  const foodItems = getItemsByCategory('food') as FoodItemConfig[];
-  const foodSlots: Array<{ id: string; food: FoodItemConfig | null; quantity: number; lockedLabel?: string }> = [
-    ...foodItems.map((food) => ({
-      id: food.id,
-      food,
-      quantity: inventory.find((item) => item.itemId === food.id)?.quantity ?? 0,
-    })),
-    ...Array.from({ length: Math.max(0, targetSlotCount - foodItems.length) }, (_, index) => ({
-      id: `locked-food-slot-${index + 1}`,
-      food: null,
-      quantity: 0,
-      lockedLabel: '잠금',
-    })),
-  ];
-  const maxFirstVisibleSlotIndex = Math.max(0, foodSlots.length - visibleSlotCount);
-  const safeFirstVisibleSlotIndex = Math.min(firstVisibleSlotIndex, maxFirstVisibleSlotIndex);
-  const visibleSlots = foodSlots.slice(safeFirstVisibleSlotIndex, safeFirstVisibleSlotIndex + visibleSlotCount);
-  const canSlidePrev = safeFirstVisibleSlotIndex > 0;
-  const canSlideNext = safeFirstVisibleSlotIndex < maxFirstVisibleSlotIndex;
+  const foodItems = getShopFoodItems();
 
   return (
-    <section className="pet-food-bag mx-auto grid h-full min-h-0 w-full max-w-[740px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[22px] border-4 border-white bg-white/84 px-3 py-2 shadow-lg">
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <h4 className="text-base font-black text-emerald-950">사료가방</h4>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800">
-            {safeFirstVisibleSlotIndex + 1}-{safeFirstVisibleSlotIndex + visibleSlots.length} / {foodSlots.length}
-          </span>
-          <Utensils className="h-5 w-5 text-orange-500" />
-        </div>
-      </div>
-      <div className="grid min-h-0 grid-cols-[42px_minmax(0,1fr)_42px] items-stretch gap-2">
-        <button
-          aria-label="이전 사료"
-          disabled={!canSlidePrev}
-          onClick={() => setFirstVisibleSlotIndex((current) => Math.max(0, current - visibleSlotCount))}
-          className="pet-food-arrow pet-food-arrow--prev flex min-h-0 items-center justify-center rounded-[16px] border-4 border-white bg-white/86 text-amber-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <div className="grid min-h-0 grid-cols-5 gap-2 overflow-hidden">
-        {visibleSlots.map(({ id, food, quantity, lockedLabel }) => {
-          if (!food) {
-            return (
-              <div key={id} className="pet-food-slot grid min-h-0 place-items-center rounded-[16px] border-4 border-dashed border-slate-200 bg-slate-50/80 px-2 text-center text-xs font-black text-slate-400">
-                <Lock className="h-5 w-5" />
-                {lockedLabel}
-              </div>
-            );
-          }
-
+    <section className="pet-food-bag relative mx-auto h-full min-h-0 w-full max-w-[820px] overflow-visible">
+      <img src={myDinoFoodBagPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+      <h4 className="absolute left-[9%] top-[7%] flex h-[16%] w-[17%] items-center justify-center whitespace-nowrap text-[clamp(0.6rem,1.6vw,0.9rem)] font-black text-[#6b3b17]">사료 가방</h4>
+      <div className="absolute bottom-[10%] left-[6%] right-[6%] top-[25%] flex min-h-0 snap-x gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {foodItems.map((food) => {
+          const quantity = inventory.find((item) => item.itemId === food.id)?.quantity ?? 0;
           const isSelected = selectedFoodItemId === food.id;
           const isDisabled = quantity <= 0;
+          const slotAsset = isDisabled ? myDinoFoodSlotDisabled : isSelected ? myDinoFoodSlotSelected : myDinoFoodSlotDefault;
 
           return (
             <button
+              type="button"
               key={food.id}
               disabled={isDisabled}
               onClick={() => onSelectFood(food.id)}
-              className={`pet-food-slot ${isSelected ? 'pet-food-slot--selected' : ''} min-h-0 rounded-[16px] border-4 px-2 py-1.5 text-center shadow-sm transition active:translate-y-1 ${
-                isSelected ? 'border-amber-400 bg-gradient-to-b from-yellow-200 to-orange-200 text-amber-950 shadow-[0_5px_0_#f59e0b]' : 'border-white bg-gradient-to-b from-amber-100 to-orange-100 text-amber-950'
-              } ${isDisabled ? 'cursor-not-allowed opacity-45 shadow-none' : 'hover:brightness-105'}`}
+              aria-pressed={isSelected}
+              className="pet-food-slot relative aspect-square h-full min-h-[68px] min-w-[68px] max-w-[116px] flex-none snap-start bg-transparent p-0 transition active:scale-[0.97] disabled:cursor-not-allowed sm:min-h-[76px] sm:min-w-[76px]"
             >
-              <p className="truncate text-sm font-black">{food.name}</p>
-              <p className="mt-1 rounded-full bg-white px-2 py-0.5 text-xs font-black text-orange-700">x{quantity}</p>
-              {isSelected && <p className="mx-auto mt-1 w-fit rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white">선택</p>}
+              <img src={slotAsset} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+              <img src={shopFoodItemImages[food.id]} alt="" className={`pointer-events-none absolute inset-x-[18%] top-[11%] h-[55%] w-[64%] object-contain ${isDisabled ? 'grayscale opacity-55' : ''}`} />
+              <span className="absolute bottom-[17%] left-[12%] right-[12%] truncate text-[clamp(0.48rem,1vw,0.62rem)] font-black leading-none text-amber-950">{food.name}</span>
+              <span className="absolute bottom-[4%] right-[7%] rounded-full bg-white/90 px-1.5 py-0.5 text-[clamp(0.5rem,1vw,0.68rem)] font-black leading-none text-orange-800 shadow-sm">x{quantity}</span>
             </button>
           );
         })}
-        </div>
-        <button
-          aria-label="다음 사료"
-          disabled={!canSlideNext}
-          onClick={() => setFirstVisibleSlotIndex((current) => Math.min(maxFirstVisibleSlotIndex, current + visibleSlotCount))}
-          className="pet-food-arrow pet-food-arrow--next flex min-h-0 items-center justify-center rounded-[16px] border-4 border-white bg-white/86 text-amber-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </button>
       </div>
     </section>
   );
 }
 
-function DeveloperDinosaurDebugPanel({
-  dinosaur,
-  activeOwnedDinosaur,
-  inventory,
+function AssetButton({
+  label,
+  defaultAsset,
+  pressedAsset,
+  disabledAsset,
+  disabled = false,
+  onClick,
+  className = '',
+  textClassName = '',
 }: {
-  dinosaur: DinosaurState;
-  activeOwnedDinosaur: OwnedDinosaur;
-  inventory: InventoryItemState[];
+  label: string;
+  defaultAsset: string;
+  pressedAsset: string;
+  disabledAsset?: string;
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
+  textClassName?: string;
 }) {
+  const [isPressed, setIsPressed] = useState(false);
+  const asset = disabled && disabledAsset ? disabledAsset : isPressed ? pressedAsset : defaultAsset;
+  const release = () => setIsPressed(false);
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setIsPressed(true);
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!disabled && (event.key === ' ' || event.key === 'Enter')) setIsPressed(true);
+  };
+
   return (
-    <details className="rounded-[26px] border-4 border-dashed border-slate-200 bg-white/62 px-4 py-3">
-      <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 공룡 상태 데이터</summary>
-      <div className="mt-3 grid gap-2 text-xs font-bold text-slate-500">
-        <p className="break-all rounded-[18px] bg-white/80 px-3 py-2 font-mono">dinosaur id: {activeOwnedDinosaur.id}</p>
-        <p className="break-all rounded-[18px] bg-white/80 px-3 py-2 font-mono">species id: {activeOwnedDinosaur.speciesId}</p>
-        <pre className="max-h-44 overflow-auto rounded-[18px] bg-white/80 px-3 py-2">{JSON.stringify(inventory, null, 2)}</pre>
-        <pre className="max-h-44 overflow-auto rounded-[18px] bg-white/80 px-3 py-2">{JSON.stringify(dinosaur, null, 2)}</pre>
-      </div>
-    </details>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={release}
+      onPointerCancel={release}
+      onPointerLeave={release}
+      onKeyDown={handleKeyDown}
+      onKeyUp={release}
+      onBlur={release}
+      aria-label={label}
+      className={`relative aspect-[2.8/1] touch-manipulation overflow-hidden bg-transparent p-0 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed ${className}`}
+    >
+      <img src={asset} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+      <span className={`pointer-events-none absolute inset-y-[12%] flex items-center justify-center whitespace-nowrap font-black leading-none drop-shadow-[0_2px_1px_rgba(3,84,63,.85)] ${textClassName}`}>{label}</span>
+    </button>
   );
 }
 
@@ -345,19 +367,23 @@ function MiniMeter({ icon: Icon, label, value, tone }: { icon: typeof Heart; lab
   const percent = clampUiPercent(value);
 
   return (
-    <div className="rounded-[14px] bg-white/78 px-2.5 py-1.5 shadow-sm">
-      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-black text-emerald-900">
-        <span className="inline-flex min-w-0 items-center gap-1">
-          <Icon className="h-3.5 w-3.5 shrink-0" />
+    <div className="flex min-h-0 flex-col justify-center px-[6%] py-0.5">
+      <div className="flex items-center justify-between gap-1 text-[clamp(0.48rem,1.1vw,0.64rem)] font-black leading-none text-emerald-900">
+        <span className="inline-flex min-w-0 items-center gap-0.5">
+          <Icon className="h-3 w-3 shrink-0" />
           <span className="truncate">{label}</span>
         </span>
         <span>{percent}%</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 shadow-inner">
-        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+      <div className="mt-1 h-[clamp(4px,.8dvh,8px)] overflow-hidden rounded-full bg-white/80 shadow-inner">
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
+}
+
+function getShopFoodItems() {
+  return (getItemsByCategory('food') as FoodItemConfig[]).filter((food) => Boolean(shopFoodItemImages[food.id]));
 }
 
 function clampUiPercent(value: number) {
@@ -379,7 +405,7 @@ function getGrowthPercent(level: number) {
 
 function getGrowthStatusMessage(level: number, staminaPercent: number) {
   if (level >= 20) return '성장 완료!';
-  if (staminaPercent < 35) return '먹이를 주면 더 힘이 나요!';
+  if (staminaPercent < 35) return '먹이를 주면 힘이 나요!';
   return '레벨 20이 되면 성장 완료!';
 }
 
