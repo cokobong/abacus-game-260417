@@ -1,5 +1,1032 @@
 @import "tailwindcss";
 
+/* Our Dinosaur screen: asset canvases include sizeable transparent borders, so each
+   panel owns an explicit canvas and a content inset matched to the visible artwork. */
+.pet-screen {
+  position: relative;
+  display: grid;
+  grid-template-rows: 172px minmax(280px, 1fr) 318px;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+  border: 4px solid white;
+  border-radius: 30px;
+  background: #d1fae5;
+}
+
+.pet-screen__background,
+.pet-screen__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pet-screen__background {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.pet-screen__shade {
+  pointer-events: none;
+  background: rgb(255 248 220 / 11%);
+}
+
+.pet-header,
+.pet-top-zone,
+.pet-control-zone,
+.pet-info-zone,
+.pet-food-inventory {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pet-header {
+  width: 176px;
+  height: 58px;
+  margin: 4px auto 0;
+}
+
+.pet-header img,
+.pet-panel-asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pet-header h2 {
+  position: absolute;
+  inset: 12% 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #6b3b17;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pet-top-zone {
+  display: grid;
+  grid-template-columns: 164px minmax(0, 1fr) 185px;
+  align-items: start;
+  gap: 10px;
+}
+
+.pet-side-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding-top: 4px;
+}
+
+.pet-asset-button {
+  position: relative;
+  display: block;
+  flex: none;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  touch-action: manipulation;
+}
+
+.pet-asset-button--menu {
+  width: 164px;
+  height: 54px;
+}
+
+.pet-asset-button--feed {
+  width: 190px;
+  height: 52px;
+}
+
+.pet-asset-button img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.pet-asset-button span {
+  position: absolute;
+  inset: 10% 8% 12% 32%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 2px 1px rgb(3 84 63 / 80%);
+  pointer-events: none;
+}
+
+.pet-asset-button--dark span {
+  color: #78350f;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 72%);
+}
+
+.pet-asset-button--feed span {
+  inset: 13% 12% 16%;
+  font-size: 20px;
+}
+
+.pet-asset-button:disabled {
+  cursor: not-allowed;
+}
+
+.pet-dino-stage {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  border-radius: 28px;
+}
+
+.pet-dino-image {
+  position: relative;
+  z-index: 1;
+  width: min(72%, 500px);
+  height: min(100%, 500px);
+  object-fit: contain;
+  transform: translate(var(--dino-x, 0), var(--dino-y, 0)) scale(var(--dino-scale, 1));
+  transform-origin: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dex-character-image {
+  transform: translate(var(--dino-x, 0), var(--dino-y, 0)) scale(var(--dino-scale, 1));
+  transform-origin: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dex-board--habitat {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.dex-board__background-wash {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: rgb(255 248 220 / 10%);
+  pointer-events: none;
+}
+
+.dex-board--habitat > :not(.dex-board__background-wash) {
+  position: relative;
+  z-index: 1;
+}
+
+.pet-dino-arrow,
+.pet-inventory-arrow {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  color: #047857;
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 4px 0 #86efac;
+}
+
+.pet-dino-arrow {
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  transform: translateY(-50%);
+}
+
+.pet-dino-arrow svg,
+.pet-inventory-arrow svg {
+  width: 26px;
+  height: 26px;
+}
+
+.pet-dino-arrow--prev { left: 12px; }
+.pet-dino-arrow--next { right: 12px; }
+
+.pet-status-panel {
+  position: relative;
+  align-self: start;
+  justify-self: end;
+  width: 185px;
+  height: 215px;
+  min-height: 0;
+}
+
+.pet-status-panel__content {
+  position: absolute;
+  inset: 8% 13% 9% 14%;
+  display: grid;
+  grid-template-rows: 26px repeat(3, minmax(36px, 1fr)) 40px;
+  align-items: center;
+  min-height: 0;
+}
+
+.pet-status-panel h4 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  color: #6b3b17;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.pet-status-panel h4 svg {
+  width: 18px;
+  color: #059669;
+}
+
+.pet-status-panel__content > p {
+  margin: 0;
+  padding: 3px 10px;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.pet-mini-meter { padding: 0 8px; }
+.pet-mini-meter > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 900;
+}
+.pet-mini-meter > div:first-child span { display: inline-flex; align-items: center; gap: 4px; }
+.pet-mini-meter svg { width: 14px; height: 14px; }
+.pet-mini-meter__track,
+.pet-exp__track {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 12%);
+}
+.pet-mini-meter__track { height: 10px; margin-top: 4px; }
+.pet-mini-meter__fill { display: block; height: 100%; border-radius: inherit; }
+.pet-mini-meter__fill--pink { background: linear-gradient(to right, #f472b6, #f43f5e); }
+.pet-mini-meter__fill--green { background: linear-gradient(to right, #34d399, #84cc16); }
+.pet-mini-meter__fill--blue { background: linear-gradient(to right, #22d3ee, #0ea5e9); }
+
+.pet-info-zone {
+  display: grid;
+  grid-template-columns: minmax(320px, 340px) 255px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.pet-control-zone {
+  display: grid;
+  grid-template-rows: 136px 176px;
+  gap: 6px;
+  top: clamp(-68px, -6dvh, -56px);
+}
+
+.pet-identity-panel {
+  position: relative;
+  container-type: inline-size;
+  width: clamp(340px, 28vw, 390px);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1979 / 795;
+}
+
+.pet-identity-panel__asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pet-identity-panel__heading {
+  position: absolute;
+  left: 6%;
+  top: 15%;
+  display: grid;
+  grid-template-rows: 38% 62%;
+  width: 88%;
+  height: 40%;
+  align-items: center;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.pet-identity-panel__heading p {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #b45309;
+  font-size: clamp(13px, 4.4cqw, 17px);
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pet-identity-panel__heading h3 {
+  margin: 0;
+  width: 100%;
+  overflow: hidden;
+  color: #064e3b;
+  font-size: clamp(22px, 7.7cqw, 30px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pet-identity-panel__level {
+  position: absolute;
+  left: 5%;
+  top: 60%;
+  display: flex;
+  width: 21%;
+  height: 31%;
+  align-items: center;
+  justify-content: center;
+  color: #065f46;
+  font-size: clamp(16px, 5.6cqw, 22px);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pet-exp {
+  position: absolute;
+  box-sizing: border-box;
+  left: 27%;
+  top: 60%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) clamp(7px, 2.8cqw, 11px);
+  gap: clamp(2px, 1cqw, 4px);
+  width: 68%;
+  height: 31%;
+  min-width: 0;
+  padding: 2% 4% 5%;
+}
+
+.pet-exp__labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: #047857;
+  font-size: clamp(12px, 4.2cqw, 16px);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.pet-exp__labels span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pet-exp__track {
+  position: relative;
+  top: 3.5px;
+  width: 100%;
+  height: 135%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 18%);
+}
+.pet-exp__track > div { height: 100%; border-radius: 999px; background: linear-gradient(to right, #22d3ee, #0ea5e9); }
+
+.pet-feed-action {
+  display: grid;
+  grid-template-rows: 80px 52px;
+  justify-items: center;
+  gap: 4px;
+  width: 255px;
+  height: 136px;
+}
+
+.pet-selected-food {
+  position: relative;
+  width: 255px;
+  height: 80px;
+}
+
+.pet-selected-food__content {
+  position: absolute;
+  inset: 10% 8% 12%;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.pet-selected-food__icon {
+  display: flex;
+  width: 60px;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.pet-selected-food__icon img {
+  width: 118%;
+  height: 118%;
+  max-width: none;
+  object-fit: contain;
+}
+
+.pet-selected-food__copy {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  min-width: 0;
+  height: 56px;
+  text-align: center;
+}
+
+.pet-selected-food__copy strong,
+.pet-selected-food__copy span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pet-selected-food__copy strong {
+  overflow: hidden;
+  color: #78350f;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.pet-selected-food__copy span { color: #c2410c; font-size: 13px; font-weight: 900; }
+
+.pet-food-inventory {
+  width: 100%;
+  height: 176px;
+}
+
+.pet-food-inventory > h4 {
+  position: absolute;
+  z-index: 2;
+  top: 20px;
+  left: 8%;
+  display: flex;
+  width: 145px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #6b3b17;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pet-food-viewport {
+  position: absolute;
+  z-index: 2;
+  inset: 53px 48px 21px;
+  display: grid;
+  grid-auto-columns: calc((100% - 36px) / 4);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.pet-food-viewport::-webkit-scrollbar { display: none; }
+
+.pet-food-card {
+  position: relative;
+  width: 100%;
+  height: 102px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 0;
+  border-radius: 20px;
+  padding: 0;
+  background: transparent;
+}
+
+.pet-food-card__asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.pet-food-card__icon {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pet-food-card__icon img {
+  width: 118%;
+  height: 118%;
+  max-width: none;
+  object-fit: contain;
+}
+
+.pet-food-card__meta {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  left: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 4px;
+  height: 30px;
+  color: #78350f;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.05;
+  pointer-events: none;
+}
+
+.pet-food-card__meta strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.pet-food-card__meta > span { border-radius: 999px; padding: 3px 5px; background: rgb(255 255 255 / 88%); color: #c2410c; }
+.pet-food-card.is-selected { filter: brightness(1.08) drop-shadow(0 0 7px rgb(250 204 21 / 70%)); }
+.pet-food-card:disabled { cursor: not-allowed; filter: grayscale(.7) brightness(.82); }
+
+.pet-inventory-arrow {
+  top: 79px;
+  width: 38px;
+  height: 44px;
+  border-radius: 16px;
+}
+.pet-inventory-arrow--prev { left: 12px; }
+.pet-inventory-arrow--next { right: 12px; }
+.pet-inventory-arrow:disabled { opacity: .36; box-shadow: none; cursor: not-allowed; }
+
+@media (max-height: 920px) {
+  .pet-screen {
+    grid-template-rows: 126px minmax(170px, 1fr) 266px;
+    gap: 5px;
+    padding: 5px;
+  }
+  .pet-header { width: 154px; height: 50px; }
+  .pet-header h2 { font-size: 17px; }
+  .pet-top-zone { grid-template-columns: 150px minmax(0, 1fr) 158px; gap: 7px; }
+  .pet-side-menu { gap: 5px; }
+  .pet-asset-button--menu { width: 150px; height: 50px; }
+  .pet-asset-button span { font-size: 15px; }
+  .pet-status-panel { width: 158px; height: 158px; min-height: 0; }
+  .pet-status-panel__content { grid-template-rows: 20px repeat(3, minmax(25px, 1fr)) 29px; }
+  .pet-status-panel h4 { font-size: 14px; }
+  .pet-status-panel__content > p { font-size: 10px; }
+  .pet-mini-meter > div:first-child { font-size: 12px; }
+  .pet-mini-meter svg { width: 13px; height: 13px; }
+  .pet-mini-meter__track { height: 9px; margin-top: 3px; }
+  .pet-control-zone { grid-template-rows: 120px 141px; gap: 5px; top: -54px; }
+  .pet-info-zone { grid-template-columns: minmax(290px, 310px) 230px; gap: 8px; }
+  .pet-identity-panel { width: min(100%, 310px); }
+  .pet-feed-action { width: 230px; height: 120px; grid-template-rows: 72px 44px; gap: 4px; }
+  .pet-selected-food { width: 230px; height: 72px; }
+  .pet-selected-food__content { grid-template-columns: 54px minmax(0, 1fr); }
+  .pet-selected-food__icon { width: 52px; height: 52px; }
+  .pet-selected-food__copy { height: 50px; }
+  .pet-selected-food__copy strong,
+  .pet-selected-food__copy span { font-size: 14px; }
+  .pet-asset-button--feed { width: 174px; height: 44px; }
+  .pet-food-inventory { height: 141px; }
+  .pet-food-inventory > h4 { top: 16px; height: 24px; font-size: 13px; }
+  .pet-food-viewport { inset: 43px 44px 17px; }
+  .pet-food-card { height: 81px; }
+  .pet-food-card__icon { top: 5px; width: 43px; height: 43px; }
+  .pet-food-card__meta { right: 8px; bottom: 5px; left: 8px; height: 26px; font-size: 8px; }
+  .pet-inventory-arrow { top: 61px; width: 34px; height: 40px; }
+  .pet-inventory-arrow--prev { left: 9px; }
+  .pet-inventory-arrow--next { right: 9px; }
+}
+
+@media (max-width: 640px) {
+  .pet-top-zone { grid-template-columns: 142px minmax(0, 1fr) 150px; }
+  .pet-asset-button--menu { width: 142px; height: 48px; }
+  .pet-status-panel { width: 150px; }
+  .pet-info-zone { grid-template-columns: minmax(270px, 1fr) 220px; }
+  .pet-identity-panel { width: min(100%, 300px); min-width: 270px; }
+  .pet-feed-action,
+  .pet-selected-food { width: 220px; }
+}
+
+/* Hatchery mirrors the Our Dinosaur screen grid while keeping its own content layer. */
+.hatch-screen {
+  position: relative;
+  display: grid;
+  grid-template-rows: 172px minmax(280px, 1fr) 318px;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 4px solid white;
+  border-radius: 30px;
+  padding: 8px;
+  background: #ffedd5;
+}
+
+.hatch-screen__background,
+.hatch-screen__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hatch-screen__background { object-fit: cover; object-position: center; }
+.hatch-screen__shade { background: rgb(255 248 220 / 7%); }
+
+.hatch-top-zone,
+.hatch-stage,
+.hatch-control-zone,
+.hatch-info-zone,
+.hatch-bag {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.hatch-top-zone {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 185px;
+  align-items: start;
+  gap: 10px;
+}
+
+.hatch-top-zone .pet-side-menu { width: 220px; }
+.hatch-top-zone .pet-asset-button--menu.is-selected {
+  width: 220px;
+  height: 73px;
+}
+
+.hatch-summary {
+  position: relative;
+  justify-self: end;
+  width: 185px;
+  aspect-ratio: 1086 / 1448;
+  color: #78350f;
+}
+
+.hatch-summary__asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.hatch-summary__cell {
+  position: absolute;
+  right: 18%;
+  left: 18%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+}
+.hatch-summary__cell strong,
+.hatch-summary__cell span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hatch-summary__cell strong { color: #78350f; font-size: 13px; font-weight: 900; }
+.hatch-summary__cell > span { color: #047857; font-size: 9px; font-weight: 900; }
+.hatch-summary__cell--egg { top: 22%; height: 20%; }
+.hatch-summary__cell--progress { top: 44%; height: 19%; gap: 5px; }
+.hatch-summary__cell--progress > div:first-child { display: flex; width: 100%; justify-content: space-between; gap: 5px; }
+.hatch-summary__cell--progress > div:first-child span { color: #c2410c; font-size: 10px; font-weight: 900; }
+.hatch-summary__progress { width: 100%; height: 8px; overflow: hidden; border-radius: 999px; background: #ffedd5; box-shadow: inset 0 1px 2px rgb(0 0 0 / 14%); }
+.hatch-summary__progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(to right, #fb923c, #22d3ee); }
+.hatch-summary__cell--stock { top: 66%; height: 18%; }
+
+.hatch-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+}
+
+.hatch-stage__egg {
+  width: min(45%, 360px);
+  height: min(100%, 410px);
+  object-fit: contain;
+  transform-origin: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hatch-stage__caption {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  max-width: 70%;
+  margin: 0;
+  overflow: hidden;
+  border: 3px solid white;
+  border-radius: 999px;
+  padding: 6px 18px;
+  color: #78350f;
+  background: rgb(255 247 237 / 88%);
+  font-size: 16px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.hatch-empty {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  border: 4px solid white;
+  border-radius: 24px;
+  padding: 24px 34px;
+  color: #9a3412;
+  background: rgb(255 247 237 / 88%);
+}
+.hatch-empty svg { width: 58px; height: 58px; }
+.hatch-empty strong { margin-top: 8px; font-size: 21px; }
+.hatch-empty span { margin-top: 3px; font-size: 13px; font-weight: 800; }
+
+.hatch-control-zone {
+  display: grid;
+  grid-template-rows: 136px 176px;
+  gap: 6px;
+  top: clamp(-68px, -6dvh, -56px);
+}
+
+.hatch-info-zone {
+  display: grid;
+  grid-template-columns: minmax(320px, 340px) 255px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hatch-identity,
+.hatch-selected-item {
+  position: relative;
+}
+
+.hatch-identity {
+  container-type: inline-size;
+  width: clamp(340px, 28vw, 390px);
+  max-width: 100%;
+  aspect-ratio: 2172 / 724;
+}
+
+.hatch-identity__asset { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.hatch-identity__content {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  text-align: center;
+}
+.hatch-identity__content h3 {
+  position: absolute;
+  top: 15%;
+  left: 10%;
+  display: flex;
+  width: 80%;
+  height: 39%;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  overflow: hidden;
+  color: #064e3b;
+  font-size: clamp(21px, 6.4cqw, 27px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hatch-identity__rarity {
+  position: absolute;
+  bottom: 12%;
+  left: 5%;
+  display: flex;
+  width: 14%;
+  height: 24%;
+  align-items: center;
+  justify-content: center;
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 900;
+}
+.hatch-identity__progress {
+  position: absolute;
+  right: 8%;
+  bottom: 10%;
+  display: grid;
+  grid-template-rows: auto 10px;
+  gap: 2px;
+  width: 69%;
+}
+.hatch-identity__content small { position: absolute; right: 7%; top: 56%; left: 24%; overflow: hidden; color: #065f46; font-size: 9px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.hatch-progress__labels { display: flex; justify-content: space-between; color: #047857; font-size: 12px; font-weight: 900; }
+.hatch-progress__track { overflow: hidden; border-radius: 999px; background: rgb(255 255 255 / 78%); box-shadow: inset 0 2px 3px rgb(0 0 0 / 13%); }
+.hatch-progress__track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(to right, #fb923c, #22d3ee); }
+
+.hatch-action {
+  display: grid;
+  grid-template-rows: 80px 52px;
+  justify-items: center;
+  gap: 4px;
+  width: 255px;
+  height: 136px;
+}
+.hatch-selected-item { width: 255px; height: 80px; }
+.hatch-selected-item__content {
+  position: absolute;
+  inset: 10% 8% 12%;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.hatch-selected-item__content > img,
+.hatch-selected-item__content > svg { width: 58px; height: 58px; object-fit: contain; }
+.hatch-selected-item__content div { display: grid; gap: 3px; min-width: 0; text-align: center; }
+.hatch-selected-item__content strong { overflow: hidden; color: #78350f; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.hatch-selected-item__content span { color: #c2410c; font-size: 13px; font-weight: 900; }
+.hatch-action__buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; height: 52px; }
+.hatch-action__buttons button {
+  border: 3px solid white;
+  border-radius: 17px;
+  color: white;
+  background: linear-gradient(#fbbf24, #f97316);
+  box-shadow: 0 4px 0 #c2410c;
+  font-size: 13px;
+  font-weight: 900;
+}
+.hatch-action__buttons button.is-primary { color: #064e3b; background: linear-gradient(#bef264, #34d399); box-shadow-color: #047857; }
+.hatch-action__buttons button:disabled { color: #64748b; background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
+
+.hatch-bag { width: 100%; height: 176px; }
+.hatch-bag > h4 {
+  position: absolute;
+  z-index: 2;
+  top: 20px;
+  left: 8%;
+  display: flex;
+  width: 165px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #6b3b17;
+  font-size: 15px;
+  font-weight: 900;
+}
+.hatch-bag__items {
+  position: absolute;
+  z-index: 2;
+  inset: 53px 48px 21px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.hatch-item-card {
+  position: relative;
+  min-width: 0;
+  height: 102px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 20px;
+  padding: 0;
+  background: transparent;
+}
+.hatch-item-card__frame,
+.hatch-item-card.is-locked > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+.hatch-item-card__icon { position: absolute; top: 7px; left: 50%; display: flex; width: 54px; height: 54px; transform: translateX(-50%); }
+.hatch-item-card__icon img { width: 100%; height: 100%; object-fit: contain; }
+.hatch-item-card__meta {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  left: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 4px;
+  height: 30px;
+  color: #78350f;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+.hatch-item-card__meta strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.hatch-item-card__meta b { border-radius: 999px; padding: 3px 5px; background: rgb(255 255 255 / 88%); color: #c2410c; }
+.hatch-item-card.is-selected { filter: brightness(1.08) drop-shadow(0 0 7px rgb(250 204 21 / 70%)); }
+.hatch-item-card.is-locked { display: grid; place-items: center; color: #64748b; }
+.hatch-item-card.is-locked svg { position: relative; z-index: 1; }
+.hatch-item-card.is-locked span { position: relative; z-index: 1; margin-top: 42px; font-size: 10px; font-weight: 900; }
+.hatch-bag .pet-inventory-arrow { top: 79px; }
+
+.hatch-result {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(6 78 59 / 58%);
+  backdrop-filter: blur(4px);
+}
+.hatch-result > section { display: grid; place-items: center; width: min(90%, 480px); border: 5px solid white; border-radius: 30px; padding: 28px; text-align: center; background: #fff7ed; box-shadow: 0 12px 0 rgb(180 83 9 / 45%); }
+.hatch-result svg { width: 54px; height: 54px; color: #f59e0b; }
+.hatch-result p { margin: 8px 0 0; color: #c2410c; font-weight: 900; }
+.hatch-result h3 { margin: 3px 0; color: #065f46; font-size: 32px; font-weight: 900; }
+.hatch-result strong { color: #78350f; font-size: 18px; }
+.hatch-result span { margin-top: 8px; color: #57534e; font-size: 13px; font-weight: 800; }
+.hatch-result div { display: flex; gap: 8px; margin-top: 18px; }
+.hatch-result button { border: 3px solid white; border-radius: 15px; padding: 9px 13px; color: #78350f; background: #fed7aa; font-weight: 900; box-shadow: 0 3px 0 #ea580c; }
+
+@media (max-height: 920px) {
+  .hatch-screen { grid-template-rows: 126px minmax(170px, 1fr) 266px; gap: 5px; padding: 5px; }
+  .hatch-top-zone { grid-template-columns: 202px minmax(0, 1fr) 158px; gap: 7px; }
+  .hatch-top-zone .pet-side-menu { width: 202px; }
+  .hatch-top-zone .pet-asset-button--menu.is-selected { width: 202px; height: 66px; }
+  .hatch-summary { width: 158px; }
+  .hatch-summary__cell strong { font-size: 11px; }
+  .hatch-summary__cell > span,
+  .hatch-summary__cell--progress > div:first-child span { font-size: 8px; }
+  .hatch-stage__egg { max-height: 285px; }
+  .hatch-control-zone { grid-template-rows: 120px 141px; gap: 5px; top: -54px; }
+  .hatch-info-zone { grid-template-columns: minmax(290px, 310px) 230px; gap: 8px; }
+  .hatch-identity { width: min(100%, 310px); }
+  .hatch-identity__content h3 { font-size: 20px; }
+  .hatch-action { width: 230px; height: 120px; grid-template-rows: 72px 44px; gap: 4px; }
+  .hatch-selected-item { width: 230px; height: 72px; }
+  .hatch-action__buttons { height: 44px; }
+  .hatch-bag { height: 141px; }
+  .hatch-bag > h4 { top: 16px; height: 24px; font-size: 13px; }
+  .hatch-bag__items { inset: 43px 44px 17px; gap: 9px; }
+  .hatch-item-card { height: 81px; }
+  .hatch-item-card__icon { top: 5px; width: 43px; height: 43px; }
+  .hatch-item-card__meta { right: 8px; bottom: 5px; left: 8px; height: 26px; font-size: 8px; }
+  .hatch-bag .pet-inventory-arrow { top: 61px; }
+}
+
 :root {
   --app-max-width: 820px;
   --app-max-height: 1093px;

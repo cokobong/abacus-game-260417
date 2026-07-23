@@ -2,6 +2,10 @@ import brachioCard from './dinosaurs/brachio_card.png';
 import stegoCard from './dinosaurs/stego_card.png';
 import trexCard from './dinosaurs/trex_card.png';
 import triceraCard from './dinosaurs/tricera_card.png';
+import collectionBgCrystalCave from './collection/collection_bg_crystal_cave.png';
+import collectionBgGreenForest from './collection/collection_bg_green_forest.png';
+import collectionBgSecretLand from './collection/collection_bg_secret_land.png';
+import collectionBgVolcanoIsland from './collection/collection_bg_volcano_island.png';
 import eggCommon from './eggs/egg_common.png';
 import eggRare from './eggs/egg_rare.png';
 import habitatCave from './habitats/habitat_cave.png';
@@ -30,6 +34,13 @@ export const dexDinosaurImages: Partial<Record<string, string>> = {
   'plate-stego': stegoCard,
   'long-brachio': brachioCard,
 };
+
+export const habitatBackgroundAssets = {
+  'green-forest': collectionBgGreenForest,
+  'sparkle-cave': collectionBgCrystalCave,
+  'volcano-island': collectionBgVolcanoIsland,
+  'secret-land': collectionBgSecretLand,
+} as const;
 
 const longneckSpeciesIds = new Set(['long-brachio', 'diplodocus', 'parasaurolophus', 'plesiosaurus']);
 const theropodSpeciesIds = new Set(['tiny-tyranno', 'allosaurus', 'dilophosaurus', 'carnotaurus', 'spinosaurus', 'swift-raptor', 'mosasaurus']);

@@ -5,6 +5,7 @@ export { default as myDinoHatcheryButtonDefault } from './mydino_btn_hatchery_de
 export { default as myDinoHatcheryButtonPressed } from './mydino_btn_hatchery_pressed.png';
 export { default as myDinoGrowthPanel } from './mydino_growth_panel.png';
 export { default as myDinoNameExpPanel } from './mydino_name_exp_panel.png';
+export { default as dinoNamePanelV2 } from './dino_name_panel_v2.png';
 export { default as myDinoOwnedFoodPanel } from './mydino_owned_food_panel.png';
 export { default as myDinoFeedButtonDefault } from './mydino_btn_feed_default.png';
 export { default as myDinoFeedButtonPressed } from './mydino_btn_feed_pressed.png';

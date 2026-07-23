@@ -1,10 +1,10 @@
-import { useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { ChevronLeft, ChevronRight, Heart, Sparkles, Zap } from 'lucide-react';
 import { getItemsByCategory, type FoodItemConfig } from '../../config/itemConfig';
-import { dinosaurSpecies } from '../../data/dinosaurSpecies';
+import { dinosaurSpecies, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { DinosaurState, OwnedDinosaur } from '../../types/game';
-import petHomeBackground from '../../assets/pet/backgrounds/bg_pet_home_forest.png';
 import petGreenMain from '../../assets/pet/backgrounds/pet_green_main-removebg-preview.png';
+import { habitatBackgroundAssets } from '../../assets/dex';
 import {
   myDinoFeedButtonDefault,
   myDinoFeedButtonDisabled,
@@ -18,7 +18,7 @@ import {
   myDinoHatcheryButtonPressed,
   myDinoListButtonDefault,
   myDinoListButtonPressed,
-  myDinoNameExpPanel,
+  dinoNamePanelV2,
   myDinoOwnedFoodPanel,
   myDinoTitlePanel,
 } from '../../assets/pet/mydino';
@@ -47,42 +47,34 @@ export interface DinosaurRoomScreenProps {
 }
 
 export function DinosaurRoomScreen({
+  view,
   dinosaur,
   activeOwnedDinosaur,
   ownedDinosaurs,
   inventory,
   selectedFoodItemId,
+  onView,
   onSelectFood,
   onSelectAdjacentDinosaur,
   onFeed,
   onGoToHatchery,
 }: DinosaurRoomScreenProps) {
   const activeSpecies = dinosaurSpecies.find((species) => species.speciesId === activeOwnedDinosaur.speciesId);
-  const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(ownedDinosaurs);
   const activeSpeciesName = activeSpecies?.displayName ?? activeSpecies?.name ?? '공룡 친구';
 
   return (
-    <div className="pet-screen pet-bg relative grid h-full min-h-0 grid-rows-[clamp(52px,8dvh,78px)_minmax(0,1fr)_clamp(98px,14dvh,132px)_clamp(150px,24dvh,220px)] gap-1.5 overflow-hidden rounded-[30px] border-4 border-white bg-emerald-100 p-2 sm:gap-2">
-      <img src={petHomeBackground} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-lime-100/5 to-emerald-950/10" />
+    <div className="pet-screen">
+      <img src={habitatBackgroundAssets[activeSpecies?.habitat ?? 'green-forest']} alt="" className="pet-screen__background" />
+      <div className="pet-screen__shade" />
 
-      <header className="pet-header relative z-10 flex min-h-0 items-center justify-center">
-        <div className="relative aspect-[1709/566] h-full max-h-[78px] w-auto max-w-[62%]">
-          <img src={myDinoTitlePanel} alt="" className="absolute inset-0 h-full w-full object-contain" />
-          <h2 className="absolute inset-x-[12%] bottom-[18%] top-[17%] flex items-center justify-center text-[clamp(1rem,3dvh,1.65rem)] font-black leading-none text-[#6b3b17] drop-shadow-[0_1px_0_rgba(255,255,255,.85)]">
-            우리 공룡
-          </h2>
-        </div>
-      </header>
-
-      <section className="pet-main-zone relative z-10 grid min-h-0 grid-cols-[clamp(68px,14vw,100px)_minmax(0,1fr)_clamp(112px,25vw,198px)] gap-1.5 sm:gap-2">
-        <aside className="pet-side-menu grid min-h-0 content-start gap-2 pt-1">
+      <section className="pet-top-zone">
+        <aside className="pet-side-menu" aria-label="공룡 화면 전환">
           <AssetButton
             label="공룡 보기"
             defaultAsset={myDinoListButtonDefault}
             pressedAsset={myDinoListButtonPressed}
-            className="w-full"
-            textClassName="left-[34%] right-[7%] text-[clamp(0.625rem,1.8vw,0.875rem)] text-white"
+            onClick={() => onView('care')}
+            selected={view === 'care'}
           />
           {onGoToHatchery && (
             <AssetButton
@@ -90,28 +82,37 @@ export function DinosaurRoomScreen({
               defaultAsset={myDinoHatcheryButtonDefault}
               pressedAsset={myDinoHatcheryButtonPressed}
               onClick={onGoToHatchery}
-              className="w-full"
-              textClassName="left-[34%] right-[7%] text-[clamp(0.625rem,1.8vw,0.875rem)] text-amber-950"
+              tone="dark"
             />
           )}
         </aside>
 
-        <section className="pet-main-stage min-h-0 overflow-hidden">
-          <DinosaurStage dinosaur={dinosaur} ownedCount={uniqueOwnedDinosaurs.length} onSelectAdjacentDinosaur={onSelectAdjacentDinosaur} />
+        <header className="pet-header">
+          <img src={myDinoTitlePanel} alt="" />
+          <h2>우리 공룡</h2>
+        </header>
+
+        <DinosaurStatusPanel dinosaur={dinosaur} />
+      </section>
+
+      <DinosaurStage
+        dinosaur={dinosaur}
+        species={activeSpecies}
+        ownedCount={getUniqueOwnedDinosaurs(ownedDinosaurs).length}
+        onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
+      />
+
+      <section className="pet-control-zone">
+        <section className="pet-info-zone">
+          <DinosaurIdentityPanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
+          <FeedAction inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
         </section>
 
-        <aside className="pet-status-zone min-h-0">
-          <DinosaurStatusPanel dinosaur={dinosaur} />
-        </aside>
-      </section>
-
-      <section className="pet-info-zone relative z-10 grid min-h-0 grid-cols-[minmax(0,1.1fr)_minmax(126px,.9fr)] items-center gap-1.5 sm:gap-2">
-        <DinosaurNamePanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
-        <FeedPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
-      </section>
-
-      <section className="pet-food-bag-zone relative z-10 min-h-0">
-        <FoodBagPanel inventory={inventory} selectedFoodItemId={selectedFoodItemId} onSelectFood={onSelectFood} />
+        <FeedInventory
+          inventory={inventory}
+          selectedFoodItemId={selectedFoodItemId}
+          onSelectFood={onSelectFood}
+        />
       </section>
     </div>
   );
@@ -119,78 +120,69 @@ export function DinosaurRoomScreen({
 
 function DinosaurStage({
   dinosaur,
+  species,
   ownedCount,
   onSelectAdjacentDinosaur,
 }: {
   dinosaur: DinosaurState;
+  species?: DinosaurSpecies;
   ownedCount: number;
   onSelectAdjacentDinosaur: (direction: -1 | 1) => void;
 }) {
-  const canSwitchDinosaur = ownedCount > 1;
+  const characterStyle = {
+    '--dino-scale': species?.homeScale ?? 1,
+    '--dino-x': `${species?.homeOffsetX ?? 0}px`,
+    '--dino-y': `${species?.homeOffsetY ?? 0}px`,
+  } as CSSProperties;
 
   return (
-    <section className="pet-dino-carousel pet-stage-background relative h-full min-h-0 overflow-hidden rounded-[28px] bg-transparent">
-      {canSwitchDinosaur && (
+    <section className="pet-dino-stage" aria-label={`${dinosaur.name} 공룡`}>
+      {ownedCount > 1 && (
         <>
-          <button
-            type="button"
-            aria-label="이전 공룡"
-            onClick={() => onSelectAdjacentDinosaur(-1)}
-            className="pet-dino-arrow pet-dino-arrow--prev absolute left-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[14px] border-3 border-white bg-white/88 text-emerald-800 shadow-[0_4px_0_#86efac] transition active:translate-y-[calc(-50%+3px)] active:shadow-none sm:left-2 sm:h-11 sm:w-11"
-          >
-            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+          <button type="button" aria-label="이전 공룡" onClick={() => onSelectAdjacentDinosaur(-1)} className="pet-dino-arrow pet-dino-arrow--prev">
+            <ChevronLeft />
           </button>
-          <button
-            type="button"
-            aria-label="다음 공룡"
-            onClick={() => onSelectAdjacentDinosaur(1)}
-            className="pet-dino-arrow pet-dino-arrow--next absolute right-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[14px] border-3 border-white bg-white/88 text-emerald-800 shadow-[0_4px_0_#86efac] transition active:translate-y-[calc(-50%+3px)] active:shadow-none sm:right-2 sm:h-11 sm:w-11"
-          >
-            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
+          <button type="button" aria-label="다음 공룡" onClick={() => onSelectAdjacentDinosaur(1)} className="pet-dino-arrow pet-dino-arrow--next">
+            <ChevronRight />
           </button>
         </>
       )}
-      <div className="pet-dino-layer relative z-10 flex h-full min-h-0 items-end justify-center pb-1">
-        <div className="absolute bottom-4 h-8 w-[62%] rounded-[50%] bg-emerald-900/12 blur-sm" />
-        <img
-          src={petGreenMain}
-          alt={dinosaur.name}
-          className="pet-dino-image relative z-10 max-h-[86%] max-w-[96%] object-contain drop-shadow-[0_18px_20px_rgba(20,83,45,.24)]"
-        />
-      </div>
+      <img
+        src={species?.characterAsset ?? petGreenMain}
+        alt={dinosaur.name}
+        className="pet-dino-image"
+        style={characterStyle}
+        draggable={false}
+      />
     </section>
   );
 }
 
-function DinosaurNamePanel({ dinosaur, activeSpeciesName }: { dinosaur: DinosaurState; activeSpeciesName: string }) {
+function DinosaurIdentityPanel({ dinosaur, activeSpeciesName }: { dinosaur: DinosaurState; activeSpeciesName: string }) {
   const expPercent = getExpProgressPercent(dinosaur.exp, dinosaur.expToNextLevel);
 
   return (
-    <section className="pet-name-panel relative h-full min-h-0 overflow-hidden">
-      <img src={myDinoNameExpPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-      <div className="absolute inset-x-[9%] bottom-[43%] top-[20%] flex min-w-0 items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-[clamp(0.55rem,1.45vw,0.75rem)] font-black text-amber-700">{activeSpeciesName}</p>
-          <h3 className="truncate text-[clamp(0.85rem,2.2vw,1.25rem)] font-black leading-tight text-emerald-950">{dinosaur.name}</h3>
-        </div>
+    <section className="pet-identity-panel" aria-label="공룡 이름과 경험치">
+      <img src={dinoNamePanelV2} alt="" className="pet-identity-panel__asset" />
+      <div className="pet-identity-panel__heading">
+        <p>{activeSpeciesName}</p>
+        <h3>{dinosaur.name}</h3>
       </div>
-      <div className="absolute bottom-[10%] left-[10%] top-[70%] flex w-[17%] items-center justify-center text-[clamp(0.58rem,1.7vw,0.82rem)] font-black text-emerald-900">
-        Lv.{dinosaur.level}
-      </div>
-      <div className="absolute bottom-[9%] left-[29%] right-[10%] top-[69%] flex min-w-0 flex-col justify-center">
-        <div className="flex justify-between gap-2 text-[clamp(0.5rem,1.25vw,0.68rem)] font-black text-emerald-800">
+      <div className="pet-identity-panel__level">Lv. {dinosaur.level}</div>
+      <div className="pet-exp">
+        <div className="pet-exp__labels">
           <span>EXP</span>
           <span>{dinosaur.exp}/{dinosaur.expToNextLevel}</span>
         </div>
-        <div className="mt-0.5 h-[clamp(5px,1dvh,9px)] overflow-hidden rounded-full bg-emerald-100 shadow-inner">
-          <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500" style={{ width: `${expPercent}%` }} />
+        <div className="pet-exp__track" role="progressbar" aria-label="경험치" aria-valuenow={expPercent} aria-valuemin={0} aria-valuemax={100}>
+          <div style={{ width: `${expPercent}%` }} />
         </div>
       </div>
     </section>
   );
 }
 
-function FeedPanel({
+function FeedAction({
   inventory,
   selectedFoodItemId,
   onFeed,
@@ -201,9 +193,7 @@ function FeedPanel({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedFood = selectedFoodItemId ? getShopFoodItems().find((food) => food.id === selectedFoodItemId) ?? null : null;
-  const selectedInventoryItem = selectedFoodItemId ? inventory.find((item) => item.itemId === selectedFoodItemId) : null;
-  const quantity = selectedInventoryItem?.quantity ?? 0;
-  const selectedFoodImage = selectedFood ? shopFoodItemImages[selectedFood.id] : undefined;
+  const quantity = selectedFoodItemId ? inventory.find((item) => item.itemId === selectedFoodItemId)?.quantity ?? 0 : 0;
   const canFeed = Boolean(selectedFood && quantity > 0 && onFeed && !isSubmitting);
 
   const handleFeed = () => {
@@ -214,17 +204,17 @@ function FeedPanel({
   };
 
   return (
-    <section className="pet-feed-panel grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-1">
-      <div className="relative min-h-0 overflow-hidden">
-        <img src={myDinoOwnedFoodPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-        <div className="absolute bottom-[13%] left-[9%] top-[17%] flex w-[27%] items-center justify-center">
-          {selectedFoodImage && <img src={selectedFoodImage} alt="" className="h-full w-full object-contain" />}
-        </div>
-        <div className="absolute bottom-[51%] left-[40%] right-[8%] top-[17%] flex min-w-0 items-center justify-center text-center text-[clamp(0.56rem,1.45vw,0.78rem)] font-black leading-tight text-amber-950">
-          <span className="line-clamp-2">{selectedFood ? selectedFood.name : '사료를 선택하세요'}</span>
-        </div>
-        <div className="absolute bottom-[13%] left-[40%] right-[8%] top-[55%] flex items-center justify-center text-[clamp(0.58rem,1.5vw,0.82rem)] font-black text-orange-800">
-          {selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}
+    <section className="pet-feed-action" aria-label="선택한 먹이">
+      <div className="pet-selected-food">
+        <img src={myDinoOwnedFoodPanel} alt="" className="pet-panel-asset" />
+        <div className="pet-selected-food__content">
+          <div className="pet-selected-food__icon">
+            {selectedFood && <img src={shopFoodItemImages[selectedFood.id]} alt="" />}
+          </div>
+          <div className="pet-selected-food__copy">
+            <strong>{selectedFood?.name ?? '사료를 선택하세요'}</strong>
+            <span>{selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}</span>
+          </div>
         </div>
       </div>
       <AssetButton
@@ -234,8 +224,7 @@ function FeedPanel({
         disabledAsset={myDinoFeedButtonDisabled}
         disabled={!canFeed}
         onClick={handleFeed}
-        className="mx-auto w-[min(100%,170px)]"
-        textClassName="inset-x-[12%] text-[clamp(0.72rem,1.8vw,1rem)] text-white"
+        variant="feed"
       />
     </section>
   );
@@ -244,31 +233,22 @@ function FeedPanel({
 function DinosaurStatusPanel({ dinosaur }: { dinosaur: DinosaurState }) {
   const staminaPercent = getPercentValue(dinosaur.stamina, dinosaur.maxStamina);
   const growthPercent = getGrowthPercent(dinosaur.level);
-  const statusMessage = getGrowthStatusMessage(dinosaur.level, staminaPercent);
 
   return (
-    <section className="pet-status-panel relative h-full min-h-0 overflow-visible">
-      <img src={myDinoGrowthPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-      <div className="absolute bottom-[11%] left-[16%] right-[14%] top-[14%] flex min-h-0 flex-col">
-        <div className="flex h-[13%] items-center justify-center gap-1 text-[clamp(0.62rem,1.65vw,0.92rem)] font-black text-[#6b3b17]">
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-          <h4>성장 상태</h4>
-        </div>
-        <div className="grid min-h-0 flex-1 grid-rows-[repeat(3,minmax(0,1fr))_minmax(0,1.45fr)] gap-[2px] pt-1">
-          <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="from-pink-400 to-rose-500" />
-          <MiniMeter icon={Zap} label="체력" value={staminaPercent} tone="from-emerald-400 to-lime-500" />
-          <MiniMeter icon={Sparkles} label="성장" value={growthPercent} tone="from-cyan-400 to-sky-500" />
-          <div className="flex min-h-0 flex-col justify-center px-[6%] py-0.5 text-center">
-            <p className="text-[clamp(0.46rem,1.1vw,0.62rem)] font-black text-emerald-700">상태 메시지</p>
-            <p className="line-clamp-2 text-[clamp(0.5rem,1.25vw,0.68rem)] font-black leading-tight text-emerald-950">{statusMessage}</p>
-          </div>
-        </div>
+    <section className="pet-status-panel" aria-label="성장 상태">
+      <img src={myDinoGrowthPanel} alt="" className="pet-panel-asset" />
+      <div className="pet-status-panel__content">
+        <h4><Sparkles />성장 상태</h4>
+        <MiniMeter icon={Heart} label="행복" value={dinosaur.happiness} tone="pink" />
+        <MiniMeter icon={Zap} label="체력" value={staminaPercent} tone="green" />
+        <MiniMeter icon={Sparkles} label="성장" value={growthPercent} tone="blue" />
+        <p>{getGrowthStatusMessage(dinosaur.level, staminaPercent)}</p>
       </div>
     </section>
   );
 }
 
-function FoodBagPanel({
+function FeedInventory({
   inventory,
   selectedFoodItemId,
   onSelectFood,
@@ -277,36 +257,77 @@ function FoodBagPanel({
   selectedFoodItemId: string | null;
   onSelectFood: (itemId: string) => void;
 }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const foodItems = getShopFoodItems();
 
+  const updateScrollButtons = () => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    setCanScrollLeft(viewport.scrollLeft > 2);
+    setCanScrollRight(viewport.scrollLeft < viewport.scrollWidth - viewport.clientWidth - 2);
+  };
+
+  useEffect(() => {
+    updateScrollButtons();
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      viewport.scrollBy({ left: event.deltaY, behavior: 'auto' });
+    };
+    viewport.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('resize', updateScrollButtons);
+    return () => {
+      viewport.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('resize', updateScrollButtons);
+    };
+  }, []);
+
+  const move = (direction: -1 | 1) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const card = viewport.querySelector<HTMLElement>('.pet-food-card');
+    viewport.scrollBy({ left: direction * ((card?.offsetWidth ?? viewport.clientWidth / 4) + 12), behavior: 'smooth' });
+  };
+
   return (
-    <section className="pet-food-bag relative mx-auto h-full min-h-0 w-full max-w-[820px] overflow-visible">
-      <img src={myDinoFoodBagPanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-      <h4 className="absolute left-[9%] top-[7%] flex h-[16%] w-[17%] items-center justify-center whitespace-nowrap text-[clamp(0.6rem,1.6vw,0.9rem)] font-black text-[#6b3b17]">사료 가방</h4>
-      <div className="absolute bottom-[10%] left-[6%] right-[6%] top-[25%] flex min-h-0 snap-x gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="pet-food-inventory" aria-label="사료 가방">
+      <img src={myDinoFoodBagPanel} alt="" className="pet-panel-asset" />
+      <h4>사료 가방</h4>
+      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--prev" onClick={() => move(-1)} disabled={!canScrollLeft} aria-label="이전 사료">
+        <ChevronLeft />
+      </button>
+      <div ref={viewportRef} className="pet-food-viewport" onScroll={updateScrollButtons}>
         {foodItems.map((food) => {
           const quantity = inventory.find((item) => item.itemId === food.id)?.quantity ?? 0;
-          const isSelected = selectedFoodItemId === food.id;
-          const isDisabled = quantity <= 0;
-          const slotAsset = isDisabled ? myDinoFoodSlotDisabled : isSelected ? myDinoFoodSlotSelected : myDinoFoodSlotDefault;
-
+          const selected = selectedFoodItemId === food.id;
+          const disabled = quantity <= 0;
+          const slotAsset = disabled ? myDinoFoodSlotDisabled : selected ? myDinoFoodSlotSelected : myDinoFoodSlotDefault;
           return (
             <button
               type="button"
               key={food.id}
-              disabled={isDisabled}
+              disabled={disabled}
               onClick={() => onSelectFood(food.id)}
-              aria-pressed={isSelected}
-              className="pet-food-slot relative aspect-square h-full min-h-[68px] min-w-[68px] max-w-[116px] flex-none snap-start bg-transparent p-0 transition active:scale-[0.97] disabled:cursor-not-allowed sm:min-h-[76px] sm:min-w-[76px]"
+              aria-pressed={selected}
+              className={`pet-food-card${selected ? ' is-selected' : ''}`}
             >
-              <img src={slotAsset} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-              <img src={shopFoodItemImages[food.id]} alt="" className={`pointer-events-none absolute inset-x-[18%] top-[11%] h-[55%] w-[64%] object-contain ${isDisabled ? 'grayscale opacity-55' : ''}`} />
-              <span className="absolute bottom-[17%] left-[12%] right-[12%] truncate text-[clamp(0.48rem,1vw,0.62rem)] font-black leading-none text-amber-950">{food.name}</span>
-              <span className="absolute bottom-[4%] right-[7%] rounded-full bg-white/90 px-1.5 py-0.5 text-[clamp(0.5rem,1vw,0.68rem)] font-black leading-none text-orange-800 shadow-sm">x{quantity}</span>
+              <img src={slotAsset} alt="" className="pet-food-card__asset" />
+              <span className="pet-food-card__icon"><img src={shopFoodItemImages[food.id]} alt="" /></span>
+              <span className="pet-food-card__meta">
+                <strong>{food.name}</strong>
+                <span>x{quantity}</span>
+              </span>
             </button>
           );
         })}
       </div>
+      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--next" onClick={() => move(1)} disabled={!canScrollRight} aria-label="다음 사료">
+        <ChevronRight />
+      </button>
     </section>
   );
 }
@@ -318,8 +339,9 @@ function AssetButton({
   disabledAsset,
   disabled = false,
   onClick,
-  className = '',
-  textClassName = '',
+  tone = 'light',
+  variant = 'menu',
+  selected = false,
 }: {
   label: string;
   defaultAsset: string;
@@ -327,11 +349,12 @@ function AssetButton({
   disabledAsset?: string;
   disabled?: boolean;
   onClick?: () => void;
-  className?: string;
-  textClassName?: string;
+  tone?: 'light' | 'dark';
+  variant?: 'menu' | 'feed';
+  selected?: boolean;
 }) {
   const [isPressed, setIsPressed] = useState(false);
-  const asset = disabled && disabledAsset ? disabledAsset : isPressed ? pressedAsset : defaultAsset;
+  const asset = disabled && disabledAsset ? disabledAsset : isPressed || selected ? pressedAsset : defaultAsset;
   const release = () => setIsPressed(false);
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (disabled) return;
@@ -355,29 +378,21 @@ function AssetButton({
       onKeyUp={release}
       onBlur={release}
       aria-label={label}
-      className={`relative aspect-[2.8/1] touch-manipulation overflow-hidden bg-transparent p-0 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed ${className}`}
+      aria-pressed={selected}
+      className={`pet-asset-button pet-asset-button--${variant} pet-asset-button--${tone}${selected ? ' is-selected' : ''}`}
     >
-      <img src={asset} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-      <span className={`pointer-events-none absolute inset-y-[12%] flex items-center justify-center whitespace-nowrap font-black leading-none drop-shadow-[0_2px_1px_rgba(3,84,63,.85)] ${textClassName}`}>{label}</span>
+      <img src={asset} alt="" draggable={false} />
+      <span>{label}</span>
     </button>
   );
 }
 
-function MiniMeter({ icon: Icon, label, value, tone }: { icon: typeof Heart; label: string; value: number; tone: string }) {
+function MiniMeter({ icon: Icon, label, value, tone }: { icon: typeof Heart; label: string; value: number; tone: 'pink' | 'green' | 'blue' }) {
   const percent = clampUiPercent(value);
-
   return (
-    <div className="flex min-h-0 flex-col justify-center px-[6%] py-0.5">
-      <div className="flex items-center justify-between gap-1 text-[clamp(0.48rem,1.1vw,0.64rem)] font-black leading-none text-emerald-900">
-        <span className="inline-flex min-w-0 items-center gap-0.5">
-          <Icon className="h-3 w-3 shrink-0" />
-          <span className="truncate">{label}</span>
-        </span>
-        <span>{percent}%</span>
-      </div>
-      <div className="mt-1 h-[clamp(4px,.8dvh,8px)] overflow-hidden rounded-full bg-white/80 shadow-inner">
-        <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${percent}%` }} />
-      </div>
+    <div className="pet-mini-meter">
+      <div><span><Icon />{label}</span><strong>{percent}%</strong></div>
+      <div className="pet-mini-meter__track"><span className={`pet-mini-meter__fill pet-mini-meter__fill--${tone}`} style={{ width: `${percent}%` }} /></div>
     </div>
   );
 }
@@ -411,7 +426,6 @@ function getGrowthStatusMessage(level: number, staminaPercent: number) {
 
 function getUniqueOwnedDinosaurs(ownedDinosaurs: OwnedDinosaur[]) {
   const seenSpeciesIds = new Set<string>();
-
   return ownedDinosaurs.filter((dinosaur) => {
     if (seenSpeciesIds.has(dinosaur.speciesId)) return false;
     seenSpeciesIds.add(dinosaur.speciesId);

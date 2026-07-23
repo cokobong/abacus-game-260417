@@ -1,4 +1,8 @@
 import type { Id, OwnedDinosaur } from '../types/game';
+import brachioCharacterAsset from '../assets/dex/dinosaurs/dino_brachio_character_transparent.png';
+import stegoCharacterAsset from '../assets/dex/dinosaurs/dino_stego_character_transparent.png';
+import trexCharacterAsset from '../assets/dex/dinosaurs/dino_trex_character_transparent.png';
+import triceraCharacterAsset from '../assets/dex/dinosaurs/dino_tricera_character_transparent.png';
 
 export type DinosaurSpeciesRarity = OwnedDinosaur['rarity'];
 export type DinosaurUnlockSource = 'normal-egg' | 'special-egg' | 'rare-egg' | 'adventure-fragment' | 'planned';
@@ -31,6 +35,13 @@ export interface DinosaurSpecies {
   status?: DinosaurSpeciesStatus;
   lockedLabel?: string;
   themeLabel?: string;
+  characterAsset?: string;
+  homeScale: number;
+  homeOffsetX: number;
+  homeOffsetY: number;
+  cardScale: number;
+  cardOffsetX: number;
+  cardOffsetY: number;
 }
 
 export type DinosaurHabitatId = 'green-forest' | 'sparkle-cave' | 'volcano-island' | 'secret-land';
@@ -44,6 +55,59 @@ const habitatOrderById: Record<DinosaurHabitatId, number> = {
   'sparkle-cave': 2,
   'volcano-island': 3,
   'secret-land': 4,
+};
+
+type DinosaurPresentation = Pick<
+  DinosaurSpecies,
+  'characterAsset' | 'homeScale' | 'homeOffsetX' | 'homeOffsetY' | 'cardScale' | 'cardOffsetX' | 'cardOffsetY'
+>;
+
+const defaultDinosaurPresentation: DinosaurPresentation = {
+  homeScale: 1,
+  homeOffsetX: 0,
+  homeOffsetY: 0,
+  cardScale: 1,
+  cardOffsetX: 0,
+  cardOffsetY: 0,
+};
+
+const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>> = {
+  'tiny-tyranno': {
+    characterAsset: trexCharacterAsset,
+    homeScale: 1,
+    homeOffsetX: 0,
+    homeOffsetY: 0,
+    cardScale: 1,
+    cardOffsetX: 0,
+    cardOffsetY: 0,
+  },
+  'baby-tricera': {
+    characterAsset: triceraCharacterAsset,
+    homeScale: 1.06,
+    homeOffsetX: -2,
+    homeOffsetY: 0,
+    cardScale: 1.04,
+    cardOffsetX: -1,
+    cardOffsetY: 0,
+  },
+  'plate-stego': {
+    characterAsset: stegoCharacterAsset,
+    homeScale: 1.12,
+    homeOffsetX: -4,
+    homeOffsetY: 4,
+    cardScale: 1.1,
+    cardOffsetX: -3,
+    cardOffsetY: 2,
+  },
+  'long-brachio': {
+    characterAsset: brachioCharacterAsset,
+    homeScale: 1.02,
+    homeOffsetX: -2,
+    homeOffsetY: 0,
+    cardScale: 1.02,
+    cardOffsetX: -1,
+    cardOffsetY: 0,
+  },
 };
 
 const eggCategoryFoundMethod: Record<DinosaurEggCategory, string> = {
@@ -131,6 +195,8 @@ const speciesDrafts: Array<{
 
 export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) => ({
   ...species,
+  ...defaultDinosaurPresentation,
+  ...dinosaurPresentationBySpeciesId[species.speciesId],
   name: species.defaultName,
   habitatOrder: habitatOrderById[species.habitat],
   starterSelectable: species.starterSelectable ?? false,

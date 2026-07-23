@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronRight, Heart, LockKeyhole, Search, Smile, Sparkles, Star, Utensils, X, type LucideIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { dexBookAssets, dexDinosaurImages, dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage } from '../../assets/dex';
+import { useMemo, useState, type CSSProperties } from 'react';
+import { dexBookAssets, dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage, habitatBackgroundAssets } from '../../assets/dex';
 import { dexTargetSpeciesCount, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
 
@@ -66,7 +66,11 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
 
       <DexHeader discoveredCount={discoveredCount} totalCount={dexTargetSpeciesCount} />
 
-      <div className="dex-board relative z-10 mt-3 grid min-h-0 grid-cols-[172px_minmax(0,1fr)] gap-3 overflow-hidden rounded-[30px] border-4 border-white/78 bg-[#fff8e9]/88 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_12px_28px_rgba(83,72,48,.12)]">
+      <div
+        className="dex-board dex-board--habitat relative z-10 mt-3 grid min-h-0 grid-cols-[172px_minmax(0,1fr)] gap-3 overflow-hidden rounded-[30px] border-4 border-white/78 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_12px_28px_rgba(83,72,48,.12)]"
+        style={{ backgroundImage: `url(${habitatBackgroundAssets[activeHabitat]})` }}
+      >
+        <div className="dex-board__background-wash" />
         <DexCategorySidebar activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onSelectHabitat={setActiveHabitat} />
         <DexMainCollection habitat={activeHabitat} speciesList={activeSpeciesList} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
       </div>
@@ -126,7 +130,7 @@ function DexCategorySidebar({
   onSelectHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <aside className="dex-category-sidebar relative min-h-0 overflow-hidden rounded-[24px] border-4 border-white/80 bg-[#fff6e3]/85 p-2.5 shadow-sm">
+    <aside className="dex-category-sidebar relative min-h-0 overflow-hidden rounded-[24px] border-4 border-white/80 bg-[#fff6e3]/76 p-2.5 shadow-sm">
       <div className="grid max-h-full content-start gap-2 overflow-hidden">
         {habitatOrder.map((habitat) => {
           const meta = habitatMeta[habitat];
@@ -175,7 +179,7 @@ function DexMainCollection({
   const discoveredCount = speciesList.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
 
   return (
-    <section className="dex-main-panel grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[26px] border-4 border-white/80 bg-[#fffdf7]/88 p-3 shadow-[0_8px_20px_rgba(83,72,48,.09)]">
+    <section className="dex-main-panel grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[26px] border-4 border-white/80 bg-[#fffdf7]/64 p-3 shadow-[0_8px_20px_rgba(83,72,48,.09)]">
       <div className="dex-section-title relative mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-2 border-amber-100 pb-2">
         <img src={dexTitleOrnamentImages[habitat]} alt="" className="ml-auto h-8 w-24 object-contain object-right opacity-80" />
         <h3 className="whitespace-nowrap text-center text-[clamp(1.35rem,2.7dvh,2rem)] font-black text-emerald-950">{meta.label}</h3>
@@ -201,8 +205,6 @@ function DexMainCollection({
 }
 
 function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
-  const dinosaurImage = dexDinosaurImages[species.speciesId];
-
   return (
     <button
       onClick={onSelect}
@@ -213,7 +215,15 @@ function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { k
       {isDiscovered && <Heart className="absolute left-3 top-3 z-10 h-7 w-7 fill-rose-400 text-white drop-shadow-sm" />}
       <div className={`dex-dino-image relative flex min-h-0 items-center justify-center overflow-hidden rounded-[16px] ${isDiscovered ? 'bg-[linear-gradient(180deg,#bfeaff,#f4edc9)]' : 'bg-[linear-gradient(180deg,#d7ccb4,#c9bda3)]'}`}>
         {isDiscovered ? (
-          dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full w-full scale-110 object-contain object-center" /> : <DexDinoAvatar species={species} />
+          species.characterAsset ? (
+            <img
+              src={species.characterAsset}
+              alt={species.displayName}
+              className="dex-character-image h-full w-full object-contain object-center"
+              style={getDexCharacterStyle(species)}
+              draggable={false}
+            />
+          ) : <DexDinoAvatar species={species} />
         ) : (
           <DexSilhouette species={species} />
         )}
@@ -245,7 +255,6 @@ function DexDetailModal({
   onViewOwnedDinosaur: (speciesId: string) => void;
   onGoToHatchery: () => void;
 }) {
-  const dinosaurImage = dexDinosaurImages[species.speciesId];
   const discoveredDateLabel = getDiscoveredDateLabel(ownedDinosaur);
 
   return (
@@ -258,7 +267,15 @@ function DexDetailModal({
         <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 overflow-y-auto p-5">
           <div className={`flex min-h-[330px] items-center justify-center overflow-hidden rounded-[26px] border-4 border-white ${isDiscovered ? 'bg-[linear-gradient(180deg,#c6edff,#eaf2cf)]' : 'bg-[#d6cbb6]'}`}>
             {isDiscovered ? (
-              dinosaurImage ? <img src={dinosaurImage} alt={species.displayName} className="h-full max-h-[430px] w-full object-contain" /> : <DexDinoAvatar species={species} large />
+              species.characterAsset ? (
+                <img
+                  src={species.characterAsset}
+                  alt={species.displayName}
+                  className="dex-character-image h-full max-h-[430px] w-full object-contain"
+                  style={getDexCharacterStyle(species)}
+                  draggable={false}
+                />
+              ) : <DexDinoAvatar species={species} large />
             ) : (
               <DexSilhouette species={species} large />
             )}
@@ -334,6 +351,14 @@ function DexSilhouette({ species, large = false }: { species: DinosaurSpecies; l
       className={`${large ? 'h-full max-h-[360px]' : 'h-full'} w-full object-contain object-center grayscale opacity-65`}
     />
   );
+}
+
+function getDexCharacterStyle(species: DinosaurSpecies) {
+  return {
+    '--dino-scale': species.cardScale,
+    '--dino-x': `${species.cardOffsetX}px`,
+    '--dino-y': `${species.cardOffsetY}px`,
+  } as CSSProperties;
 }
 
 function getSpeciesByHabitat(habitat: DinosaurHabitatId) {
