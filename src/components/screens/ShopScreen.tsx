@@ -1,4 +1,4 @@
-import { Coins, Package, Plus } from 'lucide-react';
+import { Coins, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   shopBackground,
@@ -23,10 +23,8 @@ import {
   shopItemHatchSparkleEnergy,
   shopItemHatchWarmBlanket,
   shopItemHatchWarmStone,
-  shopMyDinoButton,
   shopPriceChip,
   shopStatusChip,
-  shopTitleBanner,
 } from '../../assets/shop';
 import { getEggRequiredFragments, itemConfigs, type ItemConfig } from '../../config/itemConfig';
 import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
@@ -43,7 +41,6 @@ export interface ShopScreenProps {
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: (itemId: string) => void;
-  onGoToDino: () => void;
 }
 
 const shopCategories: Array<{ id: ShopCategoryId; label: string; defaultIcon: string; selectedIcon: string }> = [
@@ -72,7 +69,7 @@ const shopItemAssets: Record<string, string> = {
   'rare-egg-fragment': shopItemHatchRareFragment,
 };
 
-export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase, onGoToDino }: ShopScreenProps) {
+export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
   const [activeCategory, setActiveCategory] = useState<ShopCategoryId>('food');
   const visibleItems = useMemo(
     () =>
@@ -85,40 +82,11 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
 
   return (
     <section
-      className="shop-screen relative mx-auto grid h-full min-h-0 w-full max-w-[860px] grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-[30px] bg-cover bg-center p-2.5 text-emerald-950 md:p-3"
+      className="shop-screen relative mx-auto grid h-full min-h-0 w-full max-w-[860px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[30px] bg-cover bg-center p-2.5 text-emerald-950 md:p-3"
       style={{ backgroundImage: `url(${shopBackground})` }}
     >
 
-      <header className="shop-header relative z-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[clamp(0.25rem,1vw,0.75rem)]">
-        <img
-          src={shopTitleBanner}
-          alt="상점"
-          className="shop-title-sign h-auto w-[clamp(132px,19vw,210px)] justify-self-start object-contain"
-        />
-
-        <div className="shop-coin-bar flex min-h-14 items-center gap-2 rounded-full border-[4px] border-white bg-gradient-to-b from-amber-100 to-yellow-300 px-4 shadow-[0_5px_0_rgba(180,83,9,0.28)]">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-white shadow-inner">
-            <Coins className="h-6 w-6" />
-          </span>
-          <span className="min-w-[118px] text-center text-[clamp(1.3rem,2.7dvh,1.9rem)] font-black tabular-nums text-amber-950">{coins.toLocaleString()}</span>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_3px_0_#047857]">
-            <Plus className="h-5 w-5" />
-          </span>
-        </div>
-
-        <button
-          onClick={onGoToDino}
-          aria-label="내 공룡"
-          className="shop-my-dino-button relative aspect-[1538/550] w-[clamp(146px,22vw,176px)] max-w-full justify-self-end overflow-hidden bg-transparent p-0 transition active:translate-y-1"
-        >
-          <img src={shopMyDinoButton} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-          <span className="pointer-events-none absolute bottom-[12%] left-[38%] right-[7%] top-[10%] flex items-center justify-center whitespace-nowrap text-[clamp(0.8125rem,1.9vw,1.125rem)] font-black leading-none text-white drop-shadow-[0_2px_1px_rgba(3,84,63,0.9)]">
-            내 공룡
-          </span>
-        </button>
-      </header>
-
-      <div className="shop-category-tabs relative z-10 mx-auto mt-2 grid w-full max-w-[720px] grid-cols-3 gap-2 rounded-[24px] border-4 border-white bg-white/70 p-2 shadow-sm">
+      <div className="shop-category-tabs relative z-10 mx-auto grid w-full max-w-[720px] grid-cols-3 gap-2 rounded-[24px] border-4 border-white bg-white/70 p-2 shadow-sm">
         {shopCategories.map(({ id, label, defaultIcon, selectedIcon }) => {
           const isActive = activeCategory === id;
           return (

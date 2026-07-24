@@ -1,8 +1,7 @@
-import { ChevronLeft, ChevronRight, Lock, PackageOpen, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, PackageOpen, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   getEggItemConfig,
-  getHatchItemConfig,
   getItemsByCategory,
   type EggCategory,
   type HatchItemConfig,
@@ -10,19 +9,16 @@ import {
 import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getHatchCandidates } from '../../utils/hatchCandidates';
 import hatcheryBackground from '../../assets/hatchery/backgrounds/hatchery_bg_common.png';
-import eggNamePanel from '../../assets/hatchery/ui/hatchery_egg_name_panel.png';
-import eggStatusPanel from '../../assets/hatchery/ui/hatchery_egg_status_panel.png';
+import hatcheryProgressPanel from '../../assets/hatchery/ui/hatchery_progress_panel.png';
+import hatchItemSelectedPanel from '../../assets/hatchery/ui/hatch_item_selected_panel.png';
+import hatchItemUseButton from '../../assets/hatchery/ui/hatch_btn_item_use.png';
+import hatchStartButton from '../../assets/hatchery/ui/hatch_btn_start.png';
 import {
   myDinoFoodBagPanel,
-  myDinoFoodSlotDefault,
-  myDinoFoodSlotDisabled,
-  myDinoFoodSlotSelected,
   myDinoHatcheryButtonDefault,
   myDinoHatcheryButtonPressed,
   myDinoListButtonDefault,
   myDinoListButtonPressed,
-  myDinoOwnedFoodPanel,
-  myDinoTitlePanel,
 } from '../../assets/pet/mydino';
 import {
   shopItemEggForestRare,
@@ -38,6 +34,7 @@ import {
 } from '../../assets/shop';
 
 type InventoryItemState = { itemId: string; quantity: number };
+type HatchInventoryItem = { config: HatchItemConfig; quantity: number };
 
 const eggImages: Readonly<Record<string, string>> = {
   'green-starter-egg': shopItemEggGreen,
@@ -69,7 +66,6 @@ export interface HatcheryScreenProps {
   activeEggId: string | null;
   ownedDinosaurs: OwnedDinosaur[];
   inventory: InventoryItemState[];
-  feedback?: string;
   hatchResult: HatchResult | null;
   onSelectEgg: (eggId: string) => void;
   onUseHatchItem: (itemId: string) => void;
@@ -84,7 +80,6 @@ export function HatcheryScreen({
   activeEggId,
   ownedDinosaurs,
   inventory,
-  feedback,
   hatchResult,
   onSelectEgg,
   onUseHatchItem,
@@ -97,8 +92,7 @@ export function HatcheryScreen({
   const activeEgg = getSelectedEgg(ownedEggs, activeEggId);
   const eggOptions = useMemo(() => groupOwnedEggs(ownedEggs, activeEggId), [ownedEggs, activeEggId]);
   const activeIndex = activeEgg ? eggOptions.findIndex((option) => option.egg.eggItemId === activeEgg.eggItemId) : -1;
-  const activeEggQuantity = activeIndex >= 0 ? eggOptions[activeIndex]?.quantity ?? 0 : 0;
-  const hatchItems = useMemo(
+  const hatchItems = useMemo<HatchInventoryItem[]>(
     () =>
       (getItemsByCategory('hatchItem') as HatchItemConfig[]).map((config) => ({
         config,
@@ -107,14 +101,10 @@ export function HatcheryScreen({
     [inventory],
   );
   const selectedItem = hatchItems.find((item) => item.config.id === selectedItemId) ?? null;
-  const candidates = useMemo(() => getHatchCandidates(activeEgg, ownedDinosaurs), [activeEgg, ownedDinosaurs]);
   const progress = clampProgress(activeEgg?.hatchProgress ?? 0);
+  const candidates = useMemo(() => getHatchCandidates(activeEgg, ownedDinosaurs), [activeEgg, ownedDinosaurs]);
+  const canUseItem = Boolean(activeEgg && selectedItem && selectedItem.quantity > 0 && selectedItem.config.effect.hatchProgress > 0 && !hatchResult);
   const canHatch = Boolean(activeEgg && progress >= 100 && candidates.candidates.length > 0 && !hatchResult);
-
-  useEffect(() => {
-    if (selectedItemId && hatchItems.some((item) => item.config.id === selectedItemId && item.quantity > 0)) return;
-    setSelectedItemId(hatchItems.find((item) => item.quantity > 0)?.config.id ?? null);
-  }, [hatchItems, selectedItemId]);
 
   function selectAdjacent(direction: -1 | 1) {
     if (eggOptions.length <= 1 || activeIndex < 0) return;
@@ -125,184 +115,151 @@ export function HatcheryScreen({
   return (
     <div className="hatch-screen">
       <img src={hatcheryBackground} alt="" className="hatch-screen__background" />
-      <div className="hatch-screen__shade" />
 
-      <section className="hatch-top-zone">
-        <aside className="pet-side-menu" aria-label="공룡 화면 전환">
+      <div className="hatchery-content">
+        <div className="hatchery-mode-tabs" aria-label="공룡 화면 전환">
           <AssetSwitchButton label="공룡 보기" selected={false} defaultAsset={myDinoListButtonDefault} pressedAsset={myDinoListButtonPressed} onClick={onGoToDino} />
           <AssetSwitchButton label="알 부화장" selected defaultAsset={myDinoHatcheryButtonDefault} pressedAsset={myDinoHatcheryButtonPressed} />
-        </aside>
-
-        <header className="pet-header">
-          <img src={myDinoTitlePanel} alt="" />
-          <h2>알 부화장</h2>
-        </header>
-
-        <EggSummaryPanel activeEgg={activeEgg} progress={progress} quantity={activeEggQuantity} selectedItem={selectedItem} />
-      </section>
-
-      <section className="hatch-stage">
-        {eggOptions.length > 1 && (
-          <>
-            <button type="button" className="pet-dino-arrow pet-dino-arrow--prev" aria-label="이전 알" onClick={() => selectAdjacent(-1)}><ChevronLeft /></button>
-            <button type="button" className="pet-dino-arrow pet-dino-arrow--next" aria-label="다음 알" onClick={() => selectAdjacent(1)}><ChevronRight /></button>
-          </>
-        )}
-        {activeEgg ? (
-          <>
-            <img src={getEggImage(activeEgg)} alt={activeEgg.name} className="hatch-stage__egg" />
-            <p className="hatch-stage__caption">{activeEgg.name}</p>
-          </>
-        ) : (
-          <div className="hatch-empty">
-            <PackageOpen />
-            <strong>보유한 알이 없어요</strong>
-            <span>상점에서 알을 준비해 보세요.</span>
-          </div>
-        )}
-      </section>
-
-      <section className="hatch-control-zone">
-        <div className="hatch-info-zone">
-          <EggIdentityPanel activeEgg={activeEgg} progress={progress} feedback={feedback} />
-          <HatchAction
-            activeEgg={activeEgg}
-            item={selectedItem}
-            canHatch={canHatch}
-            blocked={Boolean(hatchResult)}
-            onUse={() => selectedItem && onUseHatchItem(selectedItem.config.id)}
-            onHatch={onHatchEgg}
-          />
         </div>
-        <HatchItemBag inventory={hatchItems} selectedItemId={selectedItemId} disabled={!activeEgg || Boolean(hatchResult)} onSelect={setSelectedItemId} />
-      </section>
+
+        <section className="hatchery-egg-display" aria-label="선택한 알">
+          {eggOptions.length > 1 && (
+            <>
+              <button type="button" className="pet-dino-arrow pet-dino-arrow--prev" aria-label="이전 알" onClick={() => selectAdjacent(-1)}><ChevronLeft /></button>
+              <button type="button" className="pet-dino-arrow pet-dino-arrow--next" aria-label="다음 알" onClick={() => selectAdjacent(1)}><ChevronRight /></button>
+            </>
+          )}
+          {activeEgg ? (
+            <>
+              <img src={getEggImage(activeEgg)} alt={activeEgg.name} className="hatch-stage__egg" />
+              <p className="hatch-stage__caption">{activeEgg.name}</p>
+            </>
+          ) : (
+            <div className="hatch-empty">
+              <PackageOpen />
+              <strong>보유한 알이 없어요</strong>
+              <span>상점에서 알을 준비해 보세요.</span>
+            </div>
+          )}
+        </section>
+
+        <section className="hatchery-controls" aria-label="부화 제어 영역">
+          <div className="hatchery-control-row">
+            <div className="hatchery-progress-column">
+              <HatchProgressPanel activeEgg={activeEgg} progress={progress} />
+            </div>
+            <div className="hatchery-action-column">
+              <SelectedHatchItemPanel item={selectedItem} />
+              <div className="hatch-action-buttons">
+                <HatchActionButton
+                  label="아이템 사용"
+                  src={hatchItemUseButton}
+                  disabled={!canUseItem}
+                  onClick={() => selectedItem && onUseHatchItem(selectedItem.config.id)}
+                />
+                <HatchActionButton
+                  label="부화하기"
+                  src={hatchStartButton}
+                  disabled={!canHatch}
+                  onClick={onHatchEgg}
+                />
+              </div>
+            </div>
+          </div>
+          <HatchItemBag
+            inventory={hatchItems}
+            selectedItemId={selectedItemId}
+            onSelect={setSelectedItemId}
+          />
+        </section>
+      </div>
 
       {hatchResult && <HatchResultPanel result={hatchResult} onGoToDex={onGoToDex} onGoToDino={onGoToDino} onClose={onCloseHatchResult} />}
     </div>
   );
 }
 
-function EggSummaryPanel({
-  activeEgg,
-  progress,
-  quantity,
-  selectedItem,
-}: {
-  activeEgg: OwnedEgg | null;
-  progress: number;
-  quantity: number;
-  selectedItem: { config: HatchItemConfig; quantity: number } | null;
-}) {
+function HatchProgressPanel({ activeEgg, progress }: { activeEgg: OwnedEgg | null; progress: number }) {
   return (
-    <aside className="hatch-summary" aria-label="선택한 알 상태">
-      <img src={eggStatusPanel} alt="" className="hatch-summary__asset" />
-      <div className="hatch-summary__cell hatch-summary__cell--egg">
-        <strong>{activeEgg?.name ?? '보유 알 없음'}</strong>
-        <span>{activeEgg ? `${getCategoryLabel(getEggCategory(activeEgg))} · ${getRarityLabel(activeEgg.rarity)}` : '상점에서 알을 준비해 주세요'}</span>
-      </div>
-      <div className="hatch-summary__cell hatch-summary__cell--progress">
-        <div><strong>부화 진행도</strong><span>{progress}/100</span></div>
-        <div className="hatch-summary__progress"><span style={{ width: `${progress}%` }} /></div>
-      </div>
-      <div className="hatch-summary__cell hatch-summary__cell--stock">
-        <strong>보유 {quantity}개</strong>
-        <span>{selectedItem ? `${selectedItem.config.name} x${selectedItem.quantity}` : '부화 아이템을 선택하세요'}</span>
-      </div>
-    </aside>
-  );
-}
-
-function EggIdentityPanel({ activeEgg, progress, feedback }: { activeEgg: OwnedEgg | null; progress: number; feedback?: string }) {
-  return (
-    <section className="hatch-identity" aria-label="알 정보와 부화 진행도">
-      <img src={eggNamePanel} alt="" className="hatch-identity__asset" />
-      <div className="hatch-identity__content">
-        <h3>{activeEgg?.name ?? '보유한 알이 없어요'}</h3>
-        <div className="hatch-identity__rarity">{activeEgg ? getRarityLabel(activeEgg.rarity) : '-'}</div>
-        <div className="hatch-identity__progress">
-          <div className="hatch-progress__labels"><span>부화 진행도</span><strong>{progress}/100</strong></div>
-          <div className="hatch-progress__track" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+    <section className="hatch-progress-panel" aria-label="알 부화 진행도">
+      <img src={hatcheryProgressPanel} alt="" />
+      <div className="hatch-progress-panel__content">
+        <div className="hatch-progress-panel__title">
+          <strong>{activeEgg?.name ?? '선택한 알 없음'}</strong>
+          <span>{activeEgg ? getRarityLabel(activeEgg.rarity) : '-'}</span>
+        </div>
+        <div className="hatch-progress-panel__meter">
+          <div><span>부화 진행도</span><strong>{progress}%</strong></div>
+          <div className="hatch-progress-panel__track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
             <span style={{ width: `${progress}%` }} />
           </div>
         </div>
-        {feedback && <small>{feedback}</small>}
       </div>
     </section>
   );
 }
 
-function HatchAction({
-  activeEgg,
-  item,
-  canHatch,
-  blocked,
-  onUse,
-  onHatch,
-}: {
-  activeEgg: OwnedEgg | null;
-  item: { config: HatchItemConfig; quantity: number } | null;
-  canHatch: boolean;
-  blocked: boolean;
-  onUse: () => void;
-  onHatch: () => void;
-}) {
-  const canUse = Boolean(activeEgg && item && item.quantity > 0 && item.config.effect.hatchProgress > 0 && !blocked);
+function SelectedHatchItemPanel({ item }: { item: HatchInventoryItem | null }) {
   return (
-    <section className="hatch-action" aria-label="선택한 부화 아이템">
-      <div className="hatch-selected-item">
-        <img src={myDinoOwnedFoodPanel} alt="" className="pet-panel-asset" />
-        <div className="hatch-selected-item__content">
-          {item ? <img src={hatchItemImages[item.config.id]} alt="" /> : <Sparkles />}
-          <div><strong>{item?.config.name ?? '아이템 선택'}</strong><span>보유 {item?.quantity ?? 0}개</span></div>
+    <section className="hatch-selected-panel" aria-label="선택한 부화 아이템">
+      <img src={hatchItemSelectedPanel} alt="" className="hatch-selected-panel__background" />
+      <div className="hatch-selected-panel__content">
+        <span className="hatch-selected-panel__icon">
+          {item && <img src={hatchItemImages[item.config.id]} alt="" />}
+        </span>
+        <div>
+          <strong>{item?.config.name ?? '아이템을 선택하세요'}</strong>
+          {item && <span>보유 {item.quantity}개</span>}
         </div>
       </div>
-      <div className="hatch-action__buttons">
-        <button type="button" disabled={!canUse} onClick={onUse}>아이템 사용</button>
-        <button type="button" className="is-primary" disabled={!canHatch} onClick={onHatch}>부화하기</button>
-      </div>
     </section>
+  );
+}
+
+function HatchActionButton({ label, src, disabled, onClick }: { label: string; src: string; disabled: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className="hatch-action-button" disabled={disabled} onClick={onClick}>
+      <img src={src} alt="" />
+      <span>{label}</span>
+    </button>
   );
 }
 
 function HatchItemBag({
   inventory,
   selectedItemId,
-  disabled,
   onSelect,
 }: {
-  inventory: Array<{ config: HatchItemConfig; quantity: number }>;
+  inventory: HatchInventoryItem[];
   selectedItemId: string | null;
-  disabled: boolean;
   onSelect: (itemId: string) => void;
 }) {
-  const targetCount = Math.max(8, inventory.length);
-  const slots = [...inventory, ...Array.from({ length: targetCount - inventory.length }, (_, index) => ({ config: null, quantity: 0, id: `locked-${index}` }))];
-  const [page, setPage] = useState(0);
-  const visibleCount = 4;
-  const maxPage = Math.max(0, slots.length - visibleCount);
-  const visible = slots.slice(page, page + visibleCount);
-
   return (
     <section className="hatch-bag" aria-label="부화 아이템 가방">
-      <img src={myDinoFoodBagPanel} alt="" className="pet-panel-asset" />
-      <h4>부화 아이템 가방</h4>
-      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--prev" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))} aria-label="이전 부화 아이템"><ChevronLeft /></button>
+      <img src={myDinoFoodBagPanel} alt="" className="hatch-bag__frame" />
+      <h2>부화 아이템 가방</h2>
       <div className="hatch-bag__items">
-        {visible.map((slot, slotIndex) => {
-          if (!slot.config) {
-            return <div key={`locked-${page + slotIndex}`} className="hatch-item-card is-locked"><img src={myDinoFoodSlotDisabled} alt="" /><Lock /><span>잠김</span></div>;
-          }
-          const selected = selectedItemId === slot.config.id;
+        {inventory.map(({ config, quantity }) => {
+          const selected = selectedItemId === config.id;
+          const unavailable = quantity <= 0;
           return (
-            <button key={slot.config.id} type="button" className={`hatch-item-card${selected ? ' is-selected' : ''}`} disabled={disabled} onClick={() => onSelect(slot.config!.id)}>
-              <img src={selected ? myDinoFoodSlotSelected : slot.quantity > 0 ? myDinoFoodSlotDefault : myDinoFoodSlotDisabled} alt="" className="hatch-item-card__frame" />
-              <span className="hatch-item-card__icon"><img src={hatchItemImages[slot.config.id]} alt="" /></span>
-              <span className="hatch-item-card__meta"><strong>{slot.config.name}</strong><b>x{slot.quantity}</b></span>
+            <button
+              key={config.id}
+              type="button"
+              className={`hatch-item-card${selected ? ' is-selected' : ''}`}
+              disabled={unavailable}
+              aria-pressed={selected}
+              onClick={() => onSelect(config.id)}
+            >
+              <span className="hatch-item-card__visual">
+                <img src={hatchItemImages[config.id]} alt="" className="hatch-item-card__icon" />
+              </span>
+              <span className="hatch-item-card__name">{config.name}</span>
+              <span className="hatch-item-card__quantity">x{quantity}</span>
             </button>
           );
         })}
       </div>
-      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--next" disabled={page >= maxPage} onClick={() => setPage((value) => Math.min(maxPage, value + 1))} aria-label="다음 부화 아이템"><ChevronRight /></button>
     </section>
   );
 }
@@ -355,10 +312,6 @@ function getEggCategory(egg: OwnedEgg): EggCategory {
 
 function getEggImage(egg: OwnedEgg) {
   return eggImages[egg.eggItemId] ?? (getEggCategory(egg) === 'normal' ? shopItemEggGreen : getEggCategory(egg) === 'rare' ? shopItemEggForestRare : shopItemEggSparkle);
-}
-
-function getCategoryLabel(category: EggCategory) {
-  return category === 'normal' ? '일반 알' : category === 'rare' ? '희귀 알' : '특별 알';
 }
 
 function getRarityLabel(rarity: EggState['rarity']) {

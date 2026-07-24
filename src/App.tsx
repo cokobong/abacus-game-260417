@@ -1019,9 +1019,9 @@ export default function App() {
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
   const isHomeScreen = activeTab === 'home';
   const isTrainingScreen = activeTab === 'training';
-  const showAppHeader = !isHomeScreen && !isTrainingScreen;
+  const showAppHeader = !isHomeScreen && !isTrainingScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex';
   const showBottomNav = !isHomeScreen && !isTrainingScreen;
-  const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop';
+  const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop' && activeTab !== 'dino' && activeTab !== 'pokedex';
 
   useEffect(() => {
     setCompletedTrainingSummary(null);
@@ -2023,7 +2023,6 @@ export default function App() {
             activeEggId={gameState.activeEggId}
             ownedDinosaurs={gameState.ownedDinosaurs}
             inventory={gameState.inventory}
-            feedback={gameState.egg.id === gameState.activeEggId ? gameState.egg.lastHatchMessage : undefined}
             hatchResult={hatchResult}
             onSelectEgg={selectActiveEgg}
             onUseHatchItem={useHatchItem}
@@ -2049,10 +2048,6 @@ export default function App() {
             ownedEggs={gameState.ownedEggs}
             ownedCostumeIds={gameState.ownedCostumeIds}
             onPurchase={purchaseItem}
-            onGoToDino={() => {
-              setIsHatcheryOpen(false);
-              setActiveTab('dino');
-            }}
           />
         )}
         {activeTab === 'pokedex' && (

@@ -10,17 +10,11 @@ import {
   myDinoFeedButtonDisabled,
   myDinoFeedButtonPressed,
   myDinoFoodBagPanel,
-  myDinoFoodSlotDefault,
-  myDinoFoodSlotDisabled,
-  myDinoFoodSlotSelected,
   myDinoGrowthPanel,
   myDinoHatcheryButtonDefault,
   myDinoHatcheryButtonPressed,
-  myDinoListButtonDefault,
-  myDinoListButtonPressed,
   dinoNamePanelV2,
   myDinoOwnedFoodPanel,
-  myDinoTitlePanel,
 } from '../../assets/pet/mydino';
 import { shopFoodItemImages } from '../../assets/shop';
 
@@ -47,13 +41,11 @@ export interface DinosaurRoomScreenProps {
 }
 
 export function DinosaurRoomScreen({
-  view,
   dinosaur,
   activeOwnedDinosaur,
   ownedDinosaurs,
   inventory,
   selectedFoodItemId,
-  onView,
   onSelectFood,
   onSelectAdjacentDinosaur,
   onFeed,
@@ -67,53 +59,44 @@ export function DinosaurRoomScreen({
       <img src={habitatBackgroundAssets[activeSpecies?.habitat ?? 'green-forest']} alt="" className="pet-screen__background" />
       <div className="pet-screen__shade" />
 
-      <section className="pet-top-zone">
-        <aside className="pet-side-menu" aria-label="공룡 화면 전환">
-          <AssetButton
-            label="공룡 보기"
-            defaultAsset={myDinoListButtonDefault}
-            pressedAsset={myDinoListButtonPressed}
-            onClick={() => onView('care')}
-            selected={view === 'care'}
+      <div className="dinosaur-room-content">
+        <section className="dinosaur-display-half" aria-label="공룡 표시 영역">
+          <div className="pet-top-zone">
+            <aside className="pet-side-menu" aria-label="공룡 화면 전환">
+              {onGoToHatchery && (
+                <AssetButton
+                  label="알 부화장"
+                  defaultAsset={myDinoHatcheryButtonDefault}
+                  pressedAsset={myDinoHatcheryButtonPressed}
+                  onClick={onGoToHatchery}
+                  tone="dark"
+                />
+              )}
+            </aside>
+
+            <DinosaurStatusPanel dinosaur={dinosaur} />
+          </div>
+
+          <DinosaurStage
+            dinosaur={dinosaur}
+            species={activeSpecies}
+            ownedCount={getUniqueOwnedDinosaurs(ownedDinosaurs).length}
+            onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
           />
-          {onGoToHatchery && (
-            <AssetButton
-              label="알 부화장"
-              defaultAsset={myDinoHatcheryButtonDefault}
-              pressedAsset={myDinoHatcheryButtonPressed}
-              onClick={onGoToHatchery}
-              tone="dark"
-            />
-          )}
-        </aside>
-
-        <header className="pet-header">
-          <img src={myDinoTitlePanel} alt="" />
-          <h2>우리 공룡</h2>
-        </header>
-
-        <DinosaurStatusPanel dinosaur={dinosaur} />
-      </section>
-
-      <DinosaurStage
-        dinosaur={dinosaur}
-        species={activeSpecies}
-        ownedCount={getUniqueOwnedDinosaurs(ownedDinosaurs).length}
-        onSelectAdjacentDinosaur={onSelectAdjacentDinosaur}
-      />
-
-      <section className="pet-control-zone">
-        <section className="pet-info-zone">
-          <DinosaurIdentityPanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
-          <FeedAction inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
         </section>
 
-        <FeedInventory
-          inventory={inventory}
-          selectedFoodItemId={selectedFoodItemId}
-          onSelectFood={onSelectFood}
-        />
-      </section>
+        <section className="dinosaur-control-half" aria-label="공룡 관리 영역">
+          <div className="dinosaur-control-row">
+            <DinosaurIdentityPanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
+            <FeedAction inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
+          </div>
+          <FeedInventory
+            inventory={inventory}
+            selectedFoodItemId={selectedFoodItemId}
+            onSelectFood={onSelectFood}
+          />
+        </section>
+      </div>
     </div>
   );
 }
@@ -137,23 +120,25 @@ function DinosaurStage({
 
   return (
     <section className="pet-dino-stage" aria-label={`${dinosaur.name} 공룡`}>
-      {ownedCount > 1 && (
-        <>
-          <button type="button" aria-label="이전 공룡" onClick={() => onSelectAdjacentDinosaur(-1)} className="pet-dino-arrow pet-dino-arrow--prev">
-            <ChevronLeft />
-          </button>
-          <button type="button" aria-label="다음 공룡" onClick={() => onSelectAdjacentDinosaur(1)} className="pet-dino-arrow pet-dino-arrow--next">
-            <ChevronRight />
-          </button>
-        </>
-      )}
-      <img
-        src={species?.characterAsset ?? petGreenMain}
-        alt={dinosaur.name}
-        className="pet-dino-image"
-        style={characterStyle}
-        draggable={false}
-      />
+      {ownedCount > 1 ? (
+        <button type="button" aria-label="이전 공룡" onClick={() => onSelectAdjacentDinosaur(-1)} className="pet-dino-arrow pet-dino-arrow--prev">
+          <ChevronLeft />
+        </button>
+      ) : <span className="pet-dino-arrow-spacer" aria-hidden="true" />}
+      <div className="pet-dino-visual">
+        <img
+          src={species?.characterAsset ?? petGreenMain}
+          alt={dinosaur.name}
+          className="pet-dino-image"
+          style={characterStyle}
+          draggable={false}
+        />
+      </div>
+      {ownedCount > 1 ? (
+        <button type="button" aria-label="다음 공룡" onClick={() => onSelectAdjacentDinosaur(1)} className="pet-dino-arrow pet-dino-arrow--next">
+          <ChevronRight />
+        </button>
+      ) : <span className="pet-dino-arrow-spacer" aria-hidden="true" />}
     </section>
   );
 }
@@ -305,7 +290,6 @@ function FeedInventory({
           const quantity = inventory.find((item) => item.itemId === food.id)?.quantity ?? 0;
           const selected = selectedFoodItemId === food.id;
           const disabled = quantity <= 0;
-          const slotAsset = disabled ? myDinoFoodSlotDisabled : selected ? myDinoFoodSlotSelected : myDinoFoodSlotDefault;
           return (
             <button
               type="button"
@@ -315,12 +299,10 @@ function FeedInventory({
               aria-pressed={selected}
               className={`pet-food-card${selected ? ' is-selected' : ''}`}
             >
-              <img src={slotAsset} alt="" className="pet-food-card__asset" />
-              <span className="pet-food-card__icon"><img src={shopFoodItemImages[food.id]} alt="" /></span>
-              <span className="pet-food-card__meta">
-                <strong>{food.name}</strong>
-                <span>x{quantity}</span>
-              </span>
+              <img src={shopFoodItemImages[food.id]} alt="" className="pet-food-card__image" />
+              <span className="pet-food-card__name">{food.name}</span>
+              <span className="pet-food-card__quantity">×{quantity}</span>
+              {selected && <span className="pet-food-card__check" aria-hidden="true">✓</span>}
             </button>
           );
         })}

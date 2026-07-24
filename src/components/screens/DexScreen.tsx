@@ -1,7 +1,7 @@
-import { CalendarDays, ChevronRight, Heart, LockKeyhole, Search, Smile, Sparkles, Star, Utensils, X, type LucideIcon } from 'lucide-react';
+import { CalendarDays, Heart, LockKeyhole, Search, Smile, Sparkles, Star, Utensils, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
-import { dexBookAssets, dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage, habitatBackgroundAssets } from '../../assets/dex';
-import { dexTargetSpeciesCount, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
+import { dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage, habitatBackgroundAssets } from '../../assets/dex';
+import { dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
 
 export interface DexScreenProps {
@@ -54,24 +54,21 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
   const uniqueOwnedDinosaurs = useMemo(() => getUniqueOwnedDinosaurs(ownedDinosaurs), [ownedDinosaurs]);
   const ownedBySpecies = useMemo(() => getOwnedDinosaurBySpecies(uniqueOwnedDinosaurs), [uniqueOwnedDinosaurs]);
   const discoveredSpeciesSet = useMemo(() => new Set([...discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]), [discoveredSpeciesIds, uniqueOwnedDinosaurs]);
-  const discoveredCount = dinosaurSpecies.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
   const activeSpeciesList = dinosaurSpecies.filter((species) => species.habitat === activeHabitat).sort((a, b) => a.habitatOrder - b.habitatOrder || a.collectionOrder - b.collectionOrder);
   const selectedSpecies = selectedSpeciesId ? dinosaurSpecies.find((species) => species.speciesId === selectedSpeciesId) ?? null : null;
 
   return (
-    <section className="dex-screen relative mx-auto grid h-full min-h-0 w-full max-w-[920px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[34px] border-[6px] border-[#9a6a3a] bg-[#f8edd4] p-3 text-emerald-950 shadow-[0_20px_52px_rgba(62,43,25,0.24)]">
+    <section className="encyclopedia-screen dex-screen relative mx-auto flex h-full min-h-0 w-full max-w-[920px] flex-col overflow-hidden rounded-[34px] border-[6px] border-[#9a6a3a] bg-[#f8edd4] p-3 text-emerald-950 shadow-[0_20px_52px_rgba(62,43,25,0.24)]">
       <div className="dex-bg pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_9%,rgba(132,204,22,.28),transparent_12%),radial-gradient(circle_at_88%_8%,rgba(34,197,94,.22),transparent_14%),linear-gradient(180deg,rgba(255,255,255,.55),transparent_26%)]" />
       <span className="pointer-events-none absolute left-7 top-2 h-9 w-20 rotate-[-10deg] rounded-full bg-lime-500/35 blur-[1px]" />
       <span className="pointer-events-none absolute right-8 top-3 h-9 w-24 rotate-[10deg] rounded-full bg-green-500/30 blur-[1px]" />
 
-      <DexHeader discoveredCount={discoveredCount} totalCount={dexTargetSpeciesCount} />
-
       <div
-        className="dex-board dex-board--habitat relative z-10 mt-3 grid min-h-0 grid-cols-[172px_minmax(0,1fr)] gap-3 overflow-hidden rounded-[30px] border-4 border-white/78 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_12px_28px_rgba(83,72,48,.12)]"
+        className="dex-board dex-board--habitat relative z-10 flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden rounded-[30px] border-4 border-white/78 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_12px_28px_rgba(83,72,48,.12)]"
         style={{ backgroundImage: `url(${habitatBackgroundAssets[activeHabitat]})` }}
       >
         <div className="dex-board__background-wash" />
-        <DexCategorySidebar activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onSelectHabitat={setActiveHabitat} />
+        <DexCategoryTabs activeHabitat={activeHabitat} discoveredSpeciesSet={discoveredSpeciesSet} onSelectHabitat={setActiveHabitat} />
         <DexMainCollection habitat={activeHabitat} speciesList={activeSpeciesList} discoveredSpeciesSet={discoveredSpeciesSet} ownedBySpecies={ownedBySpecies} onSelectSpecies={setSelectedSpeciesId} />
       </div>
 
@@ -89,38 +86,7 @@ export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDin
   );
 }
 
-function DexHeader({ discoveredCount, totalCount }: { discoveredCount: number; totalCount: number }) {
-  const progressPercent = totalCount > 0 ? Math.round((discoveredCount / totalCount) * 100) : 0;
-
-  return (
-    <header className="dex-header relative z-10 grid min-h-0 grid-cols-[minmax(190px,0.72fr)_minmax(0,1.28fr)] items-center gap-3 rounded-[24px] border-4 border-white/80 bg-[#fff8e8]/92 px-3 py-2.5 shadow-[0_8px_18px_rgba(83,72,48,.12)]">
-      <div className="dex-title flex min-w-0 items-center gap-2.5">
-        <img src={dexBookAssets.headerIcon} alt="" className="h-12 w-12 shrink-0 object-contain drop-shadow-sm" />
-        <div className="min-w-0">
-          <h2 className="truncate text-[clamp(1.45rem,2.8dvh,2.25rem)] font-black leading-none text-amber-950">공룡 도감</h2>
-          <p className="mt-1 truncate text-xs font-black text-amber-800/75">공룡 친구들을 만나고 모아보세요!</p>
-        </div>
-      </div>
-
-      <div className="dex-summary grid min-h-0 grid-cols-1 items-center rounded-[22px] border-2 border-amber-100 bg-white/72 px-3 py-2 shadow-inner">
-        <div className="dex-progress-card grid min-w-0 grid-cols-[46px_minmax(0,1fr)] items-center gap-3">
-          <img src={dexBookAssets.progressEgg} alt="" className="h-11 w-11 object-contain" />
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-2 text-sm font-black text-amber-950">
-              <span className="truncate">만난 공룡</span>
-              <span>{discoveredCount} / {totalCount}</span>
-            </div>
-            <div className="mt-2 h-3.5 overflow-hidden rounded-full bg-amber-100">
-              <div className="h-full rounded-full bg-gradient-to-r from-lime-500 to-emerald-500 transition-all" style={{ width: `${progressPercent}%` }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function DexCategorySidebar({
+function DexCategoryTabs({
   activeHabitat,
   discoveredSpeciesSet,
   onSelectHabitat,
@@ -130,35 +96,35 @@ function DexCategorySidebar({
   onSelectHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <aside className="dex-category-sidebar relative min-h-0 overflow-hidden rounded-[24px] border-4 border-white/80 bg-[#fff6e3]/76 p-2.5 shadow-sm">
-      <div className="grid max-h-full content-start gap-2 overflow-hidden">
-        {habitatOrder.map((habitat) => {
-          const meta = habitatMeta[habitat];
-          const speciesInHabitat = getSpeciesByHabitat(habitat);
-          const discoveredCount = speciesInHabitat.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
-          const isActive = habitat === activeHabitat;
-          const isLocked = discoveredCount === 0 && habitat !== 'green-forest';
+    <nav className="encyclopedia-category-tabs mx-auto grid w-[min(94%,760px)] flex-none grid-cols-4 gap-[clamp(6px,1.4vw,12px)]" aria-label="도감 카테고리">
+      {habitatOrder.map((habitat) => {
+        const meta = habitatMeta[habitat];
+        const speciesInHabitat = getSpeciesByHabitat(habitat);
+        const discoveredCount = speciesInHabitat.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
+        const isActive = habitat === activeHabitat;
+        const isLocked = discoveredCount === 0 && habitat !== 'green-forest';
 
-          return (
-            <button
-              key={habitat}
-              onClick={() => onSelectHabitat(habitat)}
-              className={`dex-category-item ${isActive ? 'dex-category-item--active' : ''} ${isLocked ? 'dex-category-item--locked' : ''} relative grid min-h-[82px] grid-cols-[54px_minmax(0,1fr)_18px] items-center gap-2 rounded-[20px] border-3 px-2 text-left font-black transition active:translate-y-1 ${
-                isActive ? 'border-lime-400 bg-gradient-to-b from-lime-100 to-lime-200 text-emerald-950 shadow-[0_4px_0_rgba(101,163,13,.22)]' : 'border-white/75 bg-white/72 text-stone-600 hover:bg-white'
-              }`}
-            >
-              <img src={dexHabitatBadgeImages[habitat]} alt="" className="h-12 w-12 object-contain" />
-              <span className="min-w-0">
-                <span className="block truncate text-base">{meta.shortLabel}</span>
-                <span className="mt-1 block text-sm text-stone-500">{discoveredCount} / {speciesInHabitat.length}</span>
-              </span>
-              {isLocked ? <LockKeyhole className="h-4 w-4 text-stone-400" /> : <ChevronRight className="h-4 w-4 text-emerald-600" />}
-            </button>
-          );
-        })}
-      </div>
-      <img src={dexBookAssets.mascot} alt="" className="pointer-events-none absolute -bottom-3 left-1/2 h-28 w-28 -translate-x-1/2 object-contain drop-shadow-[0_8px_8px_rgba(68,86,48,.18)]" />
-    </aside>
+        return (
+          <button
+            key={habitat}
+            onClick={() => onSelectHabitat(habitat)}
+            aria-pressed={isActive}
+            className={`dex-category-item ${isActive ? 'dex-category-item--active' : ''} ${isLocked ? 'dex-category-item--locked' : ''} grid min-h-[78px] min-w-0 grid-cols-[clamp(36px,5vw,48px)_minmax(0,1fr)] items-center gap-1.5 rounded-[18px] border-3 px-2 text-left font-black transition active:translate-y-1 ${
+              isActive ? 'border-lime-400 bg-gradient-to-b from-lime-100 to-lime-200 text-emerald-950 shadow-[0_4px_0_rgba(101,163,13,.22)]' : 'border-white/75 bg-white/72 text-stone-600 hover:bg-white'
+            } ${isLocked ? 'opacity-65' : ''}`}
+          >
+            <span className="relative grid place-items-center">
+              <img src={dexHabitatBadgeImages[habitat]} alt="" className="h-[clamp(36px,5vw,48px)] w-[clamp(36px,5vw,48px)] object-contain" />
+              {isLocked && <LockKeyhole className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white/90 p-0.5 text-stone-500" />}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[clamp(11px,1.6vw,15px)]">{meta.shortLabel}</span>
+              <span className="mt-0.5 block text-[clamp(10px,1.35vw,13px)] text-stone-500">{discoveredCount} / {speciesInHabitat.length}</span>
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -179,16 +145,17 @@ function DexMainCollection({
   const discoveredCount = speciesList.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
 
   return (
-    <section className="dex-main-panel grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[26px] border-4 border-white/80 bg-[#fffdf7]/64 p-3 shadow-[0_8px_20px_rgba(83,72,48,.09)]">
-      <div className="dex-section-title relative mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-2 border-amber-100 pb-2">
-        <img src={dexTitleOrnamentImages[habitat]} alt="" className="ml-auto h-8 w-24 object-contain object-right opacity-80" />
-        <h3 className="whitespace-nowrap text-center text-[clamp(1.35rem,2.7dvh,2rem)] font-black text-emerald-950">{meta.label}</h3>
-        <img src={dexTitleOrnamentImages[habitat]} alt="" className="h-8 w-24 -scale-x-100 object-contain object-right opacity-80" />
-        <span className="absolute right-0 top-1 rounded-full bg-lime-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">{discoveredCount}/{speciesList.length}</span>
-      </div>
+    <section className="dex-main-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+      <header className="encyclopedia-category-header mx-auto flex min-h-12 w-[min(94%,760px)] flex-none items-center justify-between gap-3 rounded-[18px] border-2 border-white/80 bg-[#fffdf7]/72 px-3 py-1.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <img src={dexTitleOrnamentImages[habitat]} alt="" className="h-8 w-16 flex-none object-contain" />
+          <h3 className="truncate text-[clamp(1.05rem,2.3dvh,1.5rem)] font-black text-emerald-950">{meta.label}</h3>
+        </span>
+        <span className="flex-none rounded-full bg-lime-100 px-3 py-1 text-xs font-black text-emerald-800">{discoveredCount} / {speciesList.length}</span>
+      </header>
 
-      <div className="dex-card-grid min-h-0 overflow-y-auto pr-1">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="encyclopedia-card-area mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+        <div className="encyclopedia-card-grid mx-auto grid w-[min(94%,760px)] grid-cols-2 gap-[clamp(10px,2vw,18px)] pb-[clamp(12px,2vh,22px)]">
           {speciesList.map((species) => (
             <DexDinosaurCard
               key={species.speciesId}
