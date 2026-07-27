@@ -177,9 +177,16 @@ function ShopProductCard({
 
       <div className="shop-item-card__price absolute left-1/2 top-[49%] h-[17%] w-[88%] -translate-x-1/2 overflow-hidden">
         <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-        <p className="relative z-10 flex h-full items-center justify-center gap-1.5 truncate px-[15%] text-[clamp(14px,2.25vw,20px)] font-extrabold text-amber-950">
-          {isRareEgg ? <Package className="h-[clamp(22px,2.8dvh,26px)] w-[clamp(22px,2.8dvh,26px)] shrink-0 text-violet-600" /> : <Coins className="h-[clamp(22px,2.8dvh,26px)] w-[clamp(22px,2.8dvh,26px)] shrink-0 text-amber-600" />}
-          {isRareEgg && requiredFragment ? `${fragmentQuantity}/${requiredFragment.amount}` : item.price.toLocaleString()}
+        <p className="relative z-10 flex h-full items-center justify-center gap-1 truncate px-[9%] text-[clamp(11px,1.65vw,15px)] font-extrabold text-amber-950">
+          <Coins className="h-[clamp(16px,2.2dvh,21px)] w-[clamp(16px,2.2dvh,21px)] shrink-0 text-amber-600" />
+          <span>{item.price.toLocaleString()}</span>
+          {isRareEgg && requiredFragment && (
+            <>
+              <span className="text-amber-700">+</span>
+              <Package className="h-[clamp(16px,2.2dvh,21px)] w-[clamp(16px,2.2dvh,21px)] shrink-0 text-violet-600" />
+              <span>{fragmentQuantity}/{requiredFragment.amount}</span>
+            </>
+          )}
         </p>
       </div>
 
@@ -224,15 +231,34 @@ function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItem
   const hasEnoughFragments = item.category === 'egg' && isRareEgg ? hasEnoughRequiredFragments(inventory, item) : false;
   const hasEnoughCoins = coins >= item.price;
   const hasEggInCategory = item.category === 'egg' && Boolean(eggAvailability?.hasEggInCategory);
+  const hasThisEgg = item.category === 'egg' && ownedQuantity > 0;
+  const hasOtherEggInCategory = hasEggInCategory && !hasThisEgg;
   const eggSoldOut = item.category === 'egg' && !hasEggInCategory && eggAvailability?.remainingCandidateCount === 0;
   const canBuyEggMore = item.category !== 'egg' || Boolean(eggAvailability?.canBuyMore);
-  const canBuy = canBuyEggMore && !hasEggInCategory && !eggSoldOut && (isRareEgg ? hasEnoughFragments : hasEnoughCoins);
+  const canBuy = canBuyEggMore && !hasEggInCategory && !eggSoldOut && (isRareEgg ? hasEnoughFragments && hasEnoughCoins : hasEnoughCoins);
 
   return {
     ownedQuantity,
-    actionLabel: hasEggInCategory ? '이미 보유' : eggSoldOut ? '품절' : isRareEgg ? (hasEnoughFragments ? '조각 충분' : '조각 부족') : hasEnoughCoins ? '구매 가능' : '코인 부족',
+    actionLabel: hasThisEgg
+      ? '이미 보유'
+      : hasOtherEggInCategory
+        ? `${getEggCategoryLabel(item)} 보유 중`
+        : eggSoldOut
+          ? '품절'
+          : isRareEgg
+            ? (!hasEnoughFragments ? '조각 부족' : !hasEnoughCoins ? '코인 부족' : '구매 가능')
+            : hasEnoughCoins
+              ? '구매 가능'
+              : '코인 부족',
     canBuy,
   };
+}
+
+function getEggCategoryLabel(item: ItemConfig) {
+  if (item.category !== 'egg') return '';
+  if (item.eggCategory === 'normal') return '일반알';
+  if (item.eggCategory === 'special') return '특수알';
+  return '희귀알';
 }
 
 function getOwnedQuantity(item: ItemConfig, inventory: InventoryItemState[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {

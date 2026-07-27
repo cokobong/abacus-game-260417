@@ -6,10 +6,8 @@ export { default as myDinoHatcheryButtonPressed } from './mydino_btn_hatchery_pr
 export { default as myDinoGrowthPanel } from './mydino_growth_panel.png';
 export { default as myDinoNameExpPanel } from './mydino_name_exp_panel.png';
 export { default as dinoNamePanelV2 } from './dino_name_panel_v2.png';
-export { default as myDinoOwnedFoodPanel } from './mydino_owned_food_panel.png';
-export { default as myDinoFeedButtonDefault } from './mydino_btn_feed_default.png';
-export { default as myDinoFeedButtonPressed } from './mydino_btn_feed_pressed.png';
-export { default as myDinoFeedButtonDisabled } from './mydino_btn_feed_disabled.png';
+export { default as dinoFeedInfoPanel } from './dino_feed_info_panel.png';
+export { default as dinoFeedButton } from './dino_feed_btn_feed.png';
 export { default as myDinoFoodBagPanel } from './mydino_food_bag_panel.png';
 export { default as myDinoFoodSlotDefault } from './mydino_food_slot_default.png';
 export { default as myDinoFoodSlotSelected } from './mydino_food_slot_selected.png';

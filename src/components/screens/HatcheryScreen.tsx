@@ -15,8 +15,6 @@ import hatchItemUseButton from '../../assets/hatchery/ui/hatch_btn_item_use.png'
 import hatchStartButton from '../../assets/hatchery/ui/hatch_btn_start.png';
 import {
   myDinoFoodBagPanel,
-  myDinoHatcheryButtonDefault,
-  myDinoHatcheryButtonPressed,
   myDinoListButtonDefault,
   myDinoListButtonPressed,
 } from '../../assets/pet/mydino';
@@ -119,7 +117,6 @@ export function HatcheryScreen({
       <div className="hatchery-content">
         <div className="hatchery-mode-tabs" aria-label="공룡 화면 전환">
           <AssetSwitchButton label="공룡 보기" selected={false} defaultAsset={myDinoListButtonDefault} pressedAsset={myDinoListButtonPressed} onClick={onGoToDino} />
-          <AssetSwitchButton label="알 부화장" selected defaultAsset={myDinoHatcheryButtonDefault} pressedAsset={myDinoHatcheryButtonPressed} />
         </div>
 
         <section className="hatchery-egg-display" aria-label="선택한 알">

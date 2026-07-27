@@ -46,7 +46,7 @@
 
 .dinosaur-room-content {
   display: grid;
-  grid-template-rows: minmax(0, 64fr) minmax(0, 36fr);
+  grid-template-rows: minmax(0, 69fr) minmax(0, 31fr);
   gap: clamp(3px, .5vh, 6px);
   width: 100%;
   height: 100%;
@@ -118,11 +118,6 @@
   height: 54px;
 }
 
-.pet-asset-button--feed {
-  width: 190px;
-  height: 52px;
-}
-
 .pet-asset-button img {
   position: absolute;
   inset: 0;
@@ -152,11 +147,6 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 72%);
 }
 
-.pet-asset-button--feed span {
-  inset: 13% 12% 16%;
-  font-size: 20px;
-}
-
 .pet-asset-button:disabled {
   cursor: not-allowed;
 }
@@ -176,6 +166,7 @@
   width: min(70%, 560px);
   height: 100%;
   border-radius: 28px;
+  transform: translateY(clamp(80px, 9.6vh, 110px));
 }
 
 .pet-dino-visual {
@@ -195,7 +186,7 @@
   max-width: 100%;
   height: min(100%, 590px);
   object-fit: contain;
-  transform: translate(var(--dino-x, 0), var(--dino-y, 0)) scale(var(--dino-scale, 1));
+  transform: translate(var(--dino-x, 0), var(--dino-y, 0)) scale(calc(var(--dino-scale, 1) * 1.2));
   transform-origin: center;
   pointer-events: none;
   user-select: none;
@@ -276,9 +267,10 @@
   grid-column: 3;
   align-self: start;
   justify-self: end;
-  width: 175px;
-  height: 200px;
+  width: 210px;
+  height: 240px;
   min-height: 0;
+  transform: translateY(24px);
 }
 
 .pet-status-panel__content {
@@ -343,10 +335,10 @@
 .dinosaur-control-row {
   display: grid;
   flex: none;
-  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1.05fr) minmax(120px, .75fr);
+  grid-template-columns: minmax(245px, .86fr) minmax(0, 1.74fr);
   align-items: center;
-  gap: clamp(10px, 1.5vw, 16px);
-  width: min(98%, 780px);
+  gap: clamp(6px, .8vw, 10px);
+  width: min(99%, 900px);
 }
 
 .pet-identity-panel {
@@ -467,87 +459,132 @@
 .pet-exp__track > div { height: 100%; border-radius: 999px; background: linear-gradient(to right, #22d3ee, #0ea5e9); }
 
 .pet-feed-action {
-  display: contents;
-}
-
-.pet-feed-action .pet-asset-button--feed {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 190 / 52;
-}
-
-.pet-selected-food {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 255 / 80;
-}
-
-.pet-selected-food__content {
-  position: absolute;
-  inset: 5% 6%;
   display: grid;
-  grid-template-columns: clamp(62px, 7vw, 70px) minmax(0, 1fr);
+  grid-template-columns: clamp(64px, 7.5vw, 78px) minmax(180px, 1fr) minmax(170px, .96fr);
   align-items: center;
-  gap: 8px;
+  gap: clamp(1px, .3vw, 4px);
+  min-width: 0;
 }
 
 .pet-selected-food__icon {
   display: flex;
-  width: clamp(62px, 7vw, 70px);
-  height: clamp(62px, 7vw, 70px);
+  width: 100%;
+  aspect-ratio: 1;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 18px;
 }
 
 .pet-selected-food__icon img {
-  width: 118%;
-  height: 118%;
+  width: 112%;
+  height: 112%;
   max-width: none;
   object-fit: contain;
 }
 
-.pet-selected-food__copy {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  min-width: 0;
-  height: clamp(58px, 7vw, 68px);
-  text-align: center;
+.pet-feed-info {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 2.75 / 1;
+  transform: translateY(12px) scale(1.12);
+  transform-origin: left center;
 }
 
-.pet-selected-food__copy strong,
-.pet-selected-food__copy span {
+.pet-feed-info__asset {
+  position: absolute;
+  left: -7%;
+  top: -55%;
+  width: 114%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pet-feed-info__copy {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pet-feed-info__copy strong,
+.pet-feed-info__copy span {
   display: flex;
+  position: absolute;
+  left: 8%;
+  width: 76%;
   align-items: center;
   justify-content: center;
-}
-.pet-selected-food__copy strong {
   overflow: hidden;
-  color: #78350f;
-  font-size: clamp(15px, 1.9vw, 18px);
-  font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.pet-selected-food__copy span { color: #c2410c; font-size: clamp(14px, 1.7vw, 17px); font-weight: 900; }
+.pet-feed-info__copy strong {
+  top: 8%;
+  height: 46%;
+  color: #78350f;
+  font-size: clamp(15px, 1.95vw, 19px);
+  font-weight: 900;
+  line-height: 1.05;
+}
+.pet-feed-info__copy span {
+  bottom: 11%;
+  height: 26%;
+  color: #c2410c;
+  font-size: clamp(11px, 1.4vw, 13.5px);
+  font-weight: 900;
+  line-height: 1;
+  transform: translateY(-14px);
+}
 
-.dinosaur-control-row .pet-asset-button--feed span {
-  font-size: clamp(18px, 2.5vw, 24px);
+.pet-feed-button {
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 3.05 / 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  touch-action: manipulation;
+  transform: translate(-18px, 16px);
+}
+
+.pet-feed-button img {
+  position: absolute;
+  left: -20%;
+  top: -82%;
+  width: 140%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pet-feed-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(.65);
+  opacity: .58;
 }
 
 .pet-food-inventory {
   flex: none;
-  width: min(69%, 515px);
+  width: min(79%, 590px);
   aspect-ratio: 1942 / 809;
+  transform: translateY(-36px);
 }
 
 .pet-food-inventory > h4 {
   position: absolute;
   z-index: 2;
-  top: 20px;
-  left: 8%;
+  top: 30px;
+  left: 8.5%;
   display: flex;
-  width: 145px;
+  width: 82px;
   height: 28px;
   align-items: center;
   justify-content: center;
@@ -663,7 +700,13 @@
   .pet-side-menu { gap: 5px; }
   .pet-asset-button--menu { width: 150px; height: 50px; }
   .pet-asset-button span { font-size: 15px; }
-  .pet-status-panel { width: 158px; height: 158px; min-height: 0; }
+  .pet-dino-stage { transform: translateY(clamp(60px, 8vh, 84px)); }
+  .pet-status-panel {
+    width: 190px;
+    height: 190px;
+    min-height: 0;
+    transform: translateY(12px);
+  }
   .pet-status-panel__content { grid-template-rows: 20px repeat(3, minmax(25px, 1fr)) 29px; }
   .pet-status-panel h4 { font-size: 14px; }
   .pet-status-panel__content > p { font-size: 10px; }
@@ -671,18 +714,16 @@
   .pet-mini-meter svg { width: 13px; height: 13px; }
   .pet-mini-meter__track { height: 9px; margin-top: 3px; }
   .dinosaur-control-row {
-    width: min(96%, 720px);
-    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1.05fr) minmax(110px, .75fr);
-    gap: 8px;
+    width: min(98%, 820px);
+    grid-template-columns: minmax(220px, .82fr) minmax(0, 1.78fr);
+    gap: 6px;
   }
-  .pet-selected-food__content { grid-template-columns: 60px minmax(0, 1fr); }
-  .pet-selected-food__icon { width: 58px; height: 58px; }
-  .pet-selected-food__copy { height: 56px; }
-  .pet-selected-food__copy strong,
-  .pet-selected-food__copy span { font-size: 15px; }
-  .pet-asset-button--feed { width: 174px; height: 44px; }
-  .pet-food-inventory { width: min(56%, 420px); }
-  .pet-food-inventory > h4 { top: 16px; height: 24px; font-size: 13px; }
+  .pet-feed-action { grid-template-columns: 58px minmax(165px, 1fr) minmax(150px, .96fr); }
+  .pet-food-inventory {
+    width: min(66%, 495px);
+    transform: translateY(-32px);
+  }
+  .pet-food-inventory > h4 { top: 26px; height: 24px; font-size: 13px; }
   .pet-food-viewport { inset: 43px 44px 17px; }
   .pet-inventory-arrow { top: 61px; width: 34px; height: 40px; }
   .pet-inventory-arrow--prev { left: 9px; }
@@ -692,12 +733,15 @@
 @media (max-width: 640px) {
   .pet-top-zone { grid-template-columns: 142px minmax(0, 1fr) 150px; }
   .pet-asset-button--menu { width: 142px; height: 48px; }
-  .pet-status-panel { width: 150px; }
+  .pet-status-panel { width: 180px; }
   .dinosaur-control-row {
     width: min(98%, 620px);
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1.1fr) minmax(96px, .8fr);
-    gap: 6px;
+    grid-template-columns: minmax(205px, .8fr) minmax(0, 1.8fr);
+    gap: 4px;
   }
+  .pet-feed-action { grid-template-columns: 50px minmax(130px, 1fr) minmax(118px, .96fr); }
+  .pet-feed-info { transform: translateY(9px) scale(1.08); }
+  .pet-feed-button { transform: translate(-12px, 12px); }
 }
 
 /* Hatchery mirrors the Our Dinosaur screen grid while keeping its own content layer. */
@@ -777,7 +821,15 @@
 }
 
 .hatchery-egg-display .pet-dino-arrow {
-  top: calc(50% + clamp(14px, 2vh, 20px));
+  top: calc(50% + clamp(34px, 4vh, 40px));
+}
+
+.hatchery-egg-display .pet-dino-arrow--prev {
+  left: calc(50% - clamp(130px, 18vw, 155px));
+}
+
+.hatchery-egg-display .pet-dino-arrow--next {
+  right: calc(50% - clamp(130px, 18vw, 155px));
 }
 
 .hatch-stage__egg {
@@ -788,6 +840,8 @@
   object-fit: contain;
   pointer-events: none;
   user-select: none;
+  transform: translateY(45px) scale(1.3);
+  transform-origin: center bottom;
 }
 
 .hatch-stage__caption {
@@ -855,6 +909,7 @@
 .hatchery-action-column {
   flex-direction: column;
   gap: clamp(5px, .8vh, 8px);
+  transform: translateY(28px);
 }
 
 .hatch-progress-panel {
@@ -862,6 +917,7 @@
   width: 100%;
   max-width: 360px;
   aspect-ratio: 1881 / 836;
+  transform: translateY(28px);
 }
 
 .hatch-progress-panel > img,
@@ -1053,6 +1109,7 @@
   flex: none;
   width: min(82%, 600px);
   aspect-ratio: 1942 / 809;
+  transform: translateY(15px);
 }
 
 .hatch-bag__frame {
@@ -1411,6 +1468,55 @@ summary:focus-visible {
     overflow: hidden;
   }
 
+  .training-answer-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .training-answer-row .training-answer-panel {
+    max-height: calc(100% - 4.125rem);
+    transition: filter 160ms ease;
+  }
+
+  .training-pencil-button {
+    flex: none;
+    width: clamp(15rem, 54%, 22rem);
+    min-height: clamp(3rem, 6dvh, 3.5rem);
+    border: 3px solid #6ee7b7;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ecfdf5 0%, #a7f3d0 100%);
+    padding: 0.65rem 1.5rem;
+    color: #065f46;
+    font-size: clamp(1rem, 2.3cqw, 1.25rem);
+    font-weight: 900;
+    line-height: 1.1;
+    box-shadow: 0 4px 0 #34d399, 0 8px 16px rgba(6, 95, 70, 0.18);
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 100ms ease;
+  }
+
+  .training-pencil-button:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #059669, 0 4px 10px rgba(6, 95, 70, 0.18);
+  }
+
+  .training-answer-row:focus-within .training-pencil-button {
+    border-color: #047857;
+    background: linear-gradient(180deg, #6ee7b7 0%, #34d399 100%);
+    color: #022c22;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.24), 0 4px 0 #047857;
+  }
+
+  .training-answer-row:focus-within .training-answer-panel {
+    filter: drop-shadow(0 0 8px rgba(5, 150, 105, 0.45));
+  }
+
+  .training-pencil-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   .training-answer-panel__image {
     position: absolute;
     inset: 0;
@@ -1423,9 +1529,9 @@ summary:focus-visible {
 
   .training-answer-panel__content {
     position: absolute;
-    inset: 14% 8% 13%;
+    inset: 11% 7% 10%;
     display: grid;
-    grid-template-rows: minmax(0, 24%) minmax(0, 76%);
+    grid-template-rows: minmax(0, 28%) minmax(0, 72%);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -1434,7 +1540,7 @@ summary:focus-visible {
 
   .training-answer-panel__instruction {
     align-self: center;
-    font-size: clamp(0.65rem, 3.2cqw, 0.875rem);
+    font-size: clamp(0.875rem, 3.4cqw, 1.125rem);
     font-weight: 900;
     line-height: 1;
     color: #047857;
@@ -1446,7 +1552,7 @@ summary:focus-visible {
     min-width: 0;
     min-height: 0;
     border: 0;
-    padding: 0 4%;
+    padding: 0 5%;
     overflow: hidden;
     background: transparent;
     color: #0f172a;
@@ -1454,6 +1560,7 @@ summary:focus-visible {
     font-weight: 900;
     line-height: 1;
     outline: none;
+    caret-color: #047857;
   }
 
   .training-answer-input::placeholder {
@@ -1467,15 +1574,15 @@ summary:focus-visible {
   }
 
   .training-answer-input--short {
-    font-size: clamp(2.75rem, 14cqw, 5rem);
+    font-size: clamp(3.5rem, 16cqw, 6.25rem);
   }
 
   .training-answer-input--medium {
-    font-size: clamp(2.4rem, 11cqw, 4.25rem);
+    font-size: clamp(3rem, 13cqw, 5.25rem);
   }
 
   .training-answer-input--long {
-    font-size: clamp(2rem, 8.5cqw, 3.5rem);
+    font-size: clamp(2.5rem, 10cqw, 4.25rem);
   }
 
   .training-keypad {
@@ -1614,60 +1721,32 @@ summary:focus-visible {
 
   .training-status-banner__content {
     position: absolute;
-    inset: 12% 8%;
+    top: 18%;
+    right: 7%;
+    bottom: 18%;
+    left: 72%;
     z-index: 1;
-    display: grid;
-    grid-template-columns: 25% minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
-    gap: clamp(0.15rem, 1.8cqw, 0.4rem);
+    justify-content: center;
     min-width: 0;
-    font-size: clamp(0.65rem, 6.5cqw, 1rem);
+    overflow: hidden;
+    font-size: clamp(0.95rem, 10cqw, 1.5rem);
     font-weight: 900;
     line-height: 1;
     color: #064e3b;
     white-space: nowrap;
   }
 
-  .training-status-banner__icon {
-    display: grid;
-    place-items: center;
-    font-size: 1.15em;
-  }
-
-  .training-status-banner__label {
+  .training-status-banner__value {
+    display: block;
     min-width: 0;
     text-align: center;
   }
 
-  .training-status-banner__value {
-    min-width: 1ch;
-    text-align: right;
-  }
-
   .training-correct-badge .training-status-banner__content {
-    inset: 10% 10% 10% 6%;
-    grid-template-columns: 24% auto auto;
-    justify-content: start;
-    gap: clamp(0.2rem, 2cqw, 0.5rem);
-    font-size: clamp(0.8rem, 8cqw, 1.25rem);
-    font-weight: 700;
     color: #064e3b;
-  }
-
-  .training-correct-badge .training-status-banner__icon {
-    align-self: center;
-    justify-self: center;
-    font-size: 1.15em;
-  }
-
-  .training-correct-badge .training-status-banner__label,
-  .training-correct-badge .training-status-banner__value {
-    align-self: center;
-    text-align: left;
-  }
-
-  .training-correct-badge .training-status-banner__value {
-    margin-left: clamp(0.05rem, 0.8cqw, 0.2rem);
+    transform: translateX(-6px);
   }
 
   .training-screen {
@@ -1727,29 +1806,8 @@ summary:focus-visible {
   }
 
   .training-wrong-badge .training-status-banner__content {
-    inset: 10% 10% 10% 6%;
-    grid-template-columns: 24% auto auto;
-    justify-content: start;
-    gap: clamp(0.2rem, 2cqw, 0.5rem);
-    font-size: clamp(0.8rem, 8cqw, 1.25rem);
-    font-weight: 700;
     color: #7c2d12;
-  }
-
-  .training-wrong-badge .training-status-banner__icon {
-    align-self: center;
-    justify-self: center;
-    font-size: 1.15em;
-  }
-
-  .training-wrong-badge .training-status-banner__label,
-  .training-wrong-badge .training-status-banner__value {
-    align-self: center;
-    text-align: left;
-  }
-
-  .training-wrong-badge .training-status-banner__value {
-    margin-left: clamp(0.05rem, 0.8cqw, 0.2rem);
+    transform: translateX(-6px);
   }
 
   .training-mascot-feedback {

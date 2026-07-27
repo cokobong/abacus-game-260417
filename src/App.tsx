@@ -35,7 +35,7 @@ import { calculateTrainingRewards, type TrainingRewardResult } from './utils/tra
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
 import { trainingUiAssets } from './assets/ui/training';
-import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingDinoCheer, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
+import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
 import homeCoinBar from './assets/home/home_coin_bar.png?url';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
@@ -158,6 +158,7 @@ const hatchableDinosaurPool = dinosaurSpecies;
 const maxTrainingHistoryRecords = 30;
 const showDeveloperPanels = false;
 const showSettingsAdvancedPanels = true;
+const eggOwnershipResetMigrationKey = 'abacus-dino-egg-ownership-reset-2026-07-25-v1';
 
 const defaultGameState: GameState = {
   userProfile: null,
@@ -184,6 +185,33 @@ const defaultGameState: GameState = {
   progressByLevel: {},
   progressByStage: {},
 };
+
+function resetOwnedEggDataOnce(state: GameState, loadedFromStorage: boolean): { state: GameState; didReset: boolean } {
+  if (!loadedFromStorage || typeof window === 'undefined') return { state, didReset: false };
+
+  try {
+    if (window.localStorage.getItem(eggOwnershipResetMigrationKey) === 'done') return { state, didReset: false };
+    window.localStorage.setItem(eggOwnershipResetMigrationKey, 'done');
+  } catch {
+    return { state, didReset: false };
+  }
+
+  return {
+    state: {
+      ...state,
+      egg: {
+        ...defaultGameState.egg,
+        hatchProgress: 0,
+        lastHatchedDinosaurName: undefined,
+        lastHatchedDinosaurRarity: undefined,
+        lastHatchMessage: undefined,
+      },
+      ownedEggs: [],
+      activeEggId: null,
+    },
+    didReset: true,
+  };
+}
 
 function normalizeGameState(state: Partial<GameState>): GameState {
   const rawUserProfile = isRecord(state.userProfile) ? state.userProfile : null;
@@ -401,9 +429,9 @@ function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg
         ...egg,
         eggItemId,
         name: typeof egg.name === 'string' ? egg.name : eggConfig?.name ?? '미확인 알',
-        rarity: egg.rarity ?? eggConfig?.rarity ?? 'normal',
-        eggType: typeof egg.eggType === 'string' ? egg.eggType : eggConfig?.eggType ?? 'normal',
-        eggCategory: egg.eggCategory ?? eggConfig?.eggCategory ?? getEggCategoryForOwnedEgg({ ...egg, eggItemId }),
+        rarity: eggConfig?.rarity ?? egg.rarity ?? 'normal',
+        eggType: eggConfig?.eggType ?? (typeof egg.eggType === 'string' ? egg.eggType : 'normal'),
+        eggCategory: eggConfig?.eggCategory ?? egg.eggCategory ?? getEggCategoryForOwnedEgg({ ...egg, eggItemId }),
         eggHabitatId: egg.eggHabitatId ?? eggConfig?.eggHabitatId,
         hatchProgress: clampPercent(normalizeNumber(egg.hatchProgress, 0)),
         createdAt: normalizeNumber(egg.createdAt, 0),
@@ -910,9 +938,11 @@ function isOperationsOverrideRecommended(value: OperationsOverride, stages: Abac
 export default function App() {
   const [initialLoadResult] = useState(() => {
     const loaded = loadGameState(defaultGameState);
+    const eggReset = resetOwnedEggDataOnce(loaded.state, loaded.loadedFromStorage);
     return {
       ...loaded,
-      state: normalizeGameState(loaded.state),
+      state: normalizeGameState(eggReset.state),
+      message: eggReset.didReset ? '알 보유 데이터를 한 번 초기화했어요. 다른 진행 데이터는 유지됩니다.' : loaded.message,
     };
   });
   const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>('app');
@@ -1415,12 +1445,13 @@ export default function App() {
       }
     }
 
-    if (item.category === 'egg' && item.eggCategory === 'rare') {
-      const requiredFragments = getEggRequiredFragments(item);
+    const requiredEggFragments = item.category === 'egg' ? getEggRequiredFragments(item) : [];
+    if (item.category === 'egg' && item.eggCategory === 'rare' && requiredEggFragments.length > 0) {
+      const requiredFragments = requiredEggFragments;
       const missingFragment = requiredFragments.find((fragment) => (gameState.inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) < fragment.amount);
 
-      if (requiredFragments.length === 0) {
-        setShopFeedback('희귀알 교환 조건이 아직 준비되지 않았어요.');
+      if (gameState.player.coins < item.price) {
+        setShopFeedback(`코인이 부족해요. 내 코인 ${gameState.player.coins.toLocaleString()} · 필요 ${item.price.toLocaleString()}`);
         return;
       }
 
@@ -1439,12 +1470,16 @@ export default function App() {
 
       setGameState((current) => ({
         ...current,
+        player: {
+          ...current.player,
+          coins: current.player.coins - item.price,
+        },
         inventory: requiredFragments.reduce((inventory, fragment) => subtractInventoryQuantity(inventory, fragment.itemId, fragment.amount), current.inventory),
         ownedEggs: getOneEggPerCategory([...current.ownedEggs, newEgg]),
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
-      setShopFeedback('희귀알을 얻었어요! 알 부화장에서 확인해보세요.');
+      setShopFeedback(`희귀알을 얻었어요! 코인 -${item.price.toLocaleString()} · 희귀알 조각 사용`);
       return;
     }
 
@@ -1964,7 +1999,6 @@ export default function App() {
               setCompleteRewards={setCompleteRewards}
               completedTrainingSummary={completedTrainingSummary}
               isSetComplete={training.isSetComplete}
-              bluetoothInput={lastBluetoothInput}
               currentCoins={gameState.player.coins}
               selectedLevelConfig={selectedLevelConfig}
               effectiveProblemCount={effectiveProblemCount}
@@ -2409,7 +2443,6 @@ function TrainingView({
   setCompleteRewards,
   completedTrainingSummary,
   isSetComplete,
-  bluetoothInput,
   currentCoins,
   selectedLevelConfig,
   effectiveProblemCount,
@@ -2443,7 +2476,6 @@ function TrainingView({
   setCompleteRewards: Reward[];
   completedTrainingSummary: CompletedTrainingSummary | null;
   isSetComplete: boolean;
-  bluetoothInput: BluetoothNotificationPayload | null;
   currentCoins: number;
   selectedLevelConfig: AbacusLevelConfig | null;
   effectiveProblemCount: number;
@@ -2463,8 +2495,6 @@ function TrainingView({
   onGoToDino: () => void;
   onGoToHatchery: () => void;
 }) {
-  const bluetoothStatus = bluetoothInput ? 'Bluetooth 주판 연결됨' : 'Bluetooth 입력 대기';
-  const bluetoothStatusTone = bluetoothInput ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-sky-200 bg-sky-50 text-sky-800';
   const canSubmitAnswer = !isSetComplete;
   const problemExpression = currentProblem.expressionText ?? currentProblem.displayText;
   const mascotMessage = getTrainingMascotMessage({ answer, isSetComplete, submissionResult });
@@ -2494,19 +2524,11 @@ function TrainingView({
           </div>
           <div className="training-score-summary mx-auto grid h-[clamp(48px,7dvh,62px)] w-[82%] max-w-[520px] grid-cols-2 gap-3">
             <TrainingStatusBadge asset={trainingStatusCorrectBanner} className="training-correct-badge">
-              <span className="training-status-banner__icon" aria-hidden="true">✓</span>
-              <span className="training-status-banner__label">정답</span>
               <strong className="training-status-banner__value">{correctCount}</strong>
             </TrainingStatusBadge>
             <TrainingStatusBadge asset={trainingStatusWrongBanner} className="training-wrong-badge">
-              <span className="training-status-banner__icon" aria-hidden="true">✕</span>
-              <span className="training-status-banner__label">오답</span>
               <strong className="training-status-banner__value">{wrongCount}</strong>
             </TrainingStatusBadge>
-          </div>
-          <div className={`mx-auto inline-flex min-h-7 max-w-full items-center gap-1 rounded-full border-2 px-3 py-1 text-[10px] font-black shadow-sm ${bluetoothStatusTone}`}>
-              {trainingUiAssets.bluetoothWait ? <img src={trainingUiAssets.bluetoothWait} alt="" className="h-4 w-4 object-contain" /> : <Bluetooth className="h-3.5 w-3.5" />}
-              <span className="break-words">{bluetoothStatus}</span>
           </div>
         </div>}
 
@@ -2525,7 +2547,6 @@ function TrainingView({
           <div className="training-workspace relative z-10 mt-3 min-h-0 min-w-0 flex-1 overflow-hidden p-3 md:p-4">
             <CurrentProblemCard
               answer={answer}
-              bluetoothInput={bluetoothInput}
               canSubmitAnswer={canSubmitAnswer}
               mascotMessage={mascotMessage}
               onAnswer={onAnswer}
@@ -2537,16 +2558,6 @@ function TrainingView({
 
         {showDeveloperPanels && <details className="mt-5 rounded-[24px] border-4 border-dashed border-cyan-100 bg-white/60 px-4 py-3">
           <summary className="cursor-pointer text-sm font-black text-slate-700">개발자용: 생성된 문제 전체 보기</summary>
-          <div className="mt-3 grid gap-2 rounded-[22px] border-4 border-white bg-white/70 px-4 py-3 text-xs font-black text-slate-600 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-emerald-800">마지막 Bluetooth 수신값</span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-800">{bluetoothInput?.parsedNumber ?? '-'}</span>
-            </div>
-            <p className="break-all font-mono font-bold text-slate-500">raw: {bluetoothInput?.raw ?? '-'}</p>
-            <p className="break-all font-mono font-bold text-slate-500">hex: {bluetoothInput?.hex ?? '-'}</p>
-            <p className="break-all font-mono font-bold text-slate-500">text: {bluetoothInput?.text ?? '-'}</p>
-            {bluetoothInput?.isConfirmSignal && <p className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">confirm signal received</p>}
-          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {problems.map((problem, index) => (
               <button
@@ -2657,7 +2668,6 @@ function TrainingBoardStatusBar({
 
 function CurrentProblemCard({
   answer,
-  bluetoothInput,
   canSubmitAnswer,
   mascotMessage,
   onAnswer,
@@ -2665,7 +2675,6 @@ function CurrentProblemCard({
   problemExpression,
 }: {
   answer: string;
-  bluetoothInput: BluetoothNotificationPayload | null;
   canSubmitAnswer: boolean;
   mascotMessage: string;
   onAnswer: (value: string) => void;
@@ -2673,6 +2682,7 @@ function CurrentProblemCard({
   problemExpression: string;
 }) {
   const expressionElementRef = useRef<HTMLDivElement>(null);
+  const answerInputRef = useRef<HTMLInputElement>(null);
   const [expressionFit, setExpressionFit] = useState({ sizeIndex: 0, wrap: false });
 
   function appendDigit(digit: string) {
@@ -2740,7 +2750,7 @@ function CurrentProblemCard({
   }, [problemExpression]);
 
   return (
-    <div className="grid h-full min-h-0 min-w-0 grid-rows-[36%_18%_minmax(0,1fr)] gap-3 overflow-hidden">
+    <div className="grid h-full min-h-0 min-w-0 grid-rows-[34%_27%_minmax(0,1fr)] gap-3 overflow-hidden">
       <section className="training-problem-board" aria-label="계산 문제">
         <img src={trainingProblemBoard} alt="" className="training-problem-board__image" aria-hidden="true" />
         <div className="training-problem-board__content">
@@ -2757,31 +2767,40 @@ function CurrentProblemCard({
         </div>
       </section>
 
-      <section className="training-answer-row mx-auto grid w-[86%] max-w-[640px] min-h-0 grid-cols-[minmax(0,1fr)_clamp(132px,28%,175px)] items-stretch gap-2">
+      <section className="training-answer-row mx-auto w-[90%] max-w-[680px] min-h-0">
         <label className="training-answer-panel">
           <img src={trainingAnswerPanel} alt="" className="training-answer-panel__image" aria-hidden="true" />
           <span className="training-answer-panel__content">
             <span className="training-answer-panel__instruction">정답을 입력하세요!</span>
             <input
-              value={answer}
-              onChange={(event) => onAnswer(event.target.value.replace(/[^\d-]/g, ''))}
-              disabled={!canSubmitAnswer}
+              ref={answerInputRef}
+              type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              enterKeyHint="done"
+              value={answer}
+              onChange={(event) => onAnswer(event.target.value.replace(/\D/g, ''))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') onCheck();
+              }}
+              disabled={!canSubmitAnswer}
               placeholder="?"
               className={`training-answer-input ${answerSize}`}
             />
           </span>
         </label>
-        <div className="training-mascot-feedback">
-          <div className="training-mascot">
-            <img src={trainingDinoCheer} alt="응원하는 공룡" className="training-mascot__image" />
-          </div>
-          <p className="training-feedback-bubble">{mascotMessage}</p>
-        </div>
+        <button
+          type="button"
+          className="training-pencil-button"
+          disabled={!canSubmitAnswer}
+          onClick={() => answerInputRef.current?.focus()}
+        >
+          펜슬로 쓰기
+        </button>
       </section>
 
-      <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden">
-        <AbacusInputGuide bluetoothInput={bluetoothInput} />
+      <div className="min-h-0 overflow-hidden pt-2">
         <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
       </div>
     </div>
@@ -2832,18 +2851,6 @@ function NumberPad({ disabled, onDigit, onDelete, onSubmit }: { disabled: boolea
           <img src={trainingKeySubmit} alt="" className="training-key-number__image" aria-hidden="true" />
           <span className="training-key-submit__label">입력</span>
         </button>
-      </div>
-    </div>
-  );
-}
-
-function AbacusInputGuide({ bluetoothInput }: { bluetoothInput: BluetoothNotificationPayload | null }) {
-  return (
-    <div className="mx-auto flex w-[82%] max-w-[600px] flex-wrap items-center justify-between gap-2 rounded-[14px] bg-white/55 px-3 py-1.5 text-[11px] font-black text-slate-500">
-      <p>주판 입력 후 리턴 버튼을 눌러주세요.</p>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-cyan-800">Bluetooth 값</span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-800">{bluetoothInput?.parsedNumber ?? '-'}</span>
       </div>
     </div>
   );

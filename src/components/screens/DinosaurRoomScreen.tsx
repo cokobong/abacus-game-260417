@@ -6,15 +6,13 @@ import type { DinosaurState, OwnedDinosaur } from '../../types/game';
 import petGreenMain from '../../assets/pet/backgrounds/pet_green_main-removebg-preview.png';
 import { habitatBackgroundAssets } from '../../assets/dex';
 import {
-  myDinoFeedButtonDefault,
-  myDinoFeedButtonDisabled,
-  myDinoFeedButtonPressed,
+  dinoFeedButton,
+  dinoFeedInfoPanel,
   myDinoFoodBagPanel,
   myDinoGrowthPanel,
   myDinoHatcheryButtonDefault,
   myDinoHatcheryButtonPressed,
   dinoNamePanelV2,
-  myDinoOwnedFoodPanel,
 } from '../../assets/pet/mydino';
 import { shopFoodItemImages } from '../../assets/shop';
 
@@ -190,27 +188,25 @@ function FeedAction({
 
   return (
     <section className="pet-feed-action" aria-label="선택한 먹이">
-      <div className="pet-selected-food">
-        <img src={myDinoOwnedFoodPanel} alt="" className="pet-panel-asset" />
-        <div className="pet-selected-food__content">
-          <div className="pet-selected-food__icon">
-            {selectedFood && <img src={shopFoodItemImages[selectedFood.id]} alt="" />}
-          </div>
-          <div className="pet-selected-food__copy">
-            <strong>{selectedFood?.name ?? '사료를 선택하세요'}</strong>
-            <span>{selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}</span>
-          </div>
+      <div className="pet-selected-food__icon" aria-hidden="true">
+        {selectedFood && <img src={shopFoodItemImages[selectedFood.id]} alt="" />}
+      </div>
+      <div className="pet-feed-info">
+        <img src={dinoFeedInfoPanel} alt="" className="pet-feed-info__asset" />
+        <div className="pet-feed-info__copy">
+          <strong>{selectedFood?.name ?? '사료를 선택하세요'}</strong>
+          <span>{selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}</span>
         </div>
       </div>
-      <AssetButton
-        label="먹이주기"
-        defaultAsset={myDinoFeedButtonDefault}
-        pressedAsset={myDinoFeedButtonPressed}
-        disabledAsset={myDinoFeedButtonDisabled}
+      <button
+        type="button"
+        className="pet-feed-button"
         disabled={!canFeed}
         onClick={handleFeed}
-        variant="feed"
-      />
+        aria-label="먹이주기"
+      >
+        <img src={dinoFeedButton} alt="" draggable={false} />
+      </button>
     </section>
   );
 }
