@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Baby,
   Bluetooth,
@@ -39,6 +39,7 @@ import { trainingUiAssets } from './assets/ui/training';
 import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
 import homeCoinBar from './assets/home/home_coin_bar.png?url';
+import homeBackground from './assets/home/home_bg_farm_full.png?url';
 import { playBackgroundMusic, playSound, stopBackgroundMusic, type BackgroundMusic } from './audio/audioManager';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
@@ -3323,6 +3324,7 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
   const [selectedSpeciesId, setSelectedSpeciesId] = useState(starterSpecies[0]?.speciesId ?? initialOwnedDinosaur.speciesId);
   const selectedSpecies = starterSpecies.find((species) => species.speciesId === selectedSpeciesId) ?? starterSpecies[0];
   const [dinosaurName, setDinosaurName] = useState(selectedSpecies?.defaultName ?? '몽이');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function selectStarterSpecies(speciesId: string) {
     const species = starterSpecies.find((candidate) => candidate.speciesId === speciesId);
@@ -3331,66 +3333,94 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
   }
 
   function submitProfile() {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     onComplete({ childName, starterSpeciesId: selectedSpeciesId, dinosaurName });
   }
 
+  const selectedImage = selectedSpecies?.images?.baby ?? selectedSpecies?.characterAsset;
+  const selectedImageStyle = {
+    '--onboarding-dino-scale': selectedSpecies?.homeScale ?? 1,
+    '--onboarding-dino-x': `${selectedSpecies?.homeOffsetX ?? 0}px`,
+    '--onboarding-dino-y': `${selectedSpecies?.homeOffsetY ?? 0}px`,
+  } as CSSProperties;
+
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-lime-100 p-4 text-slate-800 md:p-6">
-      <main className="mx-auto flex h-full max-w-5xl items-center justify-center">
-        <section className="relative grid w-full gap-4 overflow-hidden rounded-[32px] border-4 border-white bg-white/84 p-4 shadow-[0_24px_60px_rgba(14,116,144,0.22)] backdrop-blur md:grid-cols-[1fr_0.82fr] md:p-6">
-          <SkyDecor />
-          <div className="relative z-10">
-            <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border-2 border-cyan-200 bg-white px-4 py-1.5 text-sm font-black text-cyan-800 shadow-sm">
-              <Sparkles className="h-4 w-4" />
-              처음 만나는 공룡 친구
-            </div>
-            <h1 className="text-4xl font-black leading-tight text-emerald-950 md:text-5xl">프로필 만들기</h1>
-            <p className="mt-2 max-w-lg text-base font-black leading-relaxed text-emerald-800/80">이름을 정하고 대표 공룡과 함께 주산 모험을 시작해요.</p>
+    <div className="onboarding-screen" style={{ backgroundImage: `url(${homeBackground})` }}>
+      <main className="onboarding-shell">
+        <header className="onboarding-header">
+          <span><Sparkles aria-hidden="true" />처음 만나는 공룡 친구</span>
+          <h1>주산 공룡 모험에 어서 와요!</h1>
+          <p>이름을 정하고 함께 모험할 첫 공룡을 골라주세요.</p>
+        </header>
 
-            <div className="mt-4 grid gap-3">
-              <ProfileInput label="아이 이름/닉네임" value={childName} placeholder="친구" onChange={setChildName} />
-              <div className="rounded-[22px] border-4 border-white bg-white/90 p-3 shadow-sm">
-                <p className="text-sm font-black text-emerald-700">첫 번째 공룡 친구를 골라볼까요?</p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {starterSpecies.map((species) => {
-                    const isSelected = species.speciesId === selectedSpeciesId;
-                    return (
-                      <button
-                        key={species.speciesId}
-                        onClick={() => selectStarterSpecies(species.speciesId)}
-                        className={`min-h-16 rounded-[18px] border-4 px-3 py-2 text-left transition active:translate-y-1 ${
-                          isSelected ? 'border-cyan-300 bg-cyan-100 text-cyan-950 shadow-[0_5px_0_#67e8f9]' : 'border-white bg-slate-50 text-slate-700 hover:bg-cyan-50'
-                        }`}
-                      >
-                        <span className="block text-lg font-black">{species.displayName}</span>
-                        <span className="mt-1 block text-xs font-black opacity-70">{species.personality} · {species.defaultName}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <ProfileInput label="첫 공룡 이름" value={dinosaurName} placeholder={selectedSpecies?.defaultName ?? '몽이'} onChange={setDinosaurName} />
-            </div>
+        <section className="onboarding-profile-panel" aria-label="프로필 정보">
+          <ProfileInput label="아이 이름 또는 닉네임" value={childName} placeholder="친구" onChange={setChildName} />
+          <ProfileInput label="첫 공룡 이름" value={dinosaurName} placeholder={selectedSpecies?.defaultName ?? '몽이'} onChange={setDinosaurName} />
+        </section>
 
-            <button
-              onClick={submitProfile}
-              className="mt-4 inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-[24px] border-4 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-8 text-xl font-black text-white shadow-[0_8px_0_#0891b2,0_18px_24px_rgba(8,145,178,0.24)] transition hover:brightness-105 active:translate-y-1 active:shadow-[0_4px_0_#0891b2] sm:w-fit"
-            >
-              모험 시작하기
-              <Play className="h-6 w-6 fill-white" />
-            </button>
+        <section className="onboarding-featured" aria-live="polite">
+          <div className="onboarding-featured__visual">
+            {selectedImage ? (
+              <img
+                src={selectedImage}
+                alt={`${selectedSpecies?.displayName ?? '공룡'} 아기 공룡`}
+                style={selectedImageStyle}
+                draggable={false}
+              />
+            ) : (
+              <DinoAvatar size="hero" />
+            )}
           </div>
-
-          <div className="relative z-10 flex min-h-[360px] items-end justify-center rounded-[28px] bg-gradient-to-b from-sky-100 via-emerald-50 to-lime-200 p-4 shadow-inner">
-            <div className="absolute bottom-0 left-0 right-0 h-28 rounded-t-[50%] bg-lime-300/70" />
-            <div className="absolute left-5 top-5 rounded-[20px] border-4 border-white bg-white/90 px-4 py-2 shadow-lg">
-              <p className="text-sm font-black text-cyan-700">시작 공룡</p>
-              <p className="text-3xl font-black text-slate-950">{dinosaurName.trim() || selectedSpecies?.defaultName || '몽이'}</p>
-              <p className="mt-1 text-xs font-black text-slate-500">{selectedSpecies?.displayName ?? '공룡 친구'}</p>
-            </div>
-            <DinoAvatar size="hero" />
+          <div className="onboarding-featured__copy">
+            <span>나의 첫 공룡</span>
+            <h2>{dinosaurName.trim() || selectedSpecies?.defaultName || '몽이'}</h2>
+            <strong>{selectedSpecies?.displayName ?? '공룡 친구'} · {selectedSpecies?.personality ?? '다정함'}</strong>
+            {selectedSpecies?.description && <p>{selectedSpecies.description}</p>}
           </div>
         </section>
+
+        <section className="onboarding-starter-panel" aria-labelledby="starter-selection-title">
+          <h2 id="starter-selection-title">첫 공룡을 골라주세요</h2>
+          <div className="onboarding-starter-grid">
+            {starterSpecies.map((species) => {
+              const isSelected = species.speciesId === selectedSpeciesId;
+              const cardImage = species.images?.baby ?? species.characterAsset;
+              const cardStyle = {
+                '--onboarding-card-scale': species.cardScale,
+                '--onboarding-card-x': `${species.cardOffsetX}px`,
+                '--onboarding-card-y': `${species.cardOffsetY}px`,
+              } as CSSProperties;
+              return (
+                <button
+                  key={species.speciesId}
+                  type="button"
+                  onClick={() => selectStarterSpecies(species.speciesId)}
+                  aria-label={`${species.displayName} 선택`}
+                  aria-pressed={isSelected}
+                  className={`onboarding-starter-card${isSelected ? ' is-selected' : ''}`}
+                >
+                  <span className="onboarding-starter-card__visual">
+                    {cardImage && <img src={cardImage} alt="" style={cardStyle} draggable={false} />}
+                  </span>
+                  <strong>{species.displayName}</strong>
+                  <span>{species.personality}</span>
+                  {isSelected && <i aria-hidden="true">✓</i>}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <button
+          type="button"
+          onClick={submitProfile}
+          disabled={isSubmitting}
+          className="onboarding-start-button"
+        >
+          모험 시작하기
+          <Play aria-hidden="true" />
+        </button>
       </main>
     </div>
   );
@@ -3398,13 +3428,12 @@ function OnboardingView({ onComplete }: { onComplete: (profileInput: { childName
 
 function ProfileInput({ label, value, placeholder, onChange }: { label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
   return (
-    <label className="block rounded-[22px] border-4 border-white bg-white/90 p-3 shadow-sm">
-      <span className="text-sm font-black text-emerald-700">{label}</span>
+    <label className="onboarding-profile-input">
+      <span>{label}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 min-h-14 w-full rounded-[18px] bg-slate-50 px-4 text-lg font-black text-slate-900 focus:bg-cyan-50"
       />
     </label>
   );
