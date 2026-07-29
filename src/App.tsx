@@ -4,7 +4,6 @@ import {
   Bluetooth,
   BookOpen,
   ChevronLeft,
-  ChevronRight,
   Coins,
   Egg,
   Map as MapIcon,
@@ -15,9 +14,10 @@ import {
   Star,
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
+import { NavigationArrow } from './components/NavigationArrow';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
-import { fallbackFoodEffect, getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
+import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { coinRewardOptions, defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
@@ -33,10 +33,13 @@ import { createAdventureResult, type AdventureRunResult } from './utils/adventur
 import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
 import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
+import { canDinosaurEat, getIncompatibleFoodMessage } from './utils/dinosaurDiet';
 import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
 import { trainingUiAssets } from './assets/ui/training';
+import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
 import homeCoinBar from './assets/home/home_coin_bar.png?url';
+import { playBackgroundMusic, playSound, stopBackgroundMusic, type BackgroundMusic } from './audio/audioManager';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type AppScreen = 'home' | MainTab;
@@ -48,6 +51,7 @@ type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6 | 7 | 8;
 type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'three-digit' | 'mixed-digit' | 'mixed-two-three-digit';
 type ResolvedDigitType = Exclude<DigitTypeOverride, 'stage-default'>;
 type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
+type TrainingInputMode = 'pencil' | 'keypad' | 'bluetooth';
 type CompletedTrainingSummary = TrainingRewardResult & {
   sessionId: string;
   totalProblems: number;
@@ -94,8 +98,28 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
 
 const visibleMainTabs = mainTabs.filter((tab) => tab.id === 'training' || tab.id === 'dino' || tab.id === 'shop' || tab.id === 'pokedex' || tab.id === 'settings');
 
+const backgroundMusicByScreen: Partial<Record<AppScreen, BackgroundMusic>> = {
+  home: 'home',
+  dino: 'dinosaur',
+  hatchery: 'dinosaur',
+  shop: 'shop',
+  pokedex: 'dinopedia',
+};
+
 const defaultSelectedLevel = 1;
 const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
+const trainingInputModeStorageKey = 'abacus-game.training-input-mode';
+
+function loadTrainingInputMode(): TrainingInputMode {
+  if (typeof window === 'undefined') return 'pencil';
+
+  try {
+    const savedMode = window.localStorage.getItem(trainingInputModeStorageKey);
+    return savedMode === 'keypad' || savedMode === 'bluetooth' || savedMode === 'pencil' ? savedMode : 'pencil';
+  } catch {
+    return 'pencil';
+  }
+}
 
 const initialDinosaurState: DinosaurState = {
   id: 'dino-tiny-tyranno',
@@ -950,6 +974,7 @@ export default function App() {
   const hasMountedRef = useRef(false);
   const skipNextSaveRef = useRef(false);
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
+  const [trainingInputMode, setTrainingInputMode] = useState<TrainingInputMode>(loadTrainingInputMode);
   const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, getSelectedDinosaurId(gameState)) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
@@ -1036,7 +1061,7 @@ export default function App() {
   const [isHatcheryOpen, setIsHatcheryOpen] = useState(false);
   const [dinoFeedback, setDinoFeedback] = useState('오늘도 주산훈련을 기다리고 있어요.');
   const [hatchResult, setHatchResult] = useState<HatchResult | null>(null);
-  const [selectedFoodItemId, setSelectedFoodItemId] = useState<string | null>('soft-berry');
+  const [selectedFoodItemId, setSelectedFoodItemId] = useState<string | null>(null);
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const [adventureFeedback, setAdventureFeedback] = useState('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
   const [adventureResult, setAdventureResult] = useState<AdventureRunResult | null>(null);
@@ -1045,6 +1070,57 @@ export default function App() {
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
   const isFeedingRef = useRef(false);
+  const dinoHappyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!selectedFoodItemId) return;
+    const selectedFood = getFoodItemConfig(selectedFoodItemId);
+    const selectedSpecies = getDinosaurSpecies(activeOwnedDinosaur.speciesId);
+    if (!canDinosaurEat(selectedSpecies, selectedFood)) {
+      setSelectedFoodItemId(null);
+    }
+  }, [activeOwnedDinosaur.speciesId, selectedFoodItemId]);
+
+  useEffect(() => {
+    return () => {
+      if (dinoHappyTimerRef.current !== null) {
+        window.clearTimeout(dinoHappyTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const backgroundMusic = backgroundMusicByScreen[activeTab];
+    if (phase === 'app' && backgroundMusic) {
+      playBackgroundMusic(backgroundMusic);
+    } else {
+      stopBackgroundMusic();
+    }
+
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [activeTab, phase]);
+
+  useEffect(() => {
+    if (activeTab === 'dino' && !isHatcheryOpen) return;
+    if (dinoHappyTimerRef.current !== null) {
+      window.clearTimeout(dinoHappyTimerRef.current);
+      dinoHappyTimerRef.current = null;
+    }
+  }, [activeTab, isHatcheryOpen]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(trainingInputModeStorageKey, trainingInputMode);
+    } catch {
+      // 저장소가 차단된 환경에서도 기본 입력 화면은 정상적으로 표시합니다.
+    }
+  }, [trainingInputMode]);
+
+  function updateTrainingInputMode(mode: TrainingInputMode) {
+    setTrainingInputMode(mode);
+  }
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
   const isHomeScreen = activeTab === 'home';
@@ -1301,6 +1377,9 @@ export default function App() {
     ]);
     setLastRewards([]);
     setLastTrainingEffects([]);
+    if (resultReward.coins > 0) {
+      playSound('reward_coin');
+    }
   }
 
   function restartTrainingSet() {
@@ -1356,29 +1435,39 @@ export default function App() {
       return;
     }
 
+    const foodConfig = getFoodItemConfig(inventoryItem.itemId);
+    const activeSpecies = getDinosaurSpecies(activeOwnedDinosaur.speciesId);
+    if (!foodConfig || !activeSpecies || !canDinosaurEat(activeSpecies, foodConfig)) {
+      setDinoFeedback(
+        foodConfig && activeSpecies
+          ? getIncompatibleFoodMessage(activeSpecies, foodConfig.name)
+          : '먹이와 공룡 정보를 확인할 수 없어 먹이를 줄 수 없어요.',
+      );
+      return;
+    }
+
     isFeedingRef.current = true;
 
-    const foodConfig = getFoodItemConfig(inventoryItem.itemId);
-    const effect = foodConfig?.effect ?? fallbackFoodEffect;
-    const foodName = foodConfig?.name ?? inventoryItem.itemId;
-    const baseFoodExp = foodConfig?.expValue ?? effect.exp ?? fallbackFoodEffect.exp ?? 0;
+    const effect = foodConfig.effect;
+    const foodName = foodConfig.name;
+    const baseFoodExp = foodConfig.expValue;
     const adjustedFoodExp = activeOwnedDinosaur.level >= 20 ? 0 : getAdjustedFoodExp(baseFoodExp, gameState.growthSpeedMultiplier);
-
-    if (!foodConfig) {
-      console.warn('Food item config missing. Applying fallback effect.', {
-        usedItemId: inventoryItem.itemId,
-        inventoryIds,
-      });
-    }
+    const willLevelUp = adjustedFoodExp > 0 && applyDinosaurExp(activeOwnedDinosaur, adjustedFoodExp).level > activeOwnedDinosaur.level;
 
     let remainingQuantity = inventoryItem.quantity;
     let gainedExp = 0;
     let didLevelUp = false;
+    let blockedBeforeApply = false;
     setGameState((current) => {
       const currentInventoryItem = current.inventory.find((item) => item.itemId === inventoryItem.itemId);
-      remainingQuantity = Math.max(0, (currentInventoryItem?.quantity ?? 0) - 1);
       const selectedDinosaur = getSelectedOwnedDinosaur(getUniqueOwnedDinosaurs(current.ownedDinosaurs), getSelectedDinosaurId(current));
-      const currentBaseFoodExp = foodConfig?.expValue ?? effect.exp ?? fallbackFoodEffect.exp ?? 0;
+      const selectedSpecies = selectedDinosaur ? getDinosaurSpecies(selectedDinosaur.speciesId) : null;
+      if (!currentInventoryItem || currentInventoryItem.quantity <= 0 || !selectedDinosaur || !canDinosaurEat(selectedSpecies, foodConfig)) {
+        blockedBeforeApply = true;
+        return current;
+      }
+      remainingQuantity = currentInventoryItem.quantity - 1;
+      const currentBaseFoodExp = foodConfig.expValue;
       const currentAdjustedFoodExp = selectedDinosaur && selectedDinosaur.level < 20 ? getAdjustedFoodExp(currentBaseFoodExp, current.growthSpeedMultiplier) : 0;
       const adjustedEffect = selectedDinosaur
         ? {
@@ -1405,6 +1494,12 @@ export default function App() {
         inventory: current.inventory.map((item) => (item.itemId === inventoryItem.itemId ? { ...item, quantity: remainingQuantity } : item)),
       };
     });
+    if (blockedBeforeApply) {
+      isFeedingRef.current = false;
+      setSelectedFoodItemId(null);
+      setDinoFeedback('공룡이나 먹이 상태가 바뀌어 먹이를 주지 않았어요. 다시 선택해주세요.');
+      return;
+    }
     if (remainingQuantity <= 0) {
       setSelectedFoodItemId(null);
     }
@@ -1414,7 +1509,18 @@ export default function App() {
     const recoveryMessage = `체력 +${recoveredStamina}${multiplier > 1 ? ` (행복 보너스 x${multiplier})` : ''}`;
     const expMessage = adjustedFoodExp > 0 ? `EXP +${gainedExp || adjustedFoodExp}` : '성장 완료';
     const levelMessage = didLevelUp ? ' 레벨이 올랐어요!' : '';
-    setDinoFeedback(foodConfig ? `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage}` : `${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage} (config 없음, 보유 id: ${inventoryIds.join(', ')})`);
+    setDinoFeedback(`${foodName}를 먹었어요! ${expMessage}, ${recoveryMessage}${levelMessage}`);
+    playSound('dino_eat');
+    if (didLevelUp || willLevelUp) {
+      playSound('level_up');
+    }
+    if (dinoHappyTimerRef.current !== null) {
+      window.clearTimeout(dinoHappyTimerRef.current);
+    }
+    dinoHappyTimerRef.current = window.setTimeout(() => {
+      playSound('dino_happy');
+      dinoHappyTimerRef.current = null;
+    }, 320);
     window.setTimeout(() => {
       isFeedingRef.current = false;
     }, 250);
@@ -1600,6 +1706,9 @@ export default function App() {
         inventory: nextInventory,
       };
     });
+    if (result.rewards.some((reward) => reward.type === 'coin' && reward.amount > 0)) {
+      playSound('reward_coin');
+    }
     setAdventureResult(result);
     setAdventureFeedback(result.hasDexHint ? '도감 힌트를 발견했어요!' : `${area.title}을 다녀왔어요.`);
   }
@@ -1685,6 +1794,7 @@ export default function App() {
       };
     });
     setHatchResult({
+      speciesId: hatchedTemplate.speciesId,
       eggName: currentActiveEgg.name,
       eggRarity: currentActiveEgg.rarity,
       dinosaurName: hatchedTemplate.defaultName,
@@ -1698,6 +1808,9 @@ export default function App() {
   }
 
   function selectAdjacentDinosaur(direction: -1 | 1) {
+    if (getUniqueOwnedDinosaurs(gameState.ownedDinosaurs).length > 1) {
+      playSound('ui_tab_switch');
+    }
     setGameState((current) => {
       const ownedDinosaurs = getUniqueOwnedDinosaurs(current.ownedDinosaurs);
       if (ownedDinosaurs.length === 0) return current;
@@ -1747,6 +1860,9 @@ export default function App() {
   }
 
   function selectActiveEgg(eggId: string) {
+    if (eggId !== gameState.activeEggId) {
+      playSound('ui_tab_switch');
+    }
     setGameState((current) => {
       const nextActiveEgg = current.ownedEggs.find((egg) => egg.id === eggId) ?? null;
       if (!nextActiveEgg) return current;
@@ -1765,6 +1881,12 @@ export default function App() {
   function useHatchItem(itemId: string) {
     const item = getHatchItemConfig(itemId);
     if (!item) return;
+
+    const currentActiveEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
+    const currentInventoryItem = gameState.inventory.find((entry) => entry.itemId === item.id);
+    if (currentActiveEgg && currentInventoryItem && currentInventoryItem.quantity > 0 && item.effect.hatchProgress > 0) {
+      playSound('item_use');
+    }
 
     setGameState((current) => {
       const activeEgg = getSelectedOwnedEgg(current.ownedEggs, current.activeEggId);
@@ -1853,11 +1975,13 @@ export default function App() {
   }
 
   function handleBluetoothNumber(value: string) {
+    if (trainingInputMode !== 'bluetooth') return;
     training.setAnswer(value);
   }
 
   function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
     setLastBluetoothInput(payload);
+    if (trainingInputMode !== 'bluetooth') return;
 
     if (payload.parsedNumber !== null && !payload.isConfirmSignal) {
       handleBluetoothNumber(String(payload.parsedNumber));
@@ -1938,6 +2062,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
+                playSound('ui_button_tap');
                 setIsHatcheryOpen(false);
                 setActiveTab('home');
               }}
@@ -1976,6 +2101,7 @@ export default function App() {
             coins={gameState.player.coins}
             dinosaurName={activeDinosaur.name}
             onNavigate={(screen) => {
+              playSound('ui_tab_switch');
               setIsHatcheryOpen(false);
               setActiveTab(screen);
             }}
@@ -1992,6 +2118,7 @@ export default function App() {
               correctCount={training.correctCount}
               wrongCount={training.wrongCount}
               answer={training.answer}
+              inputMode={trainingInputMode}
               feedback={training.feedback}
               submissionResult={training.submissionResult}
               lastRewards={lastRewards}
@@ -2043,12 +2170,20 @@ export default function App() {
             inventory={gameState.inventory}
             selectedFoodItemId={selectedFoodItemId}
             onView={setDinoView}
-            onSelectFood={setSelectedFoodItemId}
+            onSelectFood={(itemId) => {
+              if (itemId !== selectedFoodItemId) {
+                playSound('item_select');
+                setSelectedFoodItemId(itemId);
+              }
+            }}
             onSelectAdjacentDinosaur={selectAdjacentDinosaur}
             onEquipCostume={equipCostume}
             onDinosaurInteraction={applyDinosaurInteraction}
             onFeed={feedDinosaur}
-            onGoToHatchery={() => setIsHatcheryOpen(true)}
+            onGoToHatchery={() => {
+              playSound('ui_tab_switch');
+              setIsHatcheryOpen(true);
+            }}
           />
         )}
         {activeTab === 'dino' && isHatcheryOpen && (
@@ -2127,6 +2262,7 @@ export default function App() {
             digitTypeOverride={gameState.digitTypeOverride}
             operationsOverride={gameState.operationsOverride}
             storageFeedback={storageFeedback}
+            trainingInputMode={trainingInputMode}
             onSelectLevel={selectTrainingLevel}
             onProblemCountOverride={updateProblemCountOverride}
             onNumberCountOverride={updateNumberCountOverride}
@@ -2135,31 +2271,37 @@ export default function App() {
             onGrowthSpeedMultiplier={updateGrowthSpeedMultiplier}
             onCoinRewardMultiplier={updateCoinRewardMultiplier}
             onResetSavedGameState={resetSavedGameState}
+            onTrainingInputMode={updateTrainingInputMode}
             onBluetoothNotification={handleBluetoothNotification}
           />
         )}
       </main>
 
       {showBottomNav && <nav className="bottom-nav-wrapper absolute inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.35rem+env(safe-area-inset-bottom))] md:px-5 md:pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-        <div className="bottom-nav mx-auto grid grid-cols-5 gap-1 rounded-[18px] border-[3px] border-white bg-white/90 p-1 shadow-[0_-8px_22px_rgba(14,116,144,0.18)] backdrop-blur md:gap-1.5 md:p-1.5">
+        <div className="bottom-nav mx-auto grid grid-cols-5 place-items-center gap-1 rounded-[18px] border-[3px] border-white bg-white/90 p-1 shadow-[0_-8px_22px_rgba(14,116,144,0.18)] backdrop-blur md:gap-1.5 md:p-1.5">
           {visibleMainTabs.map((tab) => {
-            const Icon = tab.icon;
             const active = tab.id === activeTab;
+            const assets = bottomNavAssets[tab.id as keyof typeof bottomNavAssets];
             return (
               <button
                 key={tab.id}
                 onClick={() => {
+                  if (tab.id !== activeTab) {
+                    playSound('ui_tab_switch');
+                  }
                   setIsHatcheryOpen(false);
                   setActiveTab(tab.id);
                 }}
-                className={`bottom-nav-item flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[13px] border text-[8px] font-black transition active:translate-y-0.5 md:min-h-14 md:text-[10px] ${
-                  active
-                    ? `border-white bg-gradient-to-b ${tab.active} shadow-[0_4px_0_rgba(15,23,42,0.14)]`
-                    : 'border-transparent bg-transparent text-slate-500 hover:bg-sky-50'
-                }`}
+                aria-label={tab.label}
+                aria-current={active ? 'page' : undefined}
+                className="bottom-nav-item flex h-[clamp(52px,7.5dvh,72px)] w-full items-center justify-center border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-0.5"
               >
-                <Icon className={`h-4 w-4 md:h-5 md:w-5 ${active ? tab.color : 'text-slate-400'}`} />
-                <span className={active ? 'text-slate-900' : ''}>{tab.label}</span>
+                <img
+                  src={active ? assets.selected : assets.default}
+                  alt=""
+                  className="block h-full w-full object-contain"
+                  draggable={false}
+                />
               </button>
             );
           })}
@@ -2241,6 +2383,7 @@ function PortraitSettingsView({
   digitTypeOverride,
   operationsOverride,
   storageFeedback,
+  trainingInputMode,
   onSelectLevel,
   onProblemCountOverride,
   onNumberCountOverride,
@@ -2249,6 +2392,7 @@ function PortraitSettingsView({
   onGrowthSpeedMultiplier,
   onCoinRewardMultiplier,
   onResetSavedGameState,
+  onTrainingInputMode,
   onBluetoothNotification,
 }: {
   levels: AbacusLevelConfig[];
@@ -2261,6 +2405,7 @@ function PortraitSettingsView({
   digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
   storageFeedback: string;
+  trainingInputMode: TrainingInputMode;
   onSelectLevel: (level: number) => void;
   onProblemCountOverride: (value: ProblemCountOverride | 'stage-default') => void;
   onNumberCountOverride: (value: NumberCountOverride) => void;
@@ -2269,6 +2414,7 @@ function PortraitSettingsView({
   onGrowthSpeedMultiplier: (value: GrowthSpeedMultiplier) => void;
   onCoinRewardMultiplier: (value: CoinRewardMultiplier) => void;
   onResetSavedGameState: () => void;
+  onTrainingInputMode: (mode: TrainingInputMode) => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
 }) {
   return (
@@ -2280,6 +2426,41 @@ function PortraitSettingsView({
           세로형 MVP에서는 꼭 필요한 항목만 먼저 보여줘요. 복잡한 개발자 설정은 기존 코드에 보존되어 있습니다.
         </p>
       </div>
+
+      <fieldset className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <legend className="px-1 text-sm font-black text-violet-800">훈련장 입력 방식</legend>
+        <p className="mb-3 mt-1 text-xs font-black leading-snug text-slate-500">훈련장에는 선택한 입력 화면 하나만 표시됩니다.</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {([
+            { value: 'pencil', label: '펜슬 입력', description: 'Apple Pencil Scribble 테스트용' },
+            { value: 'keypad', label: '화면 키패드', description: '화면의 숫자 버튼으로 입력' },
+            { value: 'bluetooth', label: '블루투스 주판', description: '연결된 주판 값으로 입력' },
+          ] as const).map((option) => {
+            const selected = trainingInputMode === option.value;
+            return (
+              <label
+                key={option.value}
+                className={`flex min-h-20 cursor-pointer items-center gap-3 rounded-[18px] border-2 p-3 transition ${
+                  selected ? 'border-violet-300 bg-violet-100 text-violet-950 shadow-[0_4px_0_#c4b5fd]' : 'border-slate-100 bg-white text-slate-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="training-input-mode"
+                  value={option.value}
+                  checked={selected}
+                  onChange={() => onTrainingInputMode(option.value)}
+                  className="h-5 w-5 shrink-0 accent-violet-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-black">{option.label}</span>
+                  <span className="mt-1 block text-[11px] font-bold leading-snug opacity-70">{option.description}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <label className="grid min-w-0 gap-2 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
         <span className="text-sm font-black text-emerald-800">훈련 난이도</span>
@@ -2436,6 +2617,7 @@ function TrainingView({
   correctCount,
   wrongCount,
   answer,
+  inputMode,
   feedback,
   submissionResult,
   lastRewards,
@@ -2469,6 +2651,7 @@ function TrainingView({
   correctCount: number;
   wrongCount: number;
   answer: string;
+  inputMode: TrainingInputMode;
   feedback: string;
   submissionResult: SubmissionResult;
   lastRewards: Reward[];
@@ -2511,7 +2694,7 @@ function TrainingView({
         </div>}
         {!isSetComplete && <div className="training-content-column relative z-10 mx-auto grid w-full max-w-[680px] shrink-0 gap-2">
           <div className="training-hud grid h-[clamp(58px,8dvh,74px)] grid-cols-[minmax(86px,1fr)_auto_minmax(86px,1fr)] items-center gap-2 rounded-[18px] border-2 border-white/90 bg-white/82 px-3 py-2 shadow-[0_6px_18px_rgba(14,116,144,.08)]">
-            <button onClick={onExitTraining} className="training-exit-button flex min-h-11 justify-self-start items-center justify-center rounded-[14px] bg-white px-4 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
+            <button onClick={() => { playSound('ui_button_tap'); onExitTraining(); }} className="training-exit-button flex min-h-11 justify-self-start items-center justify-center rounded-[14px] bg-white px-4 text-sm font-black text-emerald-800 shadow-sm transition active:translate-y-1">
               나가기
             </button>
             <div className="training-progress-sign min-w-[220px] max-w-[400px] justify-self-center rounded-[14px] bg-[#f6d89d] px-4 py-2 text-center text-base font-black text-amber-950 shadow-[inset_0_-3px_0_rgba(120,53,15,.18)]">
@@ -2547,11 +2730,13 @@ function TrainingView({
           <div className="training-workspace relative z-10 mt-3 min-h-0 min-w-0 flex-1 overflow-hidden p-3 md:p-4">
             <CurrentProblemCard
               answer={answer}
+              inputMode={inputMode}
               canSubmitAnswer={canSubmitAnswer}
               mascotMessage={mascotMessage}
               onAnswer={onAnswer}
               onCheck={onCheck}
               problemExpression={problemExpression}
+              submissionResult={submissionResult}
             />
           </div>
         )}
@@ -2632,14 +2817,13 @@ function TrainingBoardStatusBar({
         {usesFallbackGenerator && <p className="mt-0.5 text-[10px] font-black text-amber-700">임시 생성 규칙 사용 중</p>}
       </div>
       <div className="grid min-w-0 grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-2 overflow-hidden">
-        <button
-          aria-label="이전 훈련 공룡"
+        <NavigationArrow
+          direction="previous"
+          ariaLabel="이전 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(-1)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-100 text-emerald-800 transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
+          className="h-11 w-11"
+        />
         <div className="flex h-12 w-12 items-end justify-center overflow-hidden rounded-[12px] bg-gradient-to-b from-sky-50 to-lime-100">
           {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="함께 훈련 중인 공룡" className="h-full w-full object-contain" /> : <DinoAvatar size="small" />}
         </div>
@@ -2648,14 +2832,13 @@ function TrainingBoardStatusBar({
           <p className="break-words text-sm font-black leading-snug text-emerald-950">{reaction}</p>
           <p className="break-words text-[10px] font-bold leading-snug text-slate-500">{activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {staminaMessage}</p>
         </div>
-        <button
-          aria-label="다음 훈련 공룡"
+        <NavigationArrow
+          direction="next"
+          ariaLabel="다음 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(1)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-100 text-emerald-800 transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+          className="h-11 w-11"
+        />
       </div>
       <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 rounded-[16px] bg-amber-50/80 px-3 py-2 text-xs font-black text-amber-950 md:col-span-2 md:justify-center xl:col-span-1">
         <span className="text-[10px] tracking-wide text-amber-700">세트 완료 보상</span>
@@ -2668,18 +2851,22 @@ function TrainingBoardStatusBar({
 
 function CurrentProblemCard({
   answer,
+  inputMode,
   canSubmitAnswer,
   mascotMessage,
   onAnswer,
   onCheck,
   problemExpression,
+  submissionResult,
 }: {
   answer: string;
+  inputMode: TrainingInputMode;
   canSubmitAnswer: boolean;
   mascotMessage: string;
   onAnswer: (value: string) => void;
   onCheck: () => void;
   problemExpression: string;
+  submissionResult: SubmissionResult;
 }) {
   const expressionElementRef = useRef<HTMLDivElement>(null);
   const answerInputRef = useRef<HTMLInputElement>(null);
@@ -2687,12 +2874,20 @@ function CurrentProblemCard({
 
   function appendDigit(digit: string) {
     if (!canSubmitAnswer) return;
+    playSound('training_number_input');
     onAnswer(`${answer}${digit}`);
   }
 
   function deleteDigit() {
     if (!canSubmitAnswer) return;
+    playSound('ui_button_tap');
     onAnswer(answer.slice(0, -1));
+  }
+
+  function clearAnswer() {
+    if (!canSubmitAnswer) return;
+    playSound('ui_button_tap');
+    onAnswer('');
   }
 
   const expressionTokens = problemExpression.match(/\d+|[+−-]/g) ?? [problemExpression];
@@ -2750,7 +2945,7 @@ function CurrentProblemCard({
   }, [problemExpression]);
 
   return (
-    <div className="grid h-full min-h-0 min-w-0 grid-rows-[34%_27%_minmax(0,1fr)] gap-3 overflow-hidden">
+    <div className={`training-input-layout training-input-layout--${inputMode} grid h-full min-h-0 min-w-0 gap-3 overflow-hidden`}>
       <section className="training-problem-board" aria-label="계산 문제">
         <img src={trainingProblemBoard} alt="" className="training-problem-board__image" aria-hidden="true" />
         <div className="training-problem-board__content">
@@ -2767,11 +2962,10 @@ function CurrentProblemCard({
         </div>
       </section>
 
-      <section className="training-answer-row mx-auto w-[90%] max-w-[680px] min-h-0">
-        <label className="training-answer-panel">
-          <img src={trainingAnswerPanel} alt="" className="training-answer-panel__image" aria-hidden="true" />
-          <span className="training-answer-panel__content">
-            <span className="training-answer-panel__instruction">정답을 입력하세요!</span>
+      {inputMode === 'pencil' ? (
+        <section className="training-pencil-input mx-auto flex min-h-0 w-[84%] max-w-[680px] flex-col gap-3">
+          <label className="training-pencil-input__field">
+            <span className="sr-only">펜슬로 정답 입력</span>
             <input
               ref={answerInputRef}
               type="text"
@@ -2785,24 +2979,76 @@ function CurrentProblemCard({
                 if (event.key === 'Enter') onCheck();
               }}
               disabled={!canSubmitAnswer}
-              placeholder="?"
-              className={`training-answer-input ${answerSize}`}
+              placeholder="여기에 숫자를 써 보세요"
+              className={`training-pencil-input__control ${answerSize}`}
             />
-          </span>
-        </label>
-        <button
-          type="button"
-          className="training-pencil-button"
-          disabled={!canSubmitAnswer}
-          onClick={() => answerInputRef.current?.focus()}
-        >
-          펜슬로 쓰기
-        </button>
-      </section>
+          </label>
+          <TrainingSubmissionStatus result={submissionResult} />
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" disabled={!canSubmitAnswer} onClick={clearAnswer} className="training-pencil-action training-pencil-action--clear">지우기</button>
+            <button type="button" disabled={!canSubmitAnswer} onClick={onCheck} className="training-pencil-action training-pencil-action--submit">입력</button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <AnswerDisplay
+            answer={answer}
+            answerSize={answerSize}
+            inputMode={inputMode}
+            label={inputMode === 'bluetooth' ? '주판 입력값' : '입력 중인 답'}
+            submissionResult={submissionResult}
+          />
+          {inputMode === 'keypad' && (
+            <div className="min-h-0 overflow-hidden pt-1">
+              <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
-      <div className="min-h-0 overflow-hidden pt-2">
-        <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
+function AnswerDisplay({
+  answer,
+  answerSize,
+  inputMode,
+  label,
+  submissionResult,
+}: {
+  answer: string;
+  answerSize: string;
+  inputMode: Exclude<TrainingInputMode, 'pencil'>;
+  label: string;
+  submissionResult: SubmissionResult;
+}) {
+  return (
+    <section className={`training-answer-row training-answer-row--${inputMode} mx-auto w-[84%] max-w-[680px] min-h-0`} aria-live="polite">
+      <div className="training-answer-panel">
+        <img src={trainingAnswerPanel} alt="" className="training-answer-panel__image" aria-hidden="true" />
+        <span className="training-answer-panel__content">
+          <span className="training-answer-panel__instruction">{label}</span>
+          <output className={`training-answer-input ${answerSize}`}>{answer || '?'}</output>
+        </span>
       </div>
+      <TrainingSubmissionStatus result={submissionResult} />
+    </section>
+  );
+}
+
+function TrainingSubmissionStatus({ result }: { result: SubmissionResult }) {
+  const isCorrect = result === 'correct';
+  const isWrong = result === 'wrong';
+
+  return (
+    <div
+      className={`training-submission-status ${
+        isCorrect ? 'training-submission-status--correct' : isWrong ? 'training-submission-status--wrong' : 'training-submission-status--idle'
+      }`}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {isCorrect ? '✓ 정답!' : isWrong ? '! 다시 해봐!' : '\u00A0'}
     </div>
   );
 }
@@ -2876,14 +3122,13 @@ function ActiveDinoReactionPanel({
 
   return (
     <div className="grid min-h-[70px] grid-cols-[auto_56px_minmax(0,1fr)_auto] items-center gap-2 rounded-[16px] border-2 border-white bg-gradient-to-r from-lime-50/90 to-cyan-50/90 px-2.5 py-1.5 shadow-sm">
-        <button
-          aria-label="이전 훈련 공룡"
+        <NavigationArrow
+          direction="previous"
+          ariaLabel="이전 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(-1)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-100 text-emerald-800 transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
+          className="h-11 w-11"
+        />
         <div className="flex h-14 w-14 items-end justify-center overflow-hidden rounded-[12px] bg-gradient-to-b from-sky-50 to-lime-100">
           {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="응원하는 공룡" className="h-full w-full object-contain" /> : <DinoAvatar size="small" />}
         </div>
@@ -2895,14 +3140,13 @@ function ActiveDinoReactionPanel({
           <p className="truncate text-[10px] font-bold text-slate-500">{activeSpecies?.displayName ?? activeOwnedDinosaur.speciesId} · {staminaMessage}</p>
           </div>
         </div>
-        <button
-          aria-label="다음 훈련 공룡"
+        <NavigationArrow
+          direction="next"
+          ariaLabel="다음 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(1)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-100 text-emerald-800 transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+          className="h-11 w-11"
+        />
     </div>
   );
 }
@@ -2945,7 +3189,6 @@ function TrainingCompletePanel({
   const hasCoinBonus = summary ? coinMultiplier !== 1 || summary.coins !== summary.baseCoins : false;
   const bonusCoinAmount = summary ? summary.coins - summary.baseCoins : 0;
   const subtitle = displayAccuracy >= 90 ? '정말 잘했어요!' : displayAccuracy >= 70 ? '좋았어요!' : '다시 도전해요!';
-  const mascotMessage = displayAccuracy >= 90 ? '최고예요!' : displayAccuracy >= 70 ? '잘했어요!' : '괜찮아요!';
   const resultRows = [
     { icon: '✓', label: '정답 수', value: `${displayCorrectCount} / ${displayTotalProblems}`, className: 'text-emerald-700' },
     { icon: '%', label: '정확도', value: `${displayAccuracy}%`, className: 'text-cyan-700' },
@@ -2979,12 +3222,6 @@ function TrainingCompletePanel({
                 <span className={`training-result-row-value ${row.className}`}>{row.value}</span>
               </div>
             ))}
-          </div>
-          <div className="training-result-mascot">
-            <div className="training-result-mascot__image-wrap">
-              {trainingUiAssets.cheerDino ? <img src={trainingUiAssets.cheerDino} alt="응원하는 공룡" className="training-result-mascot__image" /> : <DinoAvatar size="small" />}
-            </div>
-            <p className="training-result-speech-bubble">{mascotMessage}</p>
           </div>
         </section>
 
@@ -3029,26 +3266,24 @@ function TrainingDinosaurCard({
   return (
     <div className="rounded-[30px] border-4 border-white bg-white/86 p-5 shadow-lg">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <button
-          aria-label="이전 훈련 공룡"
+        <NavigationArrow
+          direction="previous"
+          ariaLabel="이전 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(-1)}
-          className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-lime-100 text-emerald-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronLeft className="h-7 w-7" />
-        </button>
+          className="h-14 w-14"
+        />
         <div className="text-center">
           <p className="text-sm font-black text-cyan-700">함께 훈련 중!</p>
           <h4 className="text-2xl font-black text-emerald-950">{dinosaur.name}</h4>
         </div>
-        <button
-          aria-label="다음 훈련 공룡"
+        <NavigationArrow
+          direction="next"
+          ariaLabel="다음 훈련 공룡"
           disabled={uniqueOwnedCount <= 1}
           onClick={() => onSelectAdjacentDinosaur(1)}
-          className="flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-lime-100 text-emerald-800 shadow-sm transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronRight className="h-7 w-7" />
-        </button>
+          className="h-14 w-14"
+        />
       </div>
       <div className="flex min-h-44 items-end justify-center rounded-[28px] border-4 border-white bg-gradient-to-b from-sky-100 via-emerald-100 to-lime-200 p-3 shadow-inner">
         <DinoAvatar size="small" />

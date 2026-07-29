@@ -5,6 +5,7 @@ import homeButtonShop from '../../assets/home/home_btn_shop.png?url';
 import homeButtonSound from '../../assets/home/home_btn_sound.png?url';
 import homeButtonTrain from '../../assets/home/home_btn_train.png?url';
 import homeCoinBar from '../../assets/home/home_coin_bar.png?url';
+import type { CSSProperties } from 'react';
 
 type HomeRoute = 'training' | 'dino' | 'shop' | 'settings';
 
@@ -24,26 +25,41 @@ const homeActions: Array<{
   id: HomeRoute;
   image: string | undefined;
   label: string;
+  imageScaleX: number;
+  imageScaleY: number;
+  imageOffsetY: number;
 }> = [
   {
     id: 'training',
     image: homeButtonTrain,
     label: '훈련 시작',
+    imageScaleX: 1.131,
+    imageScaleY: 1.061,
+    imageOffsetY: -1.2,
   },
   {
     id: 'dino',
     image: homeButtonDino,
     label: '공룡 보기',
+    imageScaleX: 1.094,
+    imageScaleY: 1.344,
+    imageOffsetY: 0.5,
   },
   {
     id: 'shop',
     image: homeButtonShop,
     label: '상점',
+    imageScaleX: 1.019,
+    imageScaleY: 1.35,
+    imageOffsetY: 0.7,
   },
   {
     id: 'settings',
     image: homeButtonSetting,
     label: '설정',
+    imageScaleX: 1.064,
+    imageScaleY: 1.124,
+    imageOffsetY: 0.2,
   },
 ];
 
@@ -85,31 +101,40 @@ export function HomeScreen({ coins, onNavigate }: HomeScreenProps) {
                 draggable={false}
               />
             )}
-            <span className="absolute inset-0 flex items-center justify-center pb-[1%] pl-[14%] text-[clamp(0.9rem,2.2vh,1.25rem)] font-black leading-none text-yellow-200 drop-shadow-[0_2px_0_rgba(0,0,0,.38)]">
+            <span className="absolute inset-0 flex -translate-y-[5px] items-center justify-center pb-[1%] pl-[14%] text-[clamp(0.9rem,2.2vh,1.25rem)] font-black leading-none text-yellow-200 drop-shadow-[0_2px_0_rgba(0,0,0,.38)]">
               {coins.toLocaleString()}
             </span>
           </div>
         </header>
 
-        <nav className="absolute inset-x-0 bottom-[5%] z-20 flex h-[40%] flex-col items-center justify-center gap-[clamp(8px,1.1vh,10px)]">
-          {homeActions.map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => onNavigate(action.id)}
-              className="block w-[clamp(260px,48%,360px)] max-w-[72%] overflow-hidden border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-1"
-              aria-label={action.label}
-            >
-              {action.image && (
-                <img
-                  src={action.image}
-                  alt=""
-                  className="block h-auto w-full object-contain"
-                  draggable={false}
-                />
-              )}
-            </button>
-          ))}
+        <nav className="absolute inset-x-0 bottom-[5%] z-20 flex h-[40%] translate-y-[35px] flex-col items-center justify-center gap-[clamp(1px,calc(0.8vh-5px),3px)]">
+          {homeActions.map((action) => {
+            const imageStyle = {
+              '--home-action-scale-x': action.imageScaleX,
+              '--home-action-scale-y': action.imageScaleY,
+              '--home-action-offset-y': `${action.imageOffsetY}%`,
+            } as CSSProperties;
+
+            return (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => onNavigate(action.id)}
+                className="flex h-[clamp(65px,9vh,82px)] w-[clamp(260px,48%,360px)] max-w-[72%] flex-none items-center justify-center overflow-hidden border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-1"
+                aria-label={action.label}
+              >
+                {action.image && (
+                  <img
+                    src={action.image}
+                    alt=""
+                    className="block h-full w-full origin-center object-fill [transform:translateY(var(--home-action-offset-y))_scaleX(var(--home-action-scale-x))_scaleY(var(--home-action-scale-y))]"
+                    style={imageStyle}
+                    draggable={false}
+                  />
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
     </section>

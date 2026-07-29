@@ -3,6 +3,8 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage, habitatBackgroundAssets } from '../../assets/dex';
 import { dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
+import { playSound } from '../../audio/audioManager';
+import { getDinosaurImageForGrowthStage, getGrowthStageForLevel, getGrowthStageLabel } from '../../utils/dinosaurGrowth';
 
 export interface DexScreenProps {
   ownedDinosaurs: OwnedDinosaur[];
@@ -107,7 +109,12 @@ function DexCategoryTabs({
         return (
           <button
             key={habitat}
-            onClick={() => onSelectHabitat(habitat)}
+            onClick={() => {
+              if (!isActive) {
+                playSound('ui_tab_switch');
+                onSelectHabitat(habitat);
+              }
+            }}
             aria-pressed={isActive}
             className={`dex-category-item ${isActive ? 'dex-category-item--active' : ''} ${isLocked ? 'dex-category-item--locked' : ''} grid min-h-[78px] min-w-0 grid-cols-[clamp(36px,5vw,48px)_minmax(0,1fr)] items-center gap-1.5 rounded-[18px] border-3 px-2 text-left font-black transition active:translate-y-1 ${
               isActive ? 'border-lime-400 bg-gradient-to-b from-lime-100 to-lime-200 text-emerald-950 shadow-[0_4px_0_rgba(101,163,13,.22)]' : 'border-white/75 bg-white/72 text-stone-600 hover:bg-white'
@@ -172,6 +179,8 @@ function DexMainCollection({
 }
 
 function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
+  const characterImage = getDexCharacterImage(species, ownedDinosaur);
+
   return (
     <button
       onClick={onSelect}
@@ -182,9 +191,9 @@ function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { k
       {isDiscovered && <Heart className="absolute left-3 top-3 z-10 h-7 w-7 fill-rose-400 text-white drop-shadow-sm" />}
       <div className={`dex-dino-image relative flex min-h-0 items-center justify-center overflow-hidden rounded-[16px] ${isDiscovered ? 'bg-[linear-gradient(180deg,#bfeaff,#f4edc9)]' : 'bg-[linear-gradient(180deg,#d7ccb4,#c9bda3)]'}`}>
         {isDiscovered ? (
-          species.characterAsset ? (
+          characterImage ? (
             <img
-              src={species.characterAsset}
+              src={characterImage}
               alt={species.displayName}
               className="dex-character-image h-full w-full object-contain object-center"
               style={getDexCharacterStyle(species)}
@@ -223,20 +232,21 @@ function DexDetailModal({
   onGoToHatchery: () => void;
 }) {
   const discoveredDateLabel = getDiscoveredDateLabel(ownedDinosaur);
+  const characterImage = getDexCharacterImage(species, ownedDinosaur);
 
   return (
     <div className="dex-detail-modal fixed inset-0 z-40 flex items-center justify-center bg-emerald-950/50 px-4 pb-[calc(92px+env(safe-area-inset-bottom))] pt-4 backdrop-blur-md">
       <section className="relative grid max-h-full min-h-0 w-full max-w-3xl grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-[30px] border-[5px] border-white bg-[#fff8e8] shadow-[0_30px_100px_rgba(15,42,32,.38)]">
-        <button aria-label="닫기" onClick={onClose} className="absolute right-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full border-4 border-white bg-white/92 text-emerald-950 shadow-lg">
+        <button aria-label="닫기" onClick={() => { playSound('ui_button_tap'); onClose(); }} className="absolute right-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full border-4 border-white bg-white/92 text-emerald-950 shadow-lg">
           <X className="h-6 w-6" />
         </button>
 
         <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 overflow-y-auto p-5">
           <div className={`flex min-h-[330px] items-center justify-center overflow-hidden rounded-[26px] border-4 border-white ${isDiscovered ? 'bg-[linear-gradient(180deg,#c6edff,#eaf2cf)]' : 'bg-[#d6cbb6]'}`}>
             {isDiscovered ? (
-              species.characterAsset ? (
+              characterImage ? (
                 <img
-                  src={species.characterAsset}
+                  src={characterImage}
                   alt={species.displayName}
                   className="dex-character-image h-full max-h-[430px] w-full object-contain"
                   style={getDexCharacterStyle(species)}
@@ -276,11 +286,11 @@ function DexDetailModal({
               우리 공룡으로 보기
             </button>
           ) : (
-            <button onClick={onGoToHatchery} className="min-h-14 rounded-[20px] border-4 border-white bg-gradient-to-r from-amber-200 to-orange-300 text-base font-black text-amber-950 shadow-[0_5px_0_#d97706] transition active:translate-y-1 active:shadow-none">
+            <button onClick={() => { playSound('ui_button_tap'); onGoToHatchery(); }} className="min-h-14 rounded-[20px] border-4 border-white bg-gradient-to-r from-amber-200 to-orange-300 text-base font-black text-amber-950 shadow-[0_5px_0_#d97706] transition active:translate-y-1 active:shadow-none">
               알부화장으로 가기
             </button>
           )}
-          <button onClick={onClose} className="min-h-14 rounded-[20px] border-4 border-white bg-white text-base font-black text-emerald-900 shadow-[0_5px_0_#d9d2bd] transition active:translate-y-1 active:shadow-none">닫기</button>
+          <button onClick={() => { playSound('ui_button_tap'); onClose(); }} className="min-h-14 rounded-[20px] border-4 border-white bg-white text-base font-black text-emerald-900 shadow-[0_5px_0_#d9d2bd] transition active:translate-y-1 active:shadow-none">닫기</button>
         </div>
       </section>
     </div>
@@ -358,14 +368,19 @@ function getGrowthSummary(ownedDinosaur?: OwnedDinosaur) {
   }
 
   const level = Math.max(1, Math.floor(ownedDinosaur.level));
-  return `${getDexGrowthStageLabel(level)} · Lv.${level}`;
+  return `${getGrowthStageLabel(getGrowthStageForLevel(level))} · Lv.${level}`;
 }
 
-function getDexGrowthStageLabel(level: number) {
-  if (level >= 20) return '성장 완료';
-  if (level >= 10) return '청소년';
-  if (level >= 5) return '어린이';
-  return '아기';
+function getDexCharacterImage(species: DinosaurSpecies, ownedDinosaur?: OwnedDinosaur) {
+  if (!ownedDinosaur || !Number.isFinite(ownedDinosaur.level)) {
+    return species.characterAsset;
+  }
+
+  return getDinosaurImageForGrowthStage(
+    species.images,
+    getGrowthStageForLevel(Math.max(1, Math.floor(ownedDinosaur.level))),
+    species.characterAsset,
+  );
 }
 
 function getDiscoveredDateLabel(ownedDinosaur?: OwnedDinosaur) {

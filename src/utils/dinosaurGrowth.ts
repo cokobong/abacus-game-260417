@@ -1,4 +1,5 @@
 import { growthConfig } from '../config/growthConfig';
+import type { DinosaurCharacterImages } from '../assets/dex/dinosaurs';
 import type { DinosaurGrowthStage, OwnedDinosaur } from '../types/game';
 
 export function getExpToNextLevel(level: number) {
@@ -15,6 +16,17 @@ export function getGrowthStageLabel(stage: DinosaurGrowthStage) {
 
 export function getGrowthStageReaction(stage: DinosaurGrowthStage) {
   return growthConfig.growthStageByLevel.find((entry) => entry.stage === stage)?.reaction ?? '조금씩 자라고 있어요!';
+}
+
+export function getDinosaurImageForGrowthStage(
+  images: DinosaurCharacterImages | undefined,
+  stage: DinosaurGrowthStage,
+  fallback?: string,
+) {
+  if (!images) return fallback;
+  if (stage === 'adult') return images.adult || images.youth || images.baby || fallback;
+  if (stage === 'child' || stage === 'teen') return images.youth || images.baby || images.adult || fallback;
+  return images.baby || images.youth || images.adult || fallback;
 }
 
 export function getMaxStaminaForLevel(level: number) {

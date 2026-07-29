@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnswerSource, SubmissionResult, TrainingAnswer, TrainingProblem, TrainingSession } from '../types/game';
+import { playSound } from '../audio/audioManager';
 
-const NEXT_PROBLEM_DELAY_MS = 900;
+const NEXT_PROBLEM_DELAY_MS = 650;
 const INITIAL_FEEDBACK = '정답을 입력하고 확인해보세요.';
 const RESET_TRAINING_FEEDBACK = '주판알을 새 답에 맞게 움직인 뒤 리턴 버튼을 눌러주세요.';
 
@@ -176,6 +177,7 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
       return;
     }
 
+    playSound('training_submit');
     const rawInput = overrideValue.trim();
     if (!rawInput) {
       setFeedback('답을 먼저 입력해주세요.');
@@ -186,6 +188,7 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
     if (submittedValue === null) {
       setFeedback('숫자로 된 답을 입력해주세요.');
       setSubmissionResult('wrong');
+      playSound('training_wrong');
       return;
     }
 
@@ -214,11 +217,13 @@ export function useTrainingSession(problems: TrainingProblem[], options: UseTrai
 
     if (!isCorrect) {
       setSubmissionResult('wrong');
+      playSound('training_wrong');
       setFeedback('조금만 더 생각해볼까요? 주판으로 다시 맞춰보세요.');
       return;
     }
 
     setSubmissionResult('correct');
+    playSound('training_correct');
     if (!wasAlreadyCorrect) {
       options.onCorrectAnswer?.(answerRecord);
     }

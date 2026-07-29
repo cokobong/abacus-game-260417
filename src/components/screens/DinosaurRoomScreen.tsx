@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
-import { ChevronLeft, ChevronRight, Heart, Sparkles, Zap } from 'lucide-react';
+import { Heart, Sparkles, Zap } from 'lucide-react';
+import { NavigationArrow } from '../NavigationArrow';
 import { getItemsByCategory, type FoodItemConfig } from '../../config/itemConfig';
 import { dinosaurSpecies, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { DinosaurState, OwnedDinosaur } from '../../types/game';
 import petGreenMain from '../../assets/pet/backgrounds/pet_green_main-removebg-preview.png';
 import { habitatBackgroundAssets } from '../../assets/dex';
+import { getDinosaurImageForGrowthStage, getGrowthStageForLevel } from '../../utils/dinosaurGrowth';
+import { canDinosaurEat, getFoodDietLabel } from '../../utils/dinosaurDiet';
 import {
-  dinoFeedButton,
-  dinoFeedInfoPanel,
   myDinoFoodBagPanel,
   myDinoGrowthPanel,
   myDinoHatcheryButtonDefault,
   myDinoHatcheryButtonPressed,
   dinoNamePanelV2,
 } from '../../assets/pet/mydino';
+import hatchItemSelectedPanel from '../../assets/hatchery/ui/hatch_item_selected_panel.png';
+import hatchItemUseButton from '../../assets/hatchery/ui/hatch_btn_item_use.png';
 import { shopFoodItemImages } from '../../assets/shop';
 
 type DinoView = 'care' | 'playground';
@@ -86,10 +89,11 @@ export function DinosaurRoomScreen({
         <section className="dinosaur-control-half" aria-label="공룡 관리 영역">
           <div className="dinosaur-control-row">
             <DinosaurIdentityPanel dinosaur={dinosaur} activeSpeciesName={activeSpeciesName} />
-            <FeedAction inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
+            <FeedAction species={activeSpecies} inventory={inventory} selectedFoodItemId={selectedFoodItemId} onFeed={onFeed} />
           </div>
           <FeedInventory
             inventory={inventory}
+            species={activeSpecies}
             selectedFoodItemId={selectedFoodItemId}
             onSelectFood={onSelectFood}
           />
@@ -115,17 +119,20 @@ function DinosaurStage({
     '--dino-x': `${species?.homeOffsetX ?? 0}px`,
     '--dino-y': `${species?.homeOffsetY ?? 0}px`,
   } as CSSProperties;
+  const growthImage = getDinosaurImageForGrowthStage(
+    species?.images,
+    getGrowthStageForLevel(dinosaur.level),
+    species?.characterAsset,
+  );
 
   return (
     <section className="pet-dino-stage" aria-label={`${dinosaur.name} 공룡`}>
       {ownedCount > 1 ? (
-        <button type="button" aria-label="이전 공룡" onClick={() => onSelectAdjacentDinosaur(-1)} className="pet-dino-arrow pet-dino-arrow--prev">
-          <ChevronLeft />
-        </button>
+        <NavigationArrow direction="previous" ariaLabel="이전 공룡" onClick={() => onSelectAdjacentDinosaur(-1)} className="pet-dino-arrow pet-dino-arrow--prev" />
       ) : <span className="pet-dino-arrow-spacer" aria-hidden="true" />}
       <div className="pet-dino-visual">
         <img
-          src={species?.characterAsset ?? petGreenMain}
+          src={growthImage ?? species?.characterAsset ?? petGreenMain}
           alt={dinosaur.name}
           className="pet-dino-image"
           style={characterStyle}
@@ -133,9 +140,7 @@ function DinosaurStage({
         />
       </div>
       {ownedCount > 1 ? (
-        <button type="button" aria-label="다음 공룡" onClick={() => onSelectAdjacentDinosaur(1)} className="pet-dino-arrow pet-dino-arrow--next">
-          <ChevronRight />
-        </button>
+        <NavigationArrow direction="next" ariaLabel="다음 공룡" onClick={() => onSelectAdjacentDinosaur(1)} className="pet-dino-arrow pet-dino-arrow--next" />
       ) : <span className="pet-dino-arrow-spacer" aria-hidden="true" />}
     </section>
   );
@@ -166,10 +171,12 @@ function DinosaurIdentityPanel({ dinosaur, activeSpeciesName }: { dinosaur: Dino
 }
 
 function FeedAction({
+  species,
   inventory,
   selectedFoodItemId,
   onFeed,
 }: {
+  species?: DinosaurSpecies;
   inventory: InventoryItemState[];
   selectedFoodItemId: string | null;
   onFeed?: () => void;
@@ -177,7 +184,8 @@ function FeedAction({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedFood = selectedFoodItemId ? getShopFoodItems().find((food) => food.id === selectedFoodItemId) ?? null : null;
   const quantity = selectedFoodItemId ? inventory.find((item) => item.itemId === selectedFoodItemId)?.quantity ?? 0 : 0;
-  const canFeed = Boolean(selectedFood && quantity > 0 && onFeed && !isSubmitting);
+  const isCompatible = canDinosaurEat(species, selectedFood);
+  const canFeed = Boolean(selectedFood && isCompatible && quantity > 0 && onFeed && !isSubmitting);
 
   const handleFeed = () => {
     if (!canFeed || !onFeed) return;
@@ -188,25 +196,29 @@ function FeedAction({
 
   return (
     <section className="pet-feed-action" aria-label="선택한 먹이">
-      <div className="pet-selected-food__icon" aria-hidden="true">
-        {selectedFood && <img src={shopFoodItemImages[selectedFood.id]} alt="" />}
-      </div>
-      <div className="pet-feed-info">
-        <img src={dinoFeedInfoPanel} alt="" className="pet-feed-info__asset" />
-        <div className="pet-feed-info__copy">
-          <strong>{selectedFood?.name ?? '사료를 선택하세요'}</strong>
-          <span>{selectedFood ? `보유 ${quantity}개` : '보유 수량 -'}</span>
+      <div className="hatch-selected-panel pet-feed-selected-panel">
+        <img src={hatchItemSelectedPanel} alt="" className="hatch-selected-panel__background" />
+        <div className="hatch-selected-panel__content">
+          <span className="hatch-selected-panel__icon">
+            {selectedFood && <img src={shopFoodItemImages[selectedFood.id]} alt="" />}
+          </span>
+          <div>
+            <strong>{selectedFood?.name ?? '사료를 선택하세요'}</strong>
+            {selectedFood && <span>보유 {quantity}개</span>}
+            {selectedFood && !isCompatible && <span className="pet-feed-warning">이 공룡은 먹을 수 없어요</span>}
+          </div>
+          <button
+            type="button"
+            className="hatch-action-button pet-feed-inline-button"
+            disabled={!canFeed}
+            onClick={handleFeed}
+            aria-label="아이템 사용"
+          >
+            <img src={hatchItemUseButton} alt="" draggable={false} />
+            <span>아이템 사용</span>
+          </button>
         </div>
       </div>
-      <button
-        type="button"
-        className="pet-feed-button"
-        disabled={!canFeed}
-        onClick={handleFeed}
-        aria-label="먹이주기"
-      >
-        <img src={dinoFeedButton} alt="" draggable={false} />
-      </button>
     </section>
   );
 }
@@ -231,10 +243,12 @@ function DinosaurStatusPanel({ dinosaur }: { dinosaur: DinosaurState }) {
 
 function FeedInventory({
   inventory,
+  species,
   selectedFoodItemId,
   onSelectFood,
 }: {
   inventory: InventoryItemState[];
+  species?: DinosaurSpecies;
   selectedFoodItemId: string | null;
   onSelectFood: (itemId: string) => void;
 }) {
@@ -278,14 +292,13 @@ function FeedInventory({
     <section className="pet-food-inventory" aria-label="사료 가방">
       <img src={myDinoFoodBagPanel} alt="" className="pet-panel-asset" />
       <h4>사료 가방</h4>
-      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--prev" onClick={() => move(-1)} disabled={!canScrollLeft} aria-label="이전 사료">
-        <ChevronLeft />
-      </button>
+      <NavigationArrow direction="previous" ariaLabel="이전 사료" onClick={() => move(-1)} disabled={!canScrollLeft} className="pet-inventory-arrow pet-inventory-arrow--prev" />
       <div ref={viewportRef} className="pet-food-viewport" onScroll={updateScrollButtons}>
         {foodItems.map((food) => {
           const quantity = inventory.find((item) => item.itemId === food.id)?.quantity ?? 0;
           const selected = selectedFoodItemId === food.id;
-          const disabled = quantity <= 0;
+          const isCompatible = canDinosaurEat(species, food);
+          const disabled = quantity <= 0 || !isCompatible;
           return (
             <button
               type="button"
@@ -293,19 +306,20 @@ function FeedInventory({
               disabled={disabled}
               onClick={() => onSelectFood(food.id)}
               aria-pressed={selected}
-              className={`pet-food-card${selected ? ' is-selected' : ''}`}
+              aria-label={`${food.name}, ${getFoodDietLabel(food.dietType)}, 보유 ${quantity}개${isCompatible ? '' : ', 이 공룡은 먹을 수 없음'}`}
+              title={isCompatible ? getFoodDietLabel(food.dietType) : `${getFoodDietLabel(food.dietType)} · 이 공룡은 먹을 수 없어요`}
+              className={`pet-food-card${selected ? ' is-selected' : ''}${!isCompatible ? ' is-incompatible' : ''}`}
             >
               <img src={shopFoodItemImages[food.id]} alt="" className="pet-food-card__image" />
               <span className="pet-food-card__name">{food.name}</span>
               <span className="pet-food-card__quantity">×{quantity}</span>
+              {!isCompatible && <span className="pet-food-card__blocked">먹을 수 없어요</span>}
               {selected && <span className="pet-food-card__check" aria-hidden="true">✓</span>}
             </button>
           );
         })}
       </div>
-      <button type="button" className="pet-inventory-arrow pet-inventory-arrow--next" onClick={() => move(1)} disabled={!canScrollRight} aria-label="다음 사료">
-        <ChevronRight />
-      </button>
+      <NavigationArrow direction="next" ariaLabel="다음 사료" onClick={() => move(1)} disabled={!canScrollRight} className="pet-inventory-arrow pet-inventory-arrow--next" />
     </section>
   );
 }

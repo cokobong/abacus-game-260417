@@ -254,3 +254,60 @@ src/data/items.ts
 - 이미지 경로를 넣을 수 있는 데이터 구조
 
 아이템 확장은 코드 구조를 바꿔서 하는 것이 아니라, 데이터 파일에 항목을 추가하는 방식으로 준비한다.
+
+## 8. 현재 적용 음식 EXP와 식성 규칙
+
+실제 실행 값의 단일 원본은 `src/config/itemConfig.ts`다. 아래 표는 2026-07-29 적용값을 기록하며, 가격은 유지하고 가격 대비 EXP가 지나치게 역전된 항목의 EXP만 보수적으로 조정했다.
+
+| 음식 | 가격 | 변경 전 EXP | 현재 EXP | 코인/EXP | 음식 식성 | 사용 대상 | 변경 이유 |
+| --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| 나뭇잎 | 30 | 5 | 5 | 6.00 | herbivore | 초식·잡식 | 저가 기준 유지 |
+| 고기 | 50 | 10 | 10 | 5.00 | carnivore | 육식·잡식 | 저가 기준 유지 |
+| 생선 | 70 | 8 | 12 | 5.83 | carnivore | 육식·잡식 | 고기보다 비싼데 효율이 낮던 역전 완화 |
+| 말랑 열매 | 80 | 5 | 12 | 6.67 | herbivore | 초식·잡식 | 나뭇잎과 EXP가 같던 역전 해소 |
+| 달콤 열매 | 100 | 10 | 15 | 6.67 | herbivore | 초식·잡식 | 초식 가격 단계 정렬 |
+| 에너지 잎 | 110 | 11 | 16 | 6.88 | herbivore | 초식·잡식 | 초식 가격 단계 정렬 |
+| 열매 바구니 | 120 | 12 | 18 | 6.67 | herbivore | 초식·잡식 | 중가 전용 먹이 효율 보정 |
+| 튼튼 고기 | 140 | 15 | 22 | 6.36 | carnivore | 육식·잡식 | 육식 가격 단계 정렬 |
+| 공룡 쿠키 | 150 | 20 | 20 | 7.50 | universal | 모든 공룡 | 공용 편의성 대신 전용 먹이보다 낮은 효율 유지 |
+| 특별 간식 | 220 | 30 | 30 | 7.33 | universal | 모든 공룡 | 공용 고가 간식의 기존 값 유지 |
+
+규칙:
+
+- `herbivore` 공룡은 초식 먹이와 공용 먹이만 먹는다.
+- `carnivore` 공룡은 육식 먹이와 공용 먹이만 먹는다.
+- `omnivore` 공룡은 초식·육식·공용 먹이를 모두 먹는다.
+- 공룡 쿠키와 특별 간식은 `universal`이다.
+- 상점에서는 모든 음식을 살 수 있으며 상세 팝업에 사용 대상을 표시한다.
+- 사료 가방에서는 맞지 않는 먹이를 비활성화하고, 실제 먹이 적용 직전에도 식성을 다시 검증한다.
+
+### 공룡 24종 식성
+
+| 공룡 | 코드 ID | 식성 | 허용 먹이 |
+| --- | --- | --- | --- |
+| 티라노사우르스 | tiny-tyranno | carnivore | 육식·공용 |
+| 트리케라 | baby-tricera | herbivore | 초식·공용 |
+| 스테고 | plate-stego | herbivore | 초식·공용 |
+| 파라사우롤로푸스 | parasaurolophus | herbivore | 초식·공용 |
+| 안킬로 | armor-ankylo | herbivore | 초식·공용 |
+| 리프케라 | leafcera | herbivore | 초식·공용 |
+| 브라키오 | long-brachio | herbivore | 초식·공용 |
+| 알로사우루스 | allosaurus | carnivore | 육식·공용 |
+| 파키케팔로 | pachycephalosaurus | herbivore | 초식·공용 |
+| 딜로포사우루스 | dilophosaurus | carnivore | 육식·공용 |
+| 이구아노돈 | iguanodon | herbivore | 초식·공용 |
+| 크리스탈로 | crystalo | omnivore | 초식·육식·공용 |
+| 카르노타우루스 | carnotaurus | carnivore | 육식·공용 |
+| 켄트로사우루스 | kentrosaurus | herbivore | 초식·공용 |
+| 디메트로돈 | dimetrodon | carnivore | 육식·공용 |
+| 스피노사우루스 | spinosaurus | carnivore | 육식·공용 |
+| 테리지노사우루스 | therizinosaurus | omnivore | 초식·육식·공용 |
+| 불카노돈 | volcanodon | herbivore | 초식·공용 |
+| 프테라노돈 | pteranodon | carnivore | 육식·공용 |
+| 디플로도쿠스 | diplodocus | herbivore | 초식·공용 |
+| 벨로시랩터 | swift-raptor | carnivore | 육식·공용 |
+| 플레시오사우루스 | plesiosaurus | carnivore | 육식·공용 |
+| 모사사우루스 | mosasaurus | carnivore | 육식·공용 |
+| 스타라노 | starano | omnivore | 초식·육식·공용 |
+
+파키케팔로는 어린이용 게임에서 이해하기 쉽도록 일반적인 분류에 따라 초식으로 운용한다. 테리지노사우루스는 식성 해석의 폭을 고려해 잡식으로 운용한다. 크리스탈로와 스타라노는 창작종이며 기존 설명에 명확한 식성이 없어, 한쪽 먹이를 임의로 금지하지 않도록 잡식으로 명시했다.

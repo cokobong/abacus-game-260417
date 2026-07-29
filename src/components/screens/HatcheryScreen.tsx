@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, PackageOpen, Sparkles } from 'lucide-react';
+import { PackageOpen } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { NavigationArrow } from '../NavigationArrow';
 import {
   getEggItemConfig,
   getItemsByCategory,
@@ -8,11 +9,17 @@ import {
 } from '../../config/itemConfig';
 import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getHatchCandidates } from '../../utils/hatchCandidates';
+import { playSound } from '../../audio/audioManager';
+import { getDinosaurSpecies } from '../../data/dinosaurSpecies';
 import hatcheryBackground from '../../assets/hatchery/backgrounds/hatchery_bg_common.png';
 import hatcheryProgressPanel from '../../assets/hatchery/ui/hatchery_progress_panel.png';
 import hatchItemSelectedPanel from '../../assets/hatchery/ui/hatch_item_selected_panel.png';
 import hatchItemUseButton from '../../assets/hatchery/ui/hatch_btn_item_use.png';
 import hatchStartButton from '../../assets/hatchery/ui/hatch_btn_start.png';
+import hatchSuccessPanel from '../../assets/hatchery/success-popup/hatch_success_popup_panel.png';
+import hatchSuccessCollectionButton from '../../assets/hatchery/success-popup/hatch_success_btn_collection.png';
+import hatchSuccessMyDinosaurButton from '../../assets/hatchery/success-popup/hatch_success_btn_my_dinosaur.png';
+import hatchSuccessContinueButton from '../../assets/hatchery/success-popup/hatch_success_btn_continue.png';
 import {
   myDinoFoodBagPanel,
   myDinoListButtonDefault,
@@ -51,6 +58,7 @@ const hatchItemImages: Readonly<Record<string, string>> = {
 };
 
 export type HatchResult = {
+  speciesId: string;
   eggName: string;
   eggRarity: EggState['rarity'];
   dinosaurName: string;
@@ -116,14 +124,23 @@ export function HatcheryScreen({
 
       <div className="hatchery-content">
         <div className="hatchery-mode-tabs" aria-label="공룡 화면 전환">
-          <AssetSwitchButton label="공룡 보기" selected={false} defaultAsset={myDinoListButtonDefault} pressedAsset={myDinoListButtonPressed} onClick={onGoToDino} />
+          <AssetSwitchButton
+            label="공룡 보기"
+            selected={false}
+            defaultAsset={myDinoListButtonDefault}
+            pressedAsset={myDinoListButtonPressed}
+            onClick={() => {
+              playSound('ui_tab_switch');
+              onGoToDino();
+            }}
+          />
         </div>
 
         <section className="hatchery-egg-display" aria-label="선택한 알">
           {eggOptions.length > 1 && (
             <>
-              <button type="button" className="pet-dino-arrow pet-dino-arrow--prev" aria-label="이전 알" onClick={() => selectAdjacent(-1)}><ChevronLeft /></button>
-              <button type="button" className="pet-dino-arrow pet-dino-arrow--next" aria-label="다음 알" onClick={() => selectAdjacent(1)}><ChevronRight /></button>
+              <NavigationArrow direction="previous" ariaLabel="이전 알" onClick={() => selectAdjacent(-1)} className="pet-dino-arrow pet-dino-arrow--prev" />
+              <NavigationArrow direction="next" ariaLabel="다음 알" onClick={() => selectAdjacent(1)} className="pet-dino-arrow pet-dino-arrow--next" />
             </>
           )}
           {activeEgg ? (
@@ -158,7 +175,10 @@ export function HatcheryScreen({
                   label="부화하기"
                   src={hatchStartButton}
                   disabled={!canHatch}
-                  onClick={onHatchEgg}
+                  onClick={() => {
+                    playSound('ui_button_tap');
+                    onHatchEgg();
+                  }}
                 />
               </div>
             </div>
@@ -166,7 +186,12 @@ export function HatcheryScreen({
           <HatchItemBag
             inventory={hatchItems}
             selectedItemId={selectedItemId}
-            onSelect={setSelectedItemId}
+            onSelect={(itemId) => {
+              if (itemId !== selectedItemId) {
+                playSound('item_select');
+                setSelectedItemId(itemId);
+              }
+            }}
           />
         </section>
       </div>
@@ -262,17 +287,46 @@ function HatchItemBag({
 }
 
 function HatchResultPanel({ result, onGoToDex, onGoToDino, onClose }: { result: HatchResult; onGoToDex: () => void; onGoToDino: () => void; onClose: () => void }) {
+  const species = getDinosaurSpecies(result.speciesId);
+  const dinosaurImage = species?.images?.baby ?? species?.characterAsset;
+  const description = species?.description ?? result.message;
+
   return (
-    <div className="hatch-result" role="dialog" aria-modal="true" aria-label="부화 결과">
-      <section>
-        <Sparkles />
-        <p>{result.eggName}에서</p>
-        <h3>{result.dinosaurName}</h3>
-        <strong>{result.speciesName} 탄생!</strong>
-        <span>{result.message}</span>
-        <div><button onClick={onGoToDex}>도감 보기</button><button onClick={onGoToDino}>우리 공룡</button><button onClick={onClose}>계속 보기</button></div>
+    <div className="hatch-result">
+      <section role="dialog" aria-modal="true" aria-labelledby="hatch-success-title" className="hatch-success-popup">
+        <img src={hatchSuccessPanel} alt="" aria-hidden="true" className="hatch-success-popup__panel" draggable={false} />
+        <div className="hatch-success-popup__dinosaur">
+          {dinosaurImage && <img src={dinosaurImage} alt={result.dinosaurName} draggable={false} />}
+        </div>
+        <div className="hatch-success-popup__copy">
+          <p>새로운 공룡이 태어났어요!</p>
+          <h2 id="hatch-success-title">{result.dinosaurName}</h2>
+          <strong>{result.speciesName} · {result.eggName} ({getRarityLabel(result.eggRarity)})</strong>
+          <span>{description}</span>
+        </div>
+        <div className="hatch-success-popup__actions">
+          <HatchSuccessButton src={hatchSuccessCollectionButton} label="도감 보기" onClick={onGoToDex} />
+          <HatchSuccessButton src={hatchSuccessMyDinosaurButton} label="우리 공룡" onClick={onGoToDino} />
+          <HatchSuccessButton src={hatchSuccessContinueButton} label="계속 보기" onClick={onClose} />
+        </div>
       </section>
     </div>
+  );
+}
+
+function HatchSuccessButton({ src, label, onClick }: { src: string; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={() => {
+        playSound('ui_button_tap');
+        onClick();
+      }}
+      className="hatch-success-popup__button"
+    >
+      <img src={src} alt="" aria-hidden="true" draggable={false} />
+    </button>
   );
 }
 

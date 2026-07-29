@@ -1,7 +1,3 @@
-import brachioCard from './dinosaurs/brachio_card.png';
-import stegoCard from './dinosaurs/stego_card.png';
-import trexCard from './dinosaurs/trex_card.png';
-import triceraCard from './dinosaurs/tricera_card.png';
 import collectionBgCrystalCave from './collection/collection_bg_crystal_cave.png';
 import collectionBgGreenForest from './collection/collection_bg_green_forest.png';
 import collectionBgSecretLand from './collection/collection_bg_secret_land.png';
@@ -27,13 +23,6 @@ import rewardGiftIcon from './rewards/reward_gift_icon.png';
 import silhouetteHerbivore from './silhouettes/silhouette_herbivore.png';
 import silhouetteLongneck from './silhouettes/silhouette_longneck.png';
 import silhouetteTrex from './silhouettes/silhouette_trex.png';
-
-export const dexDinosaurImages: Partial<Record<string, string>> = {
-  'tiny-tyranno': trexCard,
-  'baby-tricera': triceraCard,
-  'plate-stego': stegoCard,
-  'long-brachio': brachioCard,
-};
 
 export const habitatBackgroundAssets = {
   'green-forest': collectionBgGreenForest,

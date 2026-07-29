@@ -1,5 +1,5 @@
 import type { CostumeSlot, DinosaurState } from '../types/game';
-import type { DinosaurHabitatId } from '../data/dinosaurSpecies';
+import type { DinosaurDiet, DinosaurHabitatId } from '../data/dinosaurSpecies';
 
 export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'hatchItem' | 'toy' | 'misc';
 export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
@@ -17,6 +17,7 @@ interface BaseItemConfig {
 export interface FoodItemConfig extends BaseItemConfig {
   category: 'food';
   expValue: number;
+  dietType: DinosaurDiet | 'universal';
   effect: DinosaurStatEffect;
 }
 
@@ -95,6 +96,7 @@ export const itemConfigs: ItemConfig[] = [
     description: '체력을 회복하는 든든한 기본 사료예요.',
     sortOrder: 1,
     expValue: 10,
+    dietType: 'carnivore',
     effect: {
       mood: 2,
       stamina: 5,
@@ -107,7 +109,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 80,
     description: '체력을 조금 회복하는 말랑한 열매예요.',
     sortOrder: 2,
-    expValue: 5,
+    expValue: 12,
+    dietType: 'herbivore',
     effect: {
       mood: 2,
       stamina: 3,
@@ -121,6 +124,7 @@ export const itemConfigs: ItemConfig[] = [
     description: '가볍게 체력을 회복하는 기본 사료예요.',
     sortOrder: 3,
     expValue: 5,
+    dietType: 'herbivore',
     effect: {
       mood: 1,
       stamina: 3,
@@ -134,6 +138,7 @@ export const itemConfigs: ItemConfig[] = [
     description: '체력을 많이 회복하는 특별 간식이에요.',
     sortOrder: 4,
     expValue: 20,
+    dietType: 'universal',
     effect: {
       mood: 4,
       stamina: 8,
@@ -146,7 +151,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 70,
     description: '담백한 생선 간식이에요.',
     sortOrder: 5,
-    expValue: 8,
+    expValue: 12,
+    dietType: 'carnivore',
     effect: {
       mood: 2,
       stamina: 4,
@@ -159,7 +165,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 120,
     description: '여러 가지 열매를 담은 사료예요.',
     sortOrder: 6,
-    expValue: 12,
+    expValue: 18,
+    dietType: 'herbivore',
     effect: {
       mood: 3,
       stamina: 5,
@@ -172,7 +179,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 140,
     description: '든든하게 힘을 채워주는 고기예요.',
     sortOrder: 7,
-    expValue: 15,
+    expValue: 22,
+    dietType: 'carnivore',
     effect: {
       mood: 2,
       stamina: 7,
@@ -185,7 +193,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 100,
     description: '공룡이 좋아하는 달콤한 열매예요.',
     sortOrder: 8,
-    expValue: 10,
+    expValue: 15,
+    dietType: 'herbivore',
     effect: {
       mood: 4,
       stamina: 4,
@@ -198,7 +207,8 @@ export const itemConfigs: ItemConfig[] = [
     price: 110,
     description: '가볍게 활력을 채워주는 잎사귀예요.',
     sortOrder: 9,
-    expValue: 11,
+    expValue: 16,
+    dietType: 'herbivore',
     effect: {
       mood: 2,
       stamina: 6,
@@ -212,6 +222,7 @@ export const itemConfigs: ItemConfig[] = [
     description: '조금 더 특별한 날에 주는 간식이에요.',
     sortOrder: 10,
     expValue: 30,
+    dietType: 'universal',
     effect: {
       mood: 5,
       stamina: 10,

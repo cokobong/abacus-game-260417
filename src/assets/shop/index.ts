@@ -53,3 +53,9 @@ export { default as shopItemHatchWarmStone } from './items/hatch/shop_item_hatch
 export { default as shopItemHatchWarmBlanket } from './items/hatch/shop_item_hatch_warm_blanket.png';
 export { default as shopItemHatchSparkleEnergy } from './items/hatch/shop_item_hatch_sparkle_energy.png';
 export { default as shopItemHatchRareFragment } from './items/hatch/shop_item_hatch_rare_fragment.png';
+export { default as shopPopupPanel } from './popup/shop_popup_panel.png';
+export { default as shopPopupEffectPanel } from './popup/shop_popup_effect_panel.png';
+export { default as shopPopupPricePanel } from './popup/shop_popup_price_panel.png';
+export { default as shopPopupOwnedPanel } from './popup/shop_popup_owned_panel.png';
+export { default as shopPopupBuyButton } from './popup/shop_popup_btn_buy.png';
+export { default as shopPopupExitButton } from './popup/shop_popup_btn_exit.png';

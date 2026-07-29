@@ -1,13 +1,11 @@
 import type { Id, OwnedDinosaur } from '../types/game';
-import brachioCharacterAsset from '../assets/dex/dinosaurs/dino_brachio_character_transparent.png';
-import stegoCharacterAsset from '../assets/dex/dinosaurs/dino_stego_character_transparent.png';
-import trexCharacterAsset from '../assets/dex/dinosaurs/dino_trex_character_transparent.png';
-import triceraCharacterAsset from '../assets/dex/dinosaurs/dino_tricera_character_transparent.png';
+import { dinosaurCharacterAssets, type DinosaurCharacterImages } from '../assets/dex/dinosaurs';
 
 export type DinosaurSpeciesRarity = OwnedDinosaur['rarity'];
 export type DinosaurUnlockSource = 'normal-egg' | 'special-egg' | 'rare-egg' | 'adventure-fragment' | 'planned';
 export type DinosaurEggCategory = 'normal' | 'special' | 'rare';
 export type DinosaurSpeciesStatus = 'available' | 'planned' | 'locked';
+export type DinosaurDiet = 'herbivore' | 'carnivore' | 'omnivore';
 
 export interface DinosaurSpecies {
   speciesId: Id;
@@ -20,6 +18,7 @@ export interface DinosaurSpecies {
   dexDescription: string;
   personality: string;
   favoriteFoodName: string;
+  diet: DinosaurDiet;
   habitat: DinosaurHabitatId;
   eggCategory: DinosaurEggCategory;
   unlockSource: DinosaurUnlockSource;
@@ -36,6 +35,7 @@ export interface DinosaurSpecies {
   lockedLabel?: string;
   themeLabel?: string;
   characterAsset?: string;
+  images?: DinosaurCharacterImages;
   homeScale: number;
   homeOffsetX: number;
   homeOffsetY: number;
@@ -59,7 +59,7 @@ const habitatOrderById: Record<DinosaurHabitatId, number> = {
 
 type DinosaurPresentation = Pick<
   DinosaurSpecies,
-  'characterAsset' | 'homeScale' | 'homeOffsetX' | 'homeOffsetY' | 'cardScale' | 'cardOffsetX' | 'cardOffsetY'
+  'characterAsset' | 'images' | 'homeScale' | 'homeOffsetX' | 'homeOffsetY' | 'cardScale' | 'cardOffsetX' | 'cardOffsetY'
 >;
 
 const defaultDinosaurPresentation: DinosaurPresentation = {
@@ -72,8 +72,17 @@ const defaultDinosaurPresentation: DinosaurPresentation = {
 };
 
 const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>> = {
+  allosaurus: {
+    images: dinosaurCharacterAssets.allosaurus,
+    homeScale: 1,
+    homeOffsetX: 0,
+    homeOffsetY: 0,
+    cardScale: 1,
+    cardOffsetX: 0,
+    cardOffsetY: 0,
+  },
   'tiny-tyranno': {
-    characterAsset: trexCharacterAsset,
+    images: dinosaurCharacterAssets.trex,
     homeScale: 1,
     homeOffsetX: 0,
     homeOffsetY: 0,
@@ -82,7 +91,7 @@ const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>>
     cardOffsetY: 0,
   },
   'baby-tricera': {
-    characterAsset: triceraCharacterAsset,
+    images: dinosaurCharacterAssets.tricera,
     homeScale: 1.06,
     homeOffsetX: -2,
     homeOffsetY: 0,
@@ -91,7 +100,7 @@ const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>>
     cardOffsetY: 0,
   },
   'plate-stego': {
-    characterAsset: stegoCharacterAsset,
+    images: dinosaurCharacterAssets.stego,
     homeScale: 1.12,
     homeOffsetX: -4,
     homeOffsetY: 4,
@@ -100,7 +109,7 @@ const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>>
     cardOffsetY: 2,
   },
   'long-brachio': {
-    characterAsset: brachioCharacterAsset,
+    images: dinosaurCharacterAssets.brachio,
     homeScale: 1.02,
     homeOffsetX: -2,
     homeOffsetY: 0,
@@ -108,6 +117,33 @@ const dinosaurPresentationBySpeciesId: Partial<Record<Id, DinosaurPresentation>>
     cardOffsetX: -1,
     cardOffsetY: 0,
   },
+};
+
+const dinosaurImagesBySpeciesId: Record<Id, DinosaurCharacterImages> = {
+  'tiny-tyranno': dinosaurCharacterAssets.trex,
+  'baby-tricera': dinosaurCharacterAssets.tricera,
+  'plate-stego': dinosaurCharacterAssets.stego,
+  parasaurolophus: dinosaurCharacterAssets.parasauro,
+  'armor-ankylo': dinosaurCharacterAssets.ankylo,
+  leafcera: dinosaurCharacterAssets.gallimimus,
+  'long-brachio': dinosaurCharacterAssets.brachio,
+  allosaurus: dinosaurCharacterAssets.allosaurus,
+  pachycephalosaurus: dinosaurCharacterAssets.pachy,
+  dilophosaurus: dinosaurCharacterAssets.corytho,
+  iguanodon: dinosaurCharacterAssets.iguanodon,
+  crystalo: dinosaurCharacterAssets.velociraptor,
+  carnotaurus: dinosaurCharacterAssets.carnotaurus,
+  kentrosaurus: dinosaurCharacterAssets.kentrosaurus,
+  dimetrodon: dinosaurCharacterAssets.deinonychus,
+  spinosaurus: dinosaurCharacterAssets.spino,
+  therizinosaurus: dinosaurCharacterAssets.therizino,
+  volcanodon: dinosaurCharacterAssets.ceratosaurus,
+  pteranodon: dinosaurCharacterAssets.oviraptor,
+  diplodocus: dinosaurCharacterAssets.diplodocus,
+  'swift-raptor': dinosaurCharacterAssets.saurolophus,
+  plesiosaurus: dinosaurCharacterAssets.amargasaurus,
+  mosasaurus: dinosaurCharacterAssets.dracorex,
+  starano: dinosaurCharacterAssets.maiasaura,
 };
 
 const eggCategoryFoundMethod: Record<DinosaurEggCategory, string> = {
@@ -193,10 +229,40 @@ const speciesDrafts: Array<{
   { speciesId: 'starano', displayName: '스타라노', defaultName: '스타라노', rarity: 'rare', habitat: 'secret-land', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 24, personality: '신중함', favoriteFoodName: '비밀 열매', silhouette: '?', themeLabel: '별빛 날개 공룡', description: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.', dexDescription: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.', discoveryHint: '별이 가장 많이 보이는 밤에 모습을 드러낸다는 이야기가 있어요.' },
 ];
 
+const dinosaurDietBySpeciesId: Record<string, DinosaurDiet> = {
+  'tiny-tyranno': 'carnivore',
+  'baby-tricera': 'herbivore',
+  'plate-stego': 'herbivore',
+  parasaurolophus: 'herbivore',
+  'armor-ankylo': 'herbivore',
+  leafcera: 'herbivore',
+  'long-brachio': 'herbivore',
+  allosaurus: 'carnivore',
+  pachycephalosaurus: 'herbivore',
+  dilophosaurus: 'carnivore',
+  iguanodon: 'herbivore',
+  crystalo: 'omnivore',
+  carnotaurus: 'carnivore',
+  kentrosaurus: 'herbivore',
+  dimetrodon: 'carnivore',
+  spinosaurus: 'carnivore',
+  therizinosaurus: 'omnivore',
+  volcanodon: 'herbivore',
+  pteranodon: 'carnivore',
+  diplodocus: 'herbivore',
+  'swift-raptor': 'carnivore',
+  plesiosaurus: 'carnivore',
+  mosasaurus: 'carnivore',
+  starano: 'omnivore',
+};
+
 export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) => ({
   ...species,
   ...defaultDinosaurPresentation,
   ...dinosaurPresentationBySpeciesId[species.speciesId],
+  images: dinosaurImagesBySpeciesId[species.speciesId],
+  characterAsset: dinosaurImagesBySpeciesId[species.speciesId].baby,
+  diet: dinosaurDietBySpeciesId[species.speciesId],
   name: species.defaultName,
   habitatOrder: habitatOrderById[species.habitat],
   starterSelectable: species.starterSelectable ?? false,
