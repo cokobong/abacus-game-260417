@@ -124,14 +124,14 @@ function loadTrainingInputMode(): TrainingInputMode {
 const initialDinosaurState: DinosaurState = {
   id: 'dino-tiny-tyranno',
   name: '용감한 티라노',
-  level: 4,
-  exp: 9,
-  expToNextLevel: getExpToNextLevel(4),
-  growthStage: getGrowthStageForLevel(4),
+  level: 1,
+  exp: 0,
+  expToNextLevel: getExpToNextLevel(1),
+  growthStage: getGrowthStageForLevel(1),
   mood: 74,
   happiness: 74,
   stamina: 81,
-  maxStamina: getMaxStaminaForLevel(3),
+  maxStamina: getMaxStaminaForLevel(1),
 };
 
 const initialEggState: EggState = {
@@ -140,7 +140,7 @@ const initialEggState: EggState = {
   rarity: 'normal',
   eggType: 'normal',
   eggCategory: 'normal',
-  hatchProgress: 62,
+  hatchProgress: 0,
 };
 
 const initialOwnedEgg: OwnedEgg = {
@@ -969,7 +969,9 @@ export default function App() {
       message: eggReset.didReset ? '알 보유 데이터를 한 번 초기화했어요. 다른 진행 데이터는 유지됩니다.' : loaded.message,
     };
   });
-  const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>('app');
+  const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>(() =>
+    initialLoadResult.state.userProfile ? 'app' : 'onboarding',
+  );
   const [activeTab, setActiveTab] = useState<AppScreen>('home');
   const hasMountedRef = useRef(false);
   const skipNextSaveRef = useRef(false);
@@ -1167,16 +1169,31 @@ export default function App() {
     clearGameState();
     skipNextSaveRef.current = true;
     setGameState(defaultGameState);
-    setSelectedFoodItemId('soft-berry');
+    setActiveTab('home');
+    setDinoView('care');
+    setIsHatcheryOpen(false);
+    setHatchResult(null);
+    setSelectedFoodItemId(null);
     setLastRewards([]);
     setSetCompleteRewards([]);
+    setCompletedTrainingSummary(null);
     setLastTrainingEffects([]);
+    setLastBluetoothInput(null);
+    setTrainingRunId((current) => current + 1);
     setDinoFeedback('저장 데이터를 초기화했어요.');
     setShopFeedback('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
     setAdventureFeedback('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
     setAdventureResult(null);
-    setStorageFeedback('저장 데이터를 초기화하고 기본 상태로 되돌렸어요.');
-    setPhase('app');
+    rewardedSessionIdsRef.current = new Set();
+    lastBluetoothConfirmRef.current = null;
+    isHatchingRef.current = false;
+    isFeedingRef.current = false;
+    if (dinoHappyTimerRef.current !== null) {
+      window.clearTimeout(dinoHappyTimerRef.current);
+      dinoHappyTimerRef.current = null;
+    }
+    setStorageFeedback('저장 데이터를 초기화하고 프로필 생성 화면으로 이동했어요.');
+    setPhase('onboarding');
     console.log('Cleared local game state.');
   }
 
