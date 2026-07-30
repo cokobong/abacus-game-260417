@@ -8,6 +8,17 @@ export interface AudioSettings {
   bgmEnabled: boolean;
   sfxEnabled: boolean;
 }
+
+export interface AdminChangeLog {
+  id: string;
+  changedAt: string;
+  profileId?: string;
+  type: 'coins' | 'egg' | 'item';
+  targetId?: string;
+  targetName?: string;
+  before: number;
+  after: number;
+}
 export type ProblemOperator = '+' | '-';
 export type ProblemStatus = 'ready' | 'answering' | 'correct' | 'retry';
 export type TrainingSessionStatus = 'running' | 'showing_feedback' | 'completed';

@@ -14,26 +14,28 @@ import {
   Star,
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
+import { AdminPanel } from './components/AdminPanel';
 import { NavigationArrow } from './components/NavigationArrow';
+import { SaveDataTransferControls } from './components/SaveDataTransferControls';
 import { TrainingReport } from './components/TrainingReport';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { coinRewardOptions, defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
+import { ADMIN_LIMITS } from './config/adminConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
 import { adventureAreas } from './data/adventures';
 import { dinosaurSpecies, getDinosaurSpecies, getStarterSelectableSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { AbacusLevelConfig, AbacusStageConfig, AudioSettings, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingInputMode, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
+import type { AbacusLevelConfig, AbacusStageConfig, AdminChangeLog, AudioSettings, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingInputMode, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
 import { generateTrainingProblems } from './utils/generateTrainingProblems';
 import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
 import {
   clearGameState,
   createGameBackup,
   downloadGameBackup,
-  EGG_OWNERSHIP_RESET_MIGRATION_KEY,
   importGameBackup,
   loadGameState,
   parseGameBackup,
@@ -94,6 +96,7 @@ type GameState = {
   activeEggId: string | null;
   ownedCostumeIds: string[];
   inventory: InventoryItemState[];
+  adminChangeLogs: AdminChangeLog[];
   trainingHistory: TrainingSessionRecord[];
   rewardedTrainingSessionIds: string[];
   progressByLevel: Record<number, LevelProgressRecord>;
@@ -217,38 +220,12 @@ const defaultGameState: GameState = {
   activeEggId: initialOwnedEgg.id,
   ownedCostumeIds: [],
   inventory: initialInventory,
+  adminChangeLogs: [],
   trainingHistory: [],
   rewardedTrainingSessionIds: [],
   progressByLevel: {},
   progressByStage: {},
 };
-
-function resetOwnedEggDataOnce(state: GameState, loadedFromStorage: boolean): { state: GameState; didReset: boolean } {
-  if (!loadedFromStorage || typeof window === 'undefined') return { state, didReset: false };
-
-  try {
-    if (window.localStorage.getItem(EGG_OWNERSHIP_RESET_MIGRATION_KEY) === 'done') return { state, didReset: false };
-    window.localStorage.setItem(EGG_OWNERSHIP_RESET_MIGRATION_KEY, 'done');
-  } catch {
-    return { state, didReset: false };
-  }
-
-  return {
-    state: {
-      ...state,
-      egg: {
-        ...defaultGameState.egg,
-        hatchProgress: 0,
-        lastHatchedDinosaurName: undefined,
-        lastHatchedDinosaurRarity: undefined,
-        lastHatchMessage: undefined,
-      },
-      ownedEggs: [],
-      activeEggId: null,
-    },
-    didReset: true,
-  };
-}
 
 function normalizeGameState(state: Partial<GameState>): GameState {
   const rawUserProfile = isRecord(state.userProfile) ? state.userProfile : null;
@@ -284,6 +261,9 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     (state as Partial<GameState> & { rareEggFragments?: unknown }).rareEggFragments ??
     (state as Partial<GameState> & { resources?: { rareEggFragments?: unknown } }).resources?.rareEggFragments;
   const inventory = normalizeInventoryItems(state.inventory, rareEggFragmentsFallback);
+  const adminChangeLogs = Array.isArray(state.adminChangeLogs)
+    ? state.adminChangeLogs.filter((log): log is AdminChangeLog => isRecord(log) && typeof log.id === 'string').slice(0, 50)
+    : [];
   const ownedCostumeIds = getUniqueSpeciesIds([...getArrayValue(state.ownedCostumeIds, []), ...getOwnedCostumeIdsFromInventory(inventory)].filter((itemId): itemId is string => typeof itemId === 'string'));
   const userProfile = rawUserProfile
     ? {
@@ -337,6 +317,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     activeEggId,
     ownedCostumeIds,
     inventory,
+    adminChangeLogs,
     trainingHistory,
     rewardedTrainingSessionIds,
     progressByLevel,
@@ -480,27 +461,7 @@ function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg
       };
     });
 
-  return getOneEggPerCategory(normalizedEggs);
-}
-
-function getOneEggPerCategory(ownedEggs: OwnedEgg[]): OwnedEgg[] {
-  const selectedEggs = new Map<string, OwnedEgg>();
-
-  ownedEggs.forEach((egg) => {
-    const eggCategory = getEggCategoryForOwnedEgg(egg);
-    const selectedEgg = selectedEggs.get(eggCategory);
-
-    if (!selectedEgg || getEggSlotPriority(egg) > getEggSlotPriority(selectedEgg)) {
-      selectedEggs.set(eggCategory, egg);
-    }
-  });
-
-  const eggCategoryOrder = ['normal', 'special', 'rare'];
-  return Array.from<OwnedEgg>(selectedEggs.values()).sort((a, b) => eggCategoryOrder.indexOf(getEggCategoryForOwnedEgg(a)) - eggCategoryOrder.indexOf(getEggCategoryForOwnedEgg(b)));
-}
-
-function getEggSlotPriority(egg: OwnedEgg) {
-  return clampPercent(egg.hatchProgress ?? 0) * 1_000_000 + (egg.createdAt ?? 0);
+  return normalizedEggs.sort((a, b) => a.createdAt - b.createdAt);
 }
 
 function getEggCategoryLabel(category: NonNullable<OwnedEgg['eggCategory']>) {
@@ -971,11 +932,9 @@ function isOperationsOverrideRecommended(value: OperationsOverride, stages: Abac
 export default function App() {
   const [initialLoadResult] = useState(() => {
     const loaded = loadGameState(defaultGameState);
-    const eggReset = resetOwnedEggDataOnce(loaded.state, loaded.loadedFromStorage);
     return {
       ...loaded,
-      state: normalizeGameState(eggReset.state),
-      message: eggReset.didReset ? '알 보유 데이터를 한 번 초기화했어요. 다른 진행 데이터는 유지됩니다.' : loaded.message,
+      state: normalizeGameState(loaded.state),
     };
   });
   const [phase, setPhase] = useState<'title' | 'onboarding' | 'app'>(() =>
@@ -1149,6 +1108,106 @@ export default function App() {
       bgmEnabled: shouldEnableAll,
       sfxEnabled: shouldEnableAll,
     });
+  }
+
+  function createAdminLog(
+    type: AdminChangeLog['type'],
+    before: number,
+    after: number,
+    target?: { id: string; name: string },
+  ): AdminChangeLog {
+    const changedAt = new Date().toISOString();
+    return {
+      id: `admin-${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      changedAt,
+      profileId: gameState.userProfile?.id,
+      type,
+      targetId: target?.id,
+      targetName: target?.name ?? '코인',
+      before,
+      after,
+    };
+  }
+
+  function commitAdminState(update: (current: GameState) => GameState) {
+    setGameState((current) => {
+      const next = update(current);
+      saveGameState(next);
+      return next;
+    });
+  }
+
+  function setAdminCoins(quantity: number) {
+    if (!Number.isInteger(quantity) || quantity < ADMIN_LIMITS.coins.min || quantity > ADMIN_LIMITS.coins.max) {
+      console.error('Invalid admin coin quantity.', { quantity });
+      return;
+    }
+    commitAdminState((current) => {
+      const before = current.player.coins;
+      if (before === quantity) return current;
+      const log = createAdminLog('coins', before, quantity);
+      return {
+        ...current,
+        player: { ...current.player, coins: quantity },
+        adminChangeLogs: [log, ...current.adminChangeLogs].slice(0, ADMIN_LIMITS.maxChangeLogs),
+      };
+    });
+  }
+
+  function setAdminItemQuantity(itemId: string, quantity: number) {
+    const item = itemConfigs.find((candidate) => candidate.id === itemId && candidate.category !== 'egg' && candidate.category !== 'costume' && candidate.category !== 'dinosaur' && candidate.category !== 'toy' && candidate.category !== 'misc');
+    if (!item || !Number.isInteger(quantity) || quantity < ADMIN_LIMITS.quantity.min || quantity > ADMIN_LIMITS.quantity.max) {
+      console.error('Invalid admin item change.', { itemId, quantity });
+      return;
+    }
+    commitAdminState((current) => {
+      const before = current.inventory.find((entry) => entry.itemId === itemId)?.quantity ?? 0;
+      if (before === quantity) return current;
+      const nextInventory = quantity === 0
+        ? current.inventory.filter((entry) => entry.itemId !== itemId)
+        : current.inventory.some((entry) => entry.itemId === itemId)
+          ? current.inventory.map((entry) => entry.itemId === itemId ? { ...entry, quantity } : entry)
+          : [...current.inventory, { itemId, quantity }];
+      const log = createAdminLog('item', before, quantity, item);
+      return {
+        ...current,
+        inventory: nextInventory,
+        adminChangeLogs: [log, ...current.adminChangeLogs].slice(0, ADMIN_LIMITS.maxChangeLogs),
+      };
+    });
+  }
+
+  function setAdminEggQuantity(itemId: string, quantity: number) {
+    const item = getEggItemConfig(itemId);
+    if (!item || !Number.isInteger(quantity) || quantity < ADMIN_LIMITS.quantity.min || quantity > ADMIN_LIMITS.quantity.max) {
+      console.error('Invalid admin egg change.', { itemId, quantity });
+      return;
+    }
+    commitAdminState((current) => {
+      const matchingEggs = current.ownedEggs.filter((egg) => egg.eggItemId === itemId);
+      const before = matchingEggs.length;
+      if (before === quantity) return current;
+      const retainedEggs = current.ownedEggs.filter((egg) => egg.eggItemId !== itemId);
+      const nextMatchingEggs = matchingEggs.slice(0, quantity);
+      for (let index = nextMatchingEggs.length; index < quantity; index += 1) {
+        const newEgg = createOwnedEggFromItem(itemId, Date.now() + index);
+        if (newEgg) nextMatchingEggs.push(newEgg);
+      }
+      const ownedEggs = [...retainedEggs, ...nextMatchingEggs].sort((a, b) => a.createdAt - b.createdAt);
+      const activeEgg = ownedEggs.find((egg) => egg.id === current.activeEggId) ?? ownedEggs[0] ?? null;
+      const log = createAdminLog('egg', before, quantity, item);
+      return {
+        ...current,
+        ownedEggs,
+        activeEggId: activeEgg?.id ?? null,
+        egg: activeEggToEggState(activeEgg) ?? { ...defaultGameState.egg, hatchProgress: 0 },
+        adminChangeLogs: [log, ...current.adminChangeLogs].slice(0, ADMIN_LIMITS.maxChangeLogs),
+      };
+    });
+  }
+
+  function clearAdminChangeLogs() {
+    commitAdminState((current) => ({ ...current, adminChangeLogs: [] }));
   }
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
@@ -1710,7 +1769,7 @@ export default function App() {
           coins: current.player.coins - item.price,
         },
         inventory: requiredFragments.reduce((inventory, fragment) => subtractInventoryQuantity(inventory, fragment.itemId, fragment.amount), current.inventory),
-        ownedEggs: getOneEggPerCategory([...current.ownedEggs, newEgg]),
+        ownedEggs: [...current.ownedEggs, newEgg],
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
@@ -1748,7 +1807,7 @@ export default function App() {
           ...current.player,
           coins: current.player.coins - item.price,
         },
-        ownedEggs: getOneEggPerCategory([...current.ownedEggs, newEgg]),
+        ownedEggs: [...current.ownedEggs, newEgg],
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
@@ -2397,6 +2456,11 @@ export default function App() {
             digitTypeOverride={gameState.digitTypeOverride}
             operationsOverride={gameState.operationsOverride}
             storageFeedback={storageFeedback}
+            userProfile={gameState.userProfile}
+            coins={gameState.player.coins}
+            ownedEggs={gameState.ownedEggs}
+            inventory={gameState.inventory}
+            adminChangeLogs={gameState.adminChangeLogs}
             trainingHistory={gameState.trainingHistory}
             trainingInputMode={trainingInputMode}
             onSelectLevel={selectTrainingLevel}
@@ -2409,6 +2473,10 @@ export default function App() {
             onAudioSettings={updateAudioSettings}
             onExportSavedData={exportSavedGameData}
             onImportSavedData={importSavedGameData}
+            onSetAdminCoins={setAdminCoins}
+            onSetAdminEggQuantity={setAdminEggQuantity}
+            onSetAdminItemQuantity={setAdminItemQuantity}
+            onClearAdminChangeLogs={clearAdminChangeLogs}
             onResetSavedGameState={resetSavedGameState}
             onTrainingInputMode={updateTrainingInputMode}
             onBluetoothNotification={handleBluetoothNotification}
@@ -2523,6 +2591,11 @@ function PortraitSettingsView({
   digitTypeOverride,
   operationsOverride,
   storageFeedback,
+  userProfile,
+  coins,
+  ownedEggs,
+  inventory,
+  adminChangeLogs,
   trainingHistory,
   trainingInputMode,
   onSelectLevel,
@@ -2535,6 +2608,10 @@ function PortraitSettingsView({
   onAudioSettings,
   onExportSavedData,
   onImportSavedData,
+  onSetAdminCoins,
+  onSetAdminEggQuantity,
+  onSetAdminItemQuantity,
+  onClearAdminChangeLogs,
   onResetSavedGameState,
   onTrainingInputMode,
   onBluetoothNotification,
@@ -2550,6 +2627,11 @@ function PortraitSettingsView({
   digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
   storageFeedback: string;
+  userProfile: UserProfile | null;
+  coins: number;
+  ownedEggs: OwnedEgg[];
+  inventory: InventoryItemState[];
+  adminChangeLogs: AdminChangeLog[];
   trainingHistory: TrainingSessionRecord[];
   trainingInputMode: TrainingInputMode;
   onSelectLevel: (level: number) => void;
@@ -2562,11 +2644,18 @@ function PortraitSettingsView({
   onAudioSettings: (settings: AudioSettings) => void;
   onExportSavedData: () => void;
   onImportSavedData: (file: File) => Promise<void>;
+  onSetAdminCoins: (quantity: number) => void;
+  onSetAdminEggQuantity: (itemId: string, quantity: number) => void;
+  onSetAdminItemQuantity: (itemId: string, quantity: number) => void;
+  onClearAdminChangeLogs: () => void;
   onResetSavedGameState: () => void;
   onTrainingInputMode: (mode: TrainingInputMode) => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
 }) {
   const [isTrainingReportOpen, setIsTrainingReportOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const adminEggItems = itemConfigs.filter((item) => item.category === 'egg');
+  const adminGeneralItems = itemConfigs.filter((item) => item.category === 'food' || item.category === 'hatchItem');
 
   return (
     <section className="grid min-w-0 gap-3 overflow-x-hidden pb-4">
@@ -2791,6 +2880,40 @@ function PortraitSettingsView({
       </section>
 
       <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-black text-slate-900">관리자 기능</h4>
+            <p className="mt-1 text-xs font-bold text-slate-500">부모님이 코인과 보유 아이템을 관리합니다.</p>
+          </div>
+          <button
+            type="button"
+            aria-expanded={isAdminOpen}
+            onClick={() => setIsAdminOpen((current) => !current)}
+            className="min-h-12 shrink-0 rounded-[15px] bg-slate-800 px-4 text-xs font-black text-white shadow-[0_4px_0_#0f172a] transition active:translate-y-1 active:shadow-none"
+          >
+            {isAdminOpen ? '닫기' : '관리자 기능'}
+          </button>
+        </div>
+        {isAdminOpen && (
+          <AdminPanel
+            profileName={userProfile?.childName ?? '프로필 없음'}
+            coins={coins}
+            eggs={adminEggItems}
+            items={adminGeneralItems}
+            ownedEggs={ownedEggs}
+            inventory={inventory}
+            changeLogs={adminChangeLogs}
+            onSetCoins={onSetAdminCoins}
+            onSetEggQuantity={onSetAdminEggQuantity}
+            onSetItemQuantity={onSetAdminItemQuantity}
+            onClearLogs={onClearAdminChangeLogs}
+            onExport={onExportSavedData}
+            onImport={onImportSavedData}
+          />
+        )}
+      </section>
+
+      <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
         <h4 className="text-sm font-black text-slate-800">저장 데이터</h4>
         <p className="mt-2 text-xs font-black leading-relaxed text-slate-500">
           데이터 내보내기로 현재 진행 상황을 백업할 수 있습니다. 메인 버전으로 옮길 때 백업 파일을 다시 불러오면 이어서 사용할 수 있습니다.
@@ -2806,56 +2929,6 @@ function PortraitSettingsView({
         </button>
       </section>
     </section>
-  );
-}
-
-function SaveDataTransferControls({
-  onExport,
-  onImport,
-}: {
-  onExport: () => void;
-  onImport: (file: File) => Promise<void>;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isImporting, setIsImporting] = useState(false);
-
-  async function selectBackupFile(file: File | undefined) {
-    if (!file || isImporting) return;
-    setIsImporting(true);
-    try {
-      await onImport(file);
-    } finally {
-      setIsImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
-  return (
-    <div className="mt-3 grid grid-cols-2 gap-2">
-      <button
-        type="button"
-        onClick={onExport}
-        className="min-h-12 rounded-[16px] bg-gradient-to-b from-cyan-300 to-sky-400 px-3 text-xs font-black text-cyan-950 shadow-[0_4px_0_#0284c7] transition active:translate-y-1 active:shadow-none sm:text-sm"
-      >
-        데이터 내보내기
-      </button>
-      <button
-        type="button"
-        disabled={isImporting}
-        onClick={() => fileInputRef.current?.click()}
-        className="min-h-12 rounded-[16px] bg-gradient-to-b from-emerald-300 to-green-400 px-3 text-xs font-black text-emerald-950 shadow-[0_4px_0_#16a34a] transition active:translate-y-1 active:shadow-none disabled:cursor-wait disabled:opacity-60 sm:text-sm"
-      >
-        {isImporting ? '가져오는 중…' : '데이터 가져오기'}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="sr-only"
-        aria-label="게임 데이터 백업 JSON 파일 선택"
-        onChange={(event) => void selectBackupFile(event.target.files?.[0])}
-      />
-    </div>
   );
 }
 
