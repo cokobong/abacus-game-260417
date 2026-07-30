@@ -2,6 +2,12 @@ export type Id = string;
 export type UnixTimeMs = number;
 
 export type AnswerSource = 'manual' | 'bluetooth';
+export type TrainingInputMode = 'pencil' | 'keypad' | 'bluetooth';
+
+export interface AudioSettings {
+  bgmEnabled: boolean;
+  sfxEnabled: boolean;
+}
 export type ProblemOperator = '+' | '-';
 export type ProblemStatus = 'ready' | 'answering' | 'correct' | 'retry';
 export type TrainingSessionStatus = 'running' | 'showing_feedback' | 'completed';
@@ -118,6 +124,12 @@ export interface TrainingSessionRecord {
   correctCount: number;
   wrongCount: number;
   accuracy: number;
+  /** Problems classified by their first submitted answer. */
+  answeredProblems: number;
+  /** Sum of time from each problem becoming input-ready to its first submission. */
+  totalElapsedMs: number;
+  averageAnswerMs: number;
+  inputMode: TrainingInputMode;
   earnedCoins: number;
   earnedExp: number;
   earnedItems: Array<{ itemId: Id; quantity: number }>;

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { NavigationArrow } from './components/NavigationArrow';
+import { TrainingReport } from './components/TrainingReport';
 import { DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
@@ -25,13 +26,25 @@ import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/ab
 import { adventureAreas } from './data/adventures';
 import { dinosaurSpecies, getDinosaurSpecies, getStarterSelectableSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
-import type { AbacusLevelConfig, AbacusStageConfig, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
+import type { AbacusLevelConfig, AbacusStageConfig, AudioSettings, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingInputMode, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
 import { generateTrainingProblems } from './utils/generateTrainingProblems';
 import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
-import { clearGameState, loadGameState, saveGameState } from './utils/gameStorage';
+import {
+  clearGameState,
+  createGameBackup,
+  downloadGameBackup,
+  EGG_OWNERSHIP_RESET_MIGRATION_KEY,
+  importGameBackup,
+  loadGameState,
+  parseGameBackup,
+  readGameBackupFile,
+  saveGameState,
+  TRAINING_INPUT_MODE_STORAGE_KEY,
+} from './utils/gameStorage';
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
 import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
-import { calculateTrainingRewards, type TrainingRewardResult } from './utils/trainingRewards';
+import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRewardResult } from './utils/trainingRewards';
+import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { canDinosaurEat, getIncompatibleFoodMessage } from './utils/dinosaurDiet';
 import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
@@ -40,7 +53,7 @@ import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
 import homeCoinBar from './assets/home/home_coin_bar.png?url';
 import homeBackground from './assets/home/home_bg_farm_full.png?url';
-import { playBackgroundMusic, playSound, stopBackgroundMusic, type BackgroundMusic } from './audio/audioManager';
+import { playBackgroundMusic, playSound, setAudioSettings, stopBackgroundMusic, unlockAndPlayBackgroundMusic, type BackgroundMusic } from './audio/audioManager';
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type AppScreen = 'home' | MainTab;
@@ -52,7 +65,6 @@ type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6 | 7 | 8;
 type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'three-digit' | 'mixed-digit' | 'mixed-two-three-digit';
 type ResolvedDigitType = Exclude<DigitTypeOverride, 'stage-default'>;
 type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
-type TrainingInputMode = 'pencil' | 'keypad' | 'bluetooth';
 type CompletedTrainingSummary = TrainingRewardResult & {
   sessionId: string;
   totalProblems: number;
@@ -73,6 +85,7 @@ type GameState = {
   operationsOverride: OperationsOverride;
   growthSpeedMultiplier: GrowthSpeedMultiplier;
   coinRewardMultiplier: CoinRewardMultiplier;
+  audioSettings: AudioSettings;
   dinosaur: DinosaurState;
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
@@ -109,13 +122,11 @@ const backgroundMusicByScreen: Partial<Record<AppScreen, BackgroundMusic>> = {
 
 const defaultSelectedLevel = 1;
 const defaultSelectedStageId = getDefaultStageIdForLevel(defaultSelectedLevel) ?? 'L1-DRAFT-01';
-const trainingInputModeStorageKey = 'abacus-game.training-input-mode';
-
 function loadTrainingInputMode(): TrainingInputMode {
   if (typeof window === 'undefined') return 'pencil';
 
   try {
-    const savedMode = window.localStorage.getItem(trainingInputModeStorageKey);
+    const savedMode = window.localStorage.getItem(TRAINING_INPUT_MODE_STORAGE_KEY);
     return savedMode === 'keypad' || savedMode === 'bluetooth' || savedMode === 'pencil' ? savedMode : 'pencil';
   } catch {
     return 'pencil';
@@ -180,11 +191,8 @@ const initialInventory: InventoryItemState[] = [
 ];
 
 const hatchableDinosaurPool = dinosaurSpecies;
-const maxTrainingHistoryRecords = 30;
 const showDeveloperPanels = false;
 const showSettingsAdvancedPanels = true;
-const eggOwnershipResetMigrationKey = 'abacus-dino-egg-ownership-reset-2026-07-25-v1';
-
 const defaultGameState: GameState = {
   userProfile: null,
   player: { coins: 1240 },
@@ -197,6 +205,10 @@ const defaultGameState: GameState = {
   operationsOverride: 'stage-default',
   growthSpeedMultiplier: defaultGrowthSpeedMultiplier,
   coinRewardMultiplier: defaultCoinRewardMultiplier,
+  audioSettings: {
+    bgmEnabled: true,
+    sfxEnabled: true,
+  },
   dinosaur: initialDinosaurState,
   ownedDinosaurs: [initialOwnedDinosaur],
   discoveredSpeciesIds: [initialOwnedDinosaur.speciesId],
@@ -215,8 +227,8 @@ function resetOwnedEggDataOnce(state: GameState, loadedFromStorage: boolean): { 
   if (!loadedFromStorage || typeof window === 'undefined') return { state, didReset: false };
 
   try {
-    if (window.localStorage.getItem(eggOwnershipResetMigrationKey) === 'done') return { state, didReset: false };
-    window.localStorage.setItem(eggOwnershipResetMigrationKey, 'done');
+    if (window.localStorage.getItem(EGG_OWNERSHIP_RESET_MIGRATION_KEY) === 'done') return { state, didReset: false };
+    window.localStorage.setItem(EGG_OWNERSHIP_RESET_MIGRATION_KEY, 'done');
   } catch {
     return { state, didReset: false };
   }
@@ -257,6 +269,10 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const operationsOverride = normalizeOperationsOverride(state.operationsOverride);
   const growthSpeedMultiplier = normalizeGrowthSpeedMultiplier(state.growthSpeedMultiplier);
   const coinRewardMultiplier = normalizeCoinRewardMultiplier(state.coinRewardMultiplier);
+  const audioSettings = {
+    bgmEnabled: typeof state.audioSettings?.bgmEnabled === 'boolean' ? state.audioSettings.bgmEnabled : true,
+    sfxEnabled: typeof state.audioSettings?.sfxEnabled === 'boolean' ? state.audioSettings.sfxEnabled : true,
+  };
   const trainingHistory = normalizeTrainingHistory(state.trainingHistory);
   const rewardedTrainingSessionIds = getArrayValue<unknown>(state.rewardedTrainingSessionIds, []).filter((id): id is string => typeof id === 'string');
   const progressByLevel = normalizeProgressByLevel(state.progressByLevel);
@@ -300,6 +316,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     operationsOverride,
     growthSpeedMultiplier,
     coinRewardMultiplier,
+    audioSettings,
     dinosaur: {
       ...defaultGameState.dinosaur,
       ...state.dinosaur,
@@ -582,10 +599,6 @@ function getAdjustedFoodExp(baseExp: number, growthSpeedMultiplier: GrowthSpeedM
   return Math.max(1, Math.round(baseExp * growthSpeedMultiplier));
 }
 
-function normalizeTrainingHistory(value: unknown): TrainingSessionRecord[] {
-  return Array.isArray(value) ? (value.filter((item) => item && typeof item === 'object') as TrainingSessionRecord[]).slice(0, maxTrainingHistoryRecords) : [];
-}
-
 function normalizeProgressByLevel(value: unknown): Record<number, LevelProgressRecord> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<number, LevelProgressRecord>) : {};
 }
@@ -682,11 +695,6 @@ function updateProgressByStage(progressByStage: Record<string, StageProgressReco
       lastTrainedAt: record.completedAt,
     },
   };
-}
-
-function addTrainingRecordToHistory(trainingHistory: TrainingSessionRecord[], record: TrainingSessionRecord) {
-  if (trainingHistory.some((item) => item.id === record.id)) return trainingHistory;
-  return [record, ...trainingHistory].slice(0, maxTrainingHistoryRecords);
 }
 
 function getOwnedCostumeIdsFromInventory(inventory: InventoryItemState[]) {
@@ -1093,17 +1101,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void setAudioSettings(gameState.audioSettings);
+  }, [gameState.audioSettings]);
+
+  useEffect(() => {
     const backgroundMusic = backgroundMusicByScreen[activeTab];
     if (phase === 'app' && backgroundMusic) {
       playBackgroundMusic(backgroundMusic);
     } else {
       stopBackgroundMusic();
     }
-
-    return () => {
-      stopBackgroundMusic();
-    };
   }, [activeTab, phase]);
+
+  useEffect(() => () => stopBackgroundMusic(), []);
 
   useEffect(() => {
     if (activeTab === 'dino' && !isHatcheryOpen) return;
@@ -1115,7 +1125,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(trainingInputModeStorageKey, trainingInputMode);
+      window.localStorage.setItem(TRAINING_INPUT_MODE_STORAGE_KEY, trainingInputMode);
     } catch {
       // 저장소가 차단된 환경에서도 기본 입력 화면은 정상적으로 표시합니다.
     }
@@ -1123,6 +1133,22 @@ export default function App() {
 
   function updateTrainingInputMode(mode: TrainingInputMode) {
     setTrainingInputMode(mode);
+  }
+
+  function updateAudioSettings(nextSettings: AudioSettings) {
+    void setAudioSettings(nextSettings, true);
+    setGameState((current) => ({
+      ...current,
+      audioSettings: nextSettings,
+    }));
+  }
+
+  function toggleMasterAudio() {
+    const shouldEnableAll = !gameState.audioSettings.bgmEnabled && !gameState.audioSettings.sfxEnabled;
+    updateAudioSettings({
+      bgmEnabled: shouldEnableAll,
+      sfxEnabled: shouldEnableAll,
+    });
   }
 
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
@@ -1198,7 +1224,68 @@ export default function App() {
     console.log('Cleared local game state.');
   }
 
+  function exportSavedGameData() {
+    try {
+      saveGameState(gameState);
+      const backup = createGameBackup();
+      downloadGameBackup(backup);
+      setStorageFeedback(`백업 파일을 만들었어요. 생성 시각: ${new Date(backup.exportedAt).toLocaleString()}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '데이터를 내보내지 못했습니다.';
+      setStorageFeedback(`내보내기 실패: ${message}`);
+      console.error('Failed to export game data.', error);
+    }
+  }
+
+  async function importSavedGameData(file: File) {
+    try {
+      const backup = parseGameBackup(await readGameBackupFile(file));
+      const exportedAt = new Date(backup.exportedAt).toLocaleString();
+      const shouldImport = window.confirm(
+        `${exportedAt}에 만든 백업입니다.\n현재 저장 데이터를 완전히 덮어쓰고 가져올까요?`,
+      );
+      if (!shouldImport) {
+        setStorageFeedback('데이터 가져오기를 취소했어요.');
+        return;
+      }
+
+      importGameBackup(backup);
+      const imported = loadGameState(defaultGameState);
+      if (!imported.loadedFromStorage) {
+        throw new Error('가져온 데이터를 다시 불러오지 못했습니다.');
+      }
+
+      const importedState = normalizeGameState(imported.state);
+      skipNextSaveRef.current = true;
+      setGameState(importedState);
+      setTrainingInputMode(loadTrainingInputMode());
+      setPhase(importedState.userProfile ? 'app' : 'onboarding');
+      setActiveTab('home');
+      setDinoView('care');
+      setIsHatcheryOpen(false);
+      setHatchResult(null);
+      setSelectedFoodItemId(null);
+      setLastRewards([]);
+      setSetCompleteRewards([]);
+      setCompletedTrainingSummary(null);
+      setLastTrainingEffects([]);
+      setLastBluetoothInput(null);
+      setAdventureResult(null);
+      setTrainingRunId((current) => current + 1);
+      rewardedSessionIdsRef.current = new Set(importedState.rewardedTrainingSessionIds);
+      lastBluetoothConfirmRef.current = null;
+      isHatchingRef.current = false;
+      isFeedingRef.current = false;
+      setStorageFeedback(`데이터를 가져왔어요. 백업 생성 시각: ${exportedAt}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      setStorageFeedback(`가져오기 실패: ${message}`);
+      console.error('Failed to import game data.', error);
+    }
+  }
+
   function completeOnboarding(profileInput: { childName: string; starterSpeciesId: string; dinosaurName: string }) {
+    void unlockAndPlayBackgroundMusic('home');
     const childName = profileInput.childName.trim() || '친구';
     const starterSpecies = getStarterSelectableSpecies().find((species) => species.speciesId === profileInput.starterSpeciesId) ?? getStarterSelectableSpecies()[0] ?? getDinosaurSpecies(initialOwnedDinosaur.speciesId);
     const dinosaurName = profileInput.dinosaurName.trim() || starterSpecies?.defaultName || '몽이';
@@ -1333,10 +1420,24 @@ export default function App() {
     const completedProblemIds = new Set(completedSession.answers.filter((answerRecord) => answerRecord.isCorrect).map((answerRecord) => answerRecord.problemId));
     const correctCount = completedProblemIds.size;
     const wrongCount = completedSession.answers.filter((answerRecord) => !answerRecord.isCorrect).length;
+    const firstAnswersByProblem = new Map<string, (typeof completedSession.answers)[number]>();
+    for (const answerRecord of completedSession.answers) {
+      if (!firstAnswersByProblem.has(answerRecord.problemId)) {
+        firstAnswersByProblem.set(answerRecord.problemId, answerRecord);
+      }
+    }
+    const firstAnswers = [...firstAnswersByProblem.values()];
+    const answeredProblems = firstAnswers.length;
+    const firstAttemptCorrectCount = firstAnswers.filter((answerRecord) => answerRecord.isCorrect).length;
+    const firstAttemptIncorrectCount = answeredProblems - firstAttemptCorrectCount;
+    const firstAttemptElapsedMs = firstAnswers.reduce((sum, answerRecord) => sum + Math.max(0, answerRecord.elapsedMsFromProblemStart), 0);
+    const firstAttemptAccuracy = answeredProblems > 0 ? (firstAttemptCorrectCount / answeredProblems) * 100 : 0;
+    const averageAnswerMs = answeredProblems > 0 ? firstAttemptElapsedMs / answeredProblems : 0;
     const resultReward = calculateTrainingRewards({
       totalProblems: completedSession.problems.length,
       correctCount,
       wrongCount,
+      numberCount: effectiveNumberCount,
       selectedLevel: gameState.selectedLevel,
       growthSpeedMultiplier: gameState.growthSpeedMultiplier,
       coinRewardMultiplier: gameState.coinRewardMultiplier,
@@ -1355,11 +1456,15 @@ export default function App() {
       digitType: effectiveDigitType,
       operationMode: effectiveOperationMode,
       totalProblems: completedSession.problems.length,
-      correctCount,
-      wrongCount,
-      accuracy: resultReward.accuracy,
+      correctCount: firstAttemptCorrectCount,
+      wrongCount: firstAttemptIncorrectCount,
+      accuracy: firstAttemptAccuracy,
+      answeredProblems,
+      totalElapsedMs: firstAttemptElapsedMs,
+      averageAnswerMs,
+      inputMode: trainingInputMode,
       earnedCoins: resultReward.coins,
-      earnedExp: 0,
+      earnedExp: resultReward.dinoExp,
       earnedItems: [],
       activeDinosaurId: activeOwnedDinosaur.id,
     };
@@ -1371,7 +1476,10 @@ export default function App() {
           ...current.player,
           coins: current.player.coins + resultReward.coins,
         },
-        trainingHistory: addTrainingRecordToHistory(current.trainingHistory, trainingRecord),
+        ownedDinosaurs: current.ownedDinosaurs.map((dinosaur) =>
+          dinosaur.id === activeOwnedDinosaur.id ? applyDinosaurExp(dinosaur, resultReward.dinoExp) : dinosaur,
+        ),
+        trainingHistory: addTrainingSessionRecord(current.trainingHistory, trainingRecord),
         rewardedTrainingSessionIds: Array.from(new Set([...current.rewardedTrainingSessionIds, completedSession.id])).slice(-100),
         progressByLevel: updateProgressByLevel(current.progressByLevel, trainingRecord),
         progressByStage: updateProgressByStage(current.progressByStage, trainingRecord),
@@ -1380,7 +1488,6 @@ export default function App() {
 
     setCompletedTrainingSummary({
       ...resultReward,
-      dinoExp: 0,
       happiness: 0,
       hatchItems: [],
       sessionId: completedSession.id,
@@ -1391,12 +1498,16 @@ export default function App() {
       elapsedMs: Math.max(0, completedAt - completedSession.startedAt),
     });
     setSetCompleteRewards([
+      createDisplayReward(`공룡 EXP +${resultReward.dinoExp}`, resultReward.dinoExp),
       createDisplayReward(`코인 +${resultReward.coins}`, resultReward.coins),
     ]);
     setLastRewards([]);
     setLastTrainingEffects([]);
     if (resultReward.coins > 0) {
       playSound('reward_coin');
+    }
+    if (resultReward.dinoExp > 0 && applyDinosaurExp(activeOwnedDinosaur, resultReward.dinoExp).level > activeOwnedDinosaur.level) {
+      playSound('level_up');
     }
   }
 
@@ -2041,7 +2152,10 @@ export default function App() {
                 문제를 풀고 보상을 모아 알을 부화시키고, 내 공룡을 돌보는 밝은 학습 모험입니다.
               </p>
               <button
-                onClick={() => setPhase('app')}
+                onClick={() => {
+                  void unlockAndPlayBackgroundMusic('home');
+                  setPhase('app');
+                }}
                 className="mt-8 inline-flex min-h-20 w-fit items-center justify-center gap-3 rounded-[26px] border-4 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-10 text-2xl font-black text-white shadow-[0_10px_0_#0891b2,0_20px_28px_rgba(8,145,178,0.28)] transition hover:brightness-105 active:translate-y-1 active:shadow-[0_5px_0_#0891b2]"
               >
                 훈련 시작
@@ -2116,8 +2230,10 @@ export default function App() {
 
         {activeTab === 'home' && (
           <HomeScreen
+            audioEnabled={gameState.audioSettings.bgmEnabled || gameState.audioSettings.sfxEnabled}
             coins={gameState.player.coins}
             dinosaurName={activeDinosaur.name}
+            onToggleAudio={toggleMasterAudio}
             onNavigate={(screen) => {
               playSound('ui_tab_switch');
               setIsHatcheryOpen(false);
@@ -2275,11 +2391,13 @@ export default function App() {
             selectedLevelConfig={selectedLevelConfig}
             growthSpeedMultiplier={gameState.growthSpeedMultiplier}
             coinRewardMultiplier={gameState.coinRewardMultiplier}
+            audioSettings={gameState.audioSettings}
             problemCountOverride={gameState.problemCountOverride}
             numberCountOverride={gameState.numberCountOverride}
             digitTypeOverride={gameState.digitTypeOverride}
             operationsOverride={gameState.operationsOverride}
             storageFeedback={storageFeedback}
+            trainingHistory={gameState.trainingHistory}
             trainingInputMode={trainingInputMode}
             onSelectLevel={selectTrainingLevel}
             onProblemCountOverride={updateProblemCountOverride}
@@ -2288,6 +2406,9 @@ export default function App() {
             onOperationsOverride={updateOperationsOverride}
             onGrowthSpeedMultiplier={updateGrowthSpeedMultiplier}
             onCoinRewardMultiplier={updateCoinRewardMultiplier}
+            onAudioSettings={updateAudioSettings}
+            onExportSavedData={exportSavedGameData}
+            onImportSavedData={importSavedGameData}
             onResetSavedGameState={resetSavedGameState}
             onTrainingInputMode={updateTrainingInputMode}
             onBluetoothNotification={handleBluetoothNotification}
@@ -2396,11 +2517,13 @@ function PortraitSettingsView({
   selectedLevelConfig,
   growthSpeedMultiplier,
   coinRewardMultiplier,
+  audioSettings,
   problemCountOverride,
   numberCountOverride,
   digitTypeOverride,
   operationsOverride,
   storageFeedback,
+  trainingHistory,
   trainingInputMode,
   onSelectLevel,
   onProblemCountOverride,
@@ -2409,6 +2532,9 @@ function PortraitSettingsView({
   onOperationsOverride,
   onGrowthSpeedMultiplier,
   onCoinRewardMultiplier,
+  onAudioSettings,
+  onExportSavedData,
+  onImportSavedData,
   onResetSavedGameState,
   onTrainingInputMode,
   onBluetoothNotification,
@@ -2418,11 +2544,13 @@ function PortraitSettingsView({
   selectedLevelConfig: AbacusLevelConfig | null;
   growthSpeedMultiplier: GrowthSpeedMultiplier;
   coinRewardMultiplier: CoinRewardMultiplier;
+  audioSettings: AudioSettings;
   problemCountOverride?: ProblemCountOverride;
   numberCountOverride: NumberCountOverride;
   digitTypeOverride: DigitTypeOverride;
   operationsOverride: OperationsOverride;
   storageFeedback: string;
+  trainingHistory: TrainingSessionRecord[];
   trainingInputMode: TrainingInputMode;
   onSelectLevel: (level: number) => void;
   onProblemCountOverride: (value: ProblemCountOverride | 'stage-default') => void;
@@ -2431,10 +2559,15 @@ function PortraitSettingsView({
   onOperationsOverride: (value: OperationsOverride) => void;
   onGrowthSpeedMultiplier: (value: GrowthSpeedMultiplier) => void;
   onCoinRewardMultiplier: (value: CoinRewardMultiplier) => void;
+  onAudioSettings: (settings: AudioSettings) => void;
+  onExportSavedData: () => void;
+  onImportSavedData: (file: File) => Promise<void>;
   onResetSavedGameState: () => void;
   onTrainingInputMode: (mode: TrainingInputMode) => void;
   onBluetoothNotification: (payload: BluetoothNotificationPayload) => void;
 }) {
+  const [isTrainingReportOpen, setIsTrainingReportOpen] = useState(false);
+
   return (
     <section className="grid min-w-0 gap-3 overflow-x-hidden pb-4">
       <div className="min-w-0 overflow-hidden rounded-[28px] border-4 border-white bg-white/82 p-3 shadow-lg sm:p-4">
@@ -2444,6 +2577,33 @@ function PortraitSettingsView({
           세로형 MVP에서는 꼭 필요한 항목만 먼저 보여줘요. 복잡한 개발자 설정은 기존 코드에 보존되어 있습니다.
         </p>
       </div>
+
+      <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <h4 className="text-sm font-black text-cyan-900">오디오 설정</h4>
+        <p className="mt-1 text-xs font-bold text-slate-500">홈의 소리 버튼과 같은 설정을 사용합니다.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <AudioSettingButton
+            label="배경 음악"
+            enabled={audioSettings.bgmEnabled}
+            onClick={() => onAudioSettings({ ...audioSettings, bgmEnabled: !audioSettings.bgmEnabled })}
+          />
+          <AudioSettingButton
+            label="효과음"
+            enabled={audioSettings.sfxEnabled}
+            onClick={() => onAudioSettings({ ...audioSettings, sfxEnabled: !audioSettings.sfxEnabled })}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const shouldEnableAll = !audioSettings.bgmEnabled && !audioSettings.sfxEnabled;
+            onAudioSettings({ bgmEnabled: shouldEnableAll, sfxEnabled: shouldEnableAll });
+          }}
+          className="mt-2 min-h-11 w-full rounded-[15px] bg-slate-700 px-4 text-xs font-black text-white shadow-[0_3px_0_#334155] transition active:translate-y-1 active:shadow-none"
+        >
+          {audioSettings.bgmEnabled || audioSettings.sfxEnabled ? '전체 소리 끄기' : '전체 소리 켜기'}
+        </button>
+      </section>
 
       <fieldset className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
         <legend className="px-1 text-sm font-black text-violet-800">훈련장 입력 방식</legend>
@@ -2522,12 +2682,12 @@ function PortraitSettingsView({
           className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-emerald-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
         >
           <option value="stage-default">단계 기본값</option>
-          <option value="3">3개</option>
-          <option value="4">4개</option>
-          <option value="5">5개</option>
-          <option value="6">6개</option>
-          <option value="7">7개</option>
-          <option value="8">8개</option>
+          <option value="3">3개 · {formatNumberCountRewardLabel(3)}</option>
+          <option value="4">4개 · {formatNumberCountRewardLabel(4)}</option>
+          <option value="5">5개 · {formatNumberCountRewardLabel(5)}</option>
+          <option value="6">6개 · {formatNumberCountRewardLabel(6)}</option>
+          <option value="7">7개 · {formatNumberCountRewardLabel(7)}</option>
+          <option value="8">8개 · {formatNumberCountRewardLabel(8)}</option>
         </select>
         <span className="break-words text-xs font-black leading-snug text-slate-500">한 문제에 나오는 숫자 개수를 정합니다.</span>
       </label>
@@ -2613,8 +2773,30 @@ function PortraitSettingsView({
       </section>
 
       <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-black text-emerald-900">부모용 학습 리포트</h4>
+            <p className="mt-1 text-xs font-bold leading-snug text-slate-500">오늘의 학습량과 최근 7일 훈련 기록을 확인합니다.</p>
+          </div>
+          <button
+            type="button"
+            aria-expanded={isTrainingReportOpen}
+            onClick={() => setIsTrainingReportOpen((current) => !current)}
+            className="min-h-11 shrink-0 rounded-[15px] bg-emerald-600 px-4 text-xs font-black text-white shadow-[0_4px_0_#047857] transition active:translate-y-1 active:shadow-none"
+          >
+            {isTrainingReportOpen ? '리포트 닫기' : '학습 기록'}
+          </button>
+        </div>
+        {isTrainingReportOpen && <TrainingReport history={trainingHistory} />}
+      </section>
+
+      <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
         <h4 className="text-sm font-black text-slate-800">저장 데이터</h4>
+        <p className="mt-2 text-xs font-black leading-relaxed text-slate-500">
+          데이터 내보내기로 현재 진행 상황을 백업할 수 있습니다. 메인 버전으로 옮길 때 백업 파일을 다시 불러오면 이어서 사용할 수 있습니다.
+        </p>
         <p className="mt-2 break-words rounded-[18px] bg-slate-50 px-3 py-2 text-xs font-black leading-snug text-slate-500">{storageFeedback}</p>
+        <SaveDataTransferControls onExport={onExportSavedData} onImport={onImportSavedData} />
         <button
           type="button"
           onClick={onResetSavedGameState}
@@ -2624,6 +2806,74 @@ function PortraitSettingsView({
         </button>
       </section>
     </section>
+  );
+}
+
+function SaveDataTransferControls({
+  onExport,
+  onImport,
+}: {
+  onExport: () => void;
+  onImport: (file: File) => Promise<void>;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  async function selectBackupFile(file: File | undefined) {
+    if (!file || isImporting) return;
+    setIsImporting(true);
+    try {
+      await onImport(file);
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={onExport}
+        className="min-h-12 rounded-[16px] bg-gradient-to-b from-cyan-300 to-sky-400 px-3 text-xs font-black text-cyan-950 shadow-[0_4px_0_#0284c7] transition active:translate-y-1 active:shadow-none sm:text-sm"
+      >
+        데이터 내보내기
+      </button>
+      <button
+        type="button"
+        disabled={isImporting}
+        onClick={() => fileInputRef.current?.click()}
+        className="min-h-12 rounded-[16px] bg-gradient-to-b from-emerald-300 to-green-400 px-3 text-xs font-black text-emerald-950 shadow-[0_4px_0_#16a34a] transition active:translate-y-1 active:shadow-none disabled:cursor-wait disabled:opacity-60 sm:text-sm"
+      >
+        {isImporting ? '가져오는 중…' : '데이터 가져오기'}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="sr-only"
+        aria-label="게임 데이터 백업 JSON 파일 선택"
+        onChange={(event) => void selectBackupFile(event.target.files?.[0])}
+      />
+    </div>
+  );
+}
+
+function AudioSettingButton({ label, enabled, onClick }: { label: string; enabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={enabled}
+      aria-label={`${label} ${enabled ? '끄기' : '켜기'}`}
+      onClick={onClick}
+      className={`min-h-12 rounded-[16px] px-3 text-xs font-black transition active:translate-y-1 ${
+        enabled
+          ? 'bg-cyan-300 text-cyan-950 shadow-[0_4px_0_#0891b2]'
+          : 'bg-slate-200 text-slate-600 shadow-[0_4px_0_#94a3b8]'
+      }`}
+    >
+      {label} {enabled ? 'ON' : 'OFF'}
+    </button>
   );
 }
 
@@ -3017,7 +3267,7 @@ function CurrentProblemCard({
             submissionResult={submissionResult}
           />
           {inputMode === 'keypad' && (
-            <div className="min-h-0 overflow-hidden pt-1">
+            <div className="training-keypad-slot">
               <NumberPad disabled={!canSubmitAnswer} onDigit={appendDigit} onDelete={deleteDigit} onSubmit={onCheck} />
             </div>
           )}
@@ -3204,18 +3454,34 @@ function TrainingCompletePanel({
   const displayAccuracy = summary?.accuracy ?? (displayTotalProblems > 0 ? Math.round((displayCorrectCount / displayTotalProblems) * 100) : 0);
   const accuracyRewardMultiplier = summary?.rewardMultiplier ?? (displayAccuracy >= 80 ? 1 : displayAccuracy >= 50 ? 0.8 : 0.6);
   const coinMultiplier = summary?.coinRewardMultiplier ?? 1;
-  const hasCoinBonus = summary ? coinMultiplier !== 1 || summary.coins !== summary.baseCoins : false;
-  const bonusCoinAmount = summary ? summary.coins - summary.baseCoins : 0;
+  const hasCoinBonus = coinMultiplier !== 1;
   const subtitle = displayAccuracy >= 90 ? '정말 잘했어요!' : displayAccuracy >= 70 ? '좋았어요!' : '다시 도전해요!';
   const resultRows = [
     { icon: '✓', label: '정답 수', value: `${displayCorrectCount} / ${displayTotalProblems}`, className: 'text-emerald-700' },
     { icon: '%', label: '정확도', value: `${displayAccuracy}%`, className: 'text-cyan-700' },
     { icon: '★', label: '정확도 보너스', value: `x${accuracyRewardMultiplier}`, className: 'text-fuchsia-700 training-result-accuracy-bonus' },
     { icon: '⏱', label: '걸린 시간', value: summary ? formatTrainingDuration(summary.elapsedMs) : '정산 중', className: 'text-violet-700' },
+    {
+      icon: '×',
+      label: summary ? `숫자 ${summary.numberCount}개 도전 보너스` : '숫자 개수 도전 보너스',
+      value: summary ? `×${summary.numberCountRewardMultiplier}` : '정산 중',
+      className: 'text-violet-700',
+    },
     ...(hasCoinBonus
-      ? [{ icon: '×', label: '코인 보너스', value: coinMultiplier !== 1 ? `x${coinMultiplier}` : `+${bonusCoinAmount.toLocaleString()}`, className: 'text-orange-700 training-result-coin-bonus' }]
+      ? [{ icon: '×', label: '코인 설정 배율', value: `x${coinMultiplier}`, className: 'text-orange-700 training-result-coin-bonus' }]
       : []),
-    { icon: '●', label: '획득 코인', value: summary ? `+${summary.coins.toLocaleString()}` : '정산 중', className: 'text-amber-600 training-result-coin-row' },
+    {
+      icon: '★',
+      label: '경험치',
+      value: summary ? `기본 ${summary.baseDinoExp.toLocaleString()} → 최종 ${summary.dinoExp.toLocaleString()}` : '정산 중',
+      className: 'text-emerald-700',
+    },
+    {
+      icon: '●',
+      label: '코인',
+      value: summary ? `기본 ${summary.baseCoins.toLocaleString()} → 최종 ${summary.coins.toLocaleString()}` : '정산 중',
+      className: 'text-amber-600 training-result-coin-row',
+    },
   ];
 
   return (
@@ -3578,12 +3844,12 @@ function SettingsView({
               className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
               <option value="stage-default">{formatNumberCountOverride('stage-default', selectedLevelStages)}</option>
-              <option value="3">3개</option>
-              <option value="4">4개</option>
-              <option value="5">5개</option>
-              <option value="6">6개</option>
-              <option value="7">7개</option>
-              <option value="8">8개</option>
+              <option value="3">3개 · {formatNumberCountRewardLabel(3)}</option>
+              <option value="4">4개 · {formatNumberCountRewardLabel(4)}</option>
+              <option value="5">5개 · {formatNumberCountRewardLabel(5)}</option>
+              <option value="6">6개 · {formatNumberCountRewardLabel(6)}</option>
+              <option value="7">7개 · {formatNumberCountRewardLabel(7)}</option>
+              <option value="8">8개 · {formatNumberCountRewardLabel(8)}</option>
             </select>
           </label>
           <label className="grid gap-2 text-sm font-black text-emerald-800">

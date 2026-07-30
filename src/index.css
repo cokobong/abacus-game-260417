@@ -2006,7 +2006,8 @@ summary:focus-visible {
   }
 
   .training-input-layout--keypad {
-    grid-template-rows: 29% 38% minmax(0, 1fr);
+    grid-template-rows: 25% 27% minmax(0, 1fr);
+    gap: 0.5rem;
   }
 
   .training-input-layout--bluetooth {
@@ -2263,13 +2264,22 @@ summary:focus-visible {
   .training-keypad {
     position: relative;
     container-type: inline-size;
-    width: min(78%, 540px);
+    width: min(94%, 620px, calc(100cqh * 548 / 456));
     height: auto;
-    max-height: 100%;
     aspect-ratio: 1375 / 1144;
     min-width: 0;
     margin-inline: auto;
     overflow: hidden;
+  }
+
+  .training-keypad-slot {
+    container-type: size;
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    place-items: start center;
+    overflow: hidden;
+    padding-top: 0.125rem;
   }
 
   .training-keypad__image {
@@ -2288,8 +2298,8 @@ summary:focus-visible {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(4, minmax(0, 1fr));
-    column-gap: clamp(0.375rem, 1.5cqw, 0.625rem);
-    row-gap: clamp(0.375rem, 1.5cqw, 0.625rem);
+    column-gap: clamp(0.375rem, 1.35cqw, 0.625rem);
+    row-gap: clamp(0.375rem, 1.35cqw, 0.625rem);
     min-width: 0;
     min-height: 0;
   }
@@ -2347,7 +2357,7 @@ summary:focus-visible {
   .training-key-number__label {
     position: relative;
     z-index: 1;
-    font-size: clamp(1.75rem, 24cqw, 2.75rem);
+    font-size: clamp(2rem, 25cqw, 3rem);
     font-weight: 900;
     line-height: 1;
   }
@@ -2355,7 +2365,7 @@ summary:focus-visible {
   .training-key-delete__label {
     position: relative;
     z-index: 1;
-    font-size: clamp(0.75rem, 10cqw, 1.125rem);
+    font-size: clamp(0.875rem, 11cqw, 1.25rem);
     font-weight: 900;
     line-height: 1;
     color: #78350f;
@@ -2364,7 +2374,7 @@ summary:focus-visible {
   .training-key-submit__label {
     position: relative;
     z-index: 1;
-    font-size: clamp(0.75rem, 10cqw, 1.125rem);
+    font-size: clamp(0.875rem, 11cqw, 1.25rem);
     font-weight: 900;
     line-height: 1;
     color: #14532d;

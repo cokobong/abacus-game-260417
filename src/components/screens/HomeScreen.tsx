@@ -6,13 +6,16 @@ import homeButtonSound from '../../assets/home/home_btn_sound.png?url';
 import homeButtonTrain from '../../assets/home/home_btn_train.png?url';
 import homeCoinBar from '../../assets/home/home_coin_bar.png?url';
 import type { CSSProperties } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 type HomeRoute = 'training' | 'dino' | 'shop' | 'settings';
 
 export interface HomeScreenProps {
+  audioEnabled: boolean;
   coins: number;
   dinosaurName: string;
   onNavigate: (screen: HomeRoute) => void;
+  onToggleAudio: () => void;
 }
 
 const homeAssets = {
@@ -63,7 +66,7 @@ const homeActions: Array<{
   },
 ];
 
-export function HomeScreen({ coins, onNavigate }: HomeScreenProps) {
+export function HomeScreen({ audioEnabled, coins, onNavigate, onToggleAudio }: HomeScreenProps) {
   return (
     <section className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden bg-sky-100">
       <div className="relative aspect-[3/4] h-full max-h-full w-auto max-w-full overflow-hidden bg-sky-200">
@@ -79,16 +82,25 @@ export function HomeScreen({ coins, onNavigate }: HomeScreenProps) {
         <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between px-[5.5%] pt-[5%]">
           <button
             type="button"
-            className="block h-auto w-[clamp(64px,12%,84px)] p-0 transition active:translate-y-1"
-            aria-label="소리 설정"
+            onClick={onToggleAudio}
+            className="relative flex min-h-[64px] w-[clamp(96px,18%,132px)] items-center justify-center overflow-hidden border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-1"
+            aria-label={audioEnabled ? '소리 끄기' : '소리 켜기'}
+            title={audioEnabled ? '소리 끄기' : '소리 켜기'}
+            aria-pressed={!audioEnabled}
           >
             {homeAssets.soundButton && (
               <img
                 src={homeAssets.soundButton}
                 alt=""
-                className="block h-auto w-full object-contain"
+                className={`block h-auto w-full object-contain transition ${audioEnabled ? '' : 'brightness-75 saturate-50'}`}
                 draggable={false}
               />
+            )}
+            {!homeAssets.soundButton && (audioEnabled ? <Volume2 className="h-10 w-10 text-cyan-800" /> : <VolumeX className="h-10 w-10 text-slate-700" />)}
+            {!audioEnabled && (
+              <span className="absolute right-[8%] top-[12%] grid h-[clamp(28px,5vw,38px)] w-[clamp(28px,5vw,38px)] place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-md">
+                <VolumeX className="h-[68%] w-[68%]" aria-hidden="true" />
+              </span>
             )}
           </button>
 
