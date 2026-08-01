@@ -53,9 +53,20 @@ function normalizeTrainingRecord(value: unknown): TrainingSessionRecord | null {
     : answeredProblems - correctCount;
   const totalElapsedMs = Math.max(0, finiteNumber(value.totalElapsedMs));
   const averageAnswerMs = Math.max(0, finiteNumber(value.averageAnswerMs, answeredProblems > 0 ? totalElapsedMs / answeredProblems : 0));
+  const {
+    earnedExp: _legacyEarnedExp,
+    exp: _legacyExp,
+    baseExp: _legacyBaseExp,
+    finalExp: _legacyFinalExp,
+    expMultiplier: _legacyExpMultiplier,
+    dinosaurExp: _legacyDinosaurExp,
+    dinoExp: _legacyDinoExp,
+    levelUp: _legacyLevelUp,
+    ...compatibleValue
+  } = value;
 
   return {
-    ...(value as unknown as TrainingSessionRecord),
+    ...(compatibleValue as unknown as TrainingSessionRecord),
     totalProblems,
     problemCount: Math.max(0, finiteNumber(value.problemCount, totalProblems)),
     numberCount: Math.max(0, finiteNumber(value.numberCount, 3)),

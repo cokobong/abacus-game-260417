@@ -142,7 +142,6 @@ export interface TrainingSessionRecord {
   averageAnswerMs: number;
   inputMode: TrainingInputMode;
   earnedCoins: number;
-  earnedExp: number;
   earnedItems: Array<{ itemId: Id; quantity: number }>;
   activeDinosaurId?: Id;
 }

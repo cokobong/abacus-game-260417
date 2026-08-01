@@ -1,5 +1,4 @@
 import type { CoinRewardMultiplier } from '../config/rewardConfig';
-import type { GrowthSpeedMultiplier } from '../config/growthConfig';
 
 export interface TrainingRewardInput {
   totalProblems: number;
@@ -7,7 +6,6 @@ export interface TrainingRewardInput {
   wrongCount: number;
   numberCount: number;
   selectedLevel: number;
-  growthSpeedMultiplier: GrowthSpeedMultiplier;
   coinRewardMultiplier: CoinRewardMultiplier;
   activeDinosaurCondition?: {
     stamina: number;
@@ -20,10 +18,6 @@ export interface TrainingRewardResult {
   baseCoins: number;
   coinRewardMultiplier: CoinRewardMultiplier;
   coins: number;
-  baseDinoExp: number;
-  growthSpeedMultiplier: GrowthSpeedMultiplier;
-  /** Raw EXP points, not a percentage. */
-  dinoExp: number;
   happiness: number;
   accuracy: number;
   rewardMultiplier: number;
@@ -54,16 +48,14 @@ function getRewardMultiplier(accuracy: number) {
   return 0.6;
 }
 
-export function calculateTrainingRewards({ correctCount, wrongCount, numberCount, growthSpeedMultiplier, coinRewardMultiplier }: TrainingRewardInput): TrainingRewardResult {
+export function calculateTrainingRewards({ correctCount, wrongCount, numberCount, coinRewardMultiplier }: TrainingRewardInput): TrainingRewardResult {
   const totalAttempts = correctCount + wrongCount;
   const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
   const rewardMultiplier = getRewardMultiplier(accuracy);
   const numberCountRewardMultiplier = getNumberCountRewardMultiplier(numberCount);
   const accuracyAdjustedCoins = Math.max(0, Math.round((correctCount * 3 + 10) * rewardMultiplier));
   const baseCoins = Math.round(accuracyAdjustedCoins * coinRewardMultiplier);
-  const baseDinoExp = Math.round((correctCount + 5) * rewardMultiplier * growthSpeedMultiplier);
   const adjustedCoins = Math.round(baseCoins * numberCountRewardMultiplier);
-  const adjustedDinoExp = Math.round(baseDinoExp * numberCountRewardMultiplier);
 
   return {
     numberCount,
@@ -71,9 +63,6 @@ export function calculateTrainingRewards({ correctCount, wrongCount, numberCount
     baseCoins,
     coinRewardMultiplier,
     coins: adjustedCoins,
-    baseDinoExp,
-    growthSpeedMultiplier,
-    dinoExp: adjustedDinoExp,
     happiness: 0,
     accuracy,
     rewardMultiplier,

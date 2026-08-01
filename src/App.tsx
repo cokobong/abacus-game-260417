@@ -1213,7 +1213,7 @@ export default function App() {
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
   const isHomeScreen = activeTab === 'home';
   const isTrainingScreen = activeTab === 'training';
-  const showAppHeader = !isHomeScreen && !isTrainingScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex';
+  const showAppHeader = !isHomeScreen && !isTrainingScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex' && activeTab !== 'settings';
   const showBottomNav = !isHomeScreen && !isTrainingScreen;
   const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop' && activeTab !== 'dino' && activeTab !== 'pokedex';
 
@@ -1498,7 +1498,6 @@ export default function App() {
       wrongCount,
       numberCount: effectiveNumberCount,
       selectedLevel: gameState.selectedLevel,
-      growthSpeedMultiplier: gameState.growthSpeedMultiplier,
       coinRewardMultiplier: gameState.coinRewardMultiplier,
       activeDinosaurCondition: {
         stamina: activeOwnedDinosaur.stamina,
@@ -1523,7 +1522,6 @@ export default function App() {
       averageAnswerMs,
       inputMode: trainingInputMode,
       earnedCoins: resultReward.coins,
-      earnedExp: resultReward.dinoExp,
       earnedItems: [],
       activeDinosaurId: activeOwnedDinosaur.id,
     };
@@ -1535,9 +1533,6 @@ export default function App() {
           ...current.player,
           coins: current.player.coins + resultReward.coins,
         },
-        ownedDinosaurs: current.ownedDinosaurs.map((dinosaur) =>
-          dinosaur.id === activeOwnedDinosaur.id ? applyDinosaurExp(dinosaur, resultReward.dinoExp) : dinosaur,
-        ),
         trainingHistory: addTrainingSessionRecord(current.trainingHistory, trainingRecord),
         rewardedTrainingSessionIds: Array.from(new Set([...current.rewardedTrainingSessionIds, completedSession.id])).slice(-100),
         progressByLevel: updateProgressByLevel(current.progressByLevel, trainingRecord),
@@ -1557,16 +1552,12 @@ export default function App() {
       elapsedMs: Math.max(0, completedAt - completedSession.startedAt),
     });
     setSetCompleteRewards([
-      createDisplayReward(`공룡 EXP +${resultReward.dinoExp}`, resultReward.dinoExp),
       createDisplayReward(`코인 +${resultReward.coins}`, resultReward.coins),
     ]);
     setLastRewards([]);
     setLastTrainingEffects([]);
     if (resultReward.coins > 0) {
       playSound('reward_coin');
-    }
-    if (resultReward.dinoExp > 0 && applyDinosaurExp(activeOwnedDinosaur, resultReward.dinoExp).level > activeOwnedDinosaur.level) {
-      playSound('level_up');
     }
   }
 
@@ -3543,12 +3534,6 @@ function TrainingCompletePanel({
     ...(hasCoinBonus
       ? [{ icon: '×', label: '코인 설정 배율', value: `x${coinMultiplier}`, className: 'text-orange-700 training-result-coin-bonus' }]
       : []),
-    {
-      icon: '★',
-      label: '경험치',
-      value: summary ? `기본 ${summary.baseDinoExp.toLocaleString()} → 최종 ${summary.dinoExp.toLocaleString()}` : '정산 중',
-      className: 'text-emerald-700',
-    },
     {
       icon: '●',
       label: '코인',
