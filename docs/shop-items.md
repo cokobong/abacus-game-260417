@@ -306,8 +306,8 @@ src/data/items.ts
 | 프테라노돈 | pteranodon | carnivore | 육식·공용 |
 | 디플로도쿠스 | diplodocus | herbivore | 초식·공용 |
 | 벨로시랩터 | swift-raptor | carnivore | 육식·공용 |
-| 플레시오사우루스 | plesiosaurus | carnivore | 육식·공용 |
-| 모사사우루스 | mosasaurus | carnivore | 육식·공용 |
+| 디스토르투스 렉스 | distortus-rex | carnivore | 육식·공용 |
+| 인도미누스 렉스 | indominus-rex | carnivore | 육식·공용 |
 | 스타라노 | starano | omnivore | 초식·육식·공용 |
 
 파키케팔로는 어린이용 게임에서 이해하기 쉽도록 일반적인 분류에 따라 초식으로 운용한다. 테리지노사우루스는 식성 해석의 폭을 고려해 잡식으로 운용한다. 크리스탈로와 스타라노는 창작종이며 기존 설명에 명확한 식성이 없어, 한쪽 먹이를 임의로 금지하지 않도록 잡식으로 명시했다.

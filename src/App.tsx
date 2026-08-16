@@ -367,6 +367,8 @@ function getCurrentSpeciesId(speciesId: string) {
     'sparkle-cave-rare': 'crystalo',
     'volcano-island-rare': 'volcanodon',
     'secret-land-rare': 'starano',
+    plesiosaurus: 'distortus-rex',
+    mosasaurus: 'indominus-rex',
   };
 
   return speciesIdAliases[speciesId] ?? speciesId;

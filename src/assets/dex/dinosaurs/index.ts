@@ -5,6 +5,51 @@ export interface DinosaurCharacterImages {
 }
 
 export const dinosaurCharacterAssets = {
+  crystalo: {
+    baby: new URL('../dino_upgrade/dino_crystalo_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_crystalo_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_crystalo_adult_character.png', import.meta.url).href,
+  },
+  dilophosaurus: {
+    baby: new URL('../dino_upgrade/dino_dilophosaurus_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_dilophosaurus_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_dilophosaurus_adult_character.png', import.meta.url).href,
+  },
+  dimetrodon: {
+    baby: new URL('../dino_upgrade/dino_dimetrodon_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_dimetrodon_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_dimetrodon_adult_character.png', import.meta.url).href,
+  },
+  distortusRex: {
+    baby: new URL('../dino_upgrade/dino_distortus_rex_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_distortus_rex_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_distortus_rex_adult_character.png', import.meta.url).href,
+  },
+  indominusRex: {
+    baby: new URL('../dino_upgrade/dino_indominus_rex_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_indominus_rex_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_indominus_rex_adult_character.png', import.meta.url).href,
+  },
+  leafcera: {
+    baby: new URL('../dino_upgrade/dino_leafcera_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_leafcera_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_leafcera_adult_character.png', import.meta.url).href,
+  },
+  pteranodon: {
+    baby: new URL('../dino_upgrade/dino_pteranodon_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_pteranodon_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_pteranodon_adult_character.png', import.meta.url).href,
+  },
+  starano: {
+    baby: new URL('../dino_upgrade/dino_starano_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_starano_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_starano_adult_character.png', import.meta.url).href,
+  },
+  volcanodon: {
+    baby: new URL('../dino_upgrade/dino_volcanodon_character.png', import.meta.url).href,
+    youth: new URL('../dino_upgrade/dino_volcanodon_youth_character.png', import.meta.url).href,
+    adult: new URL('../dino_upgrade/dino_volcanodon_adult_character.png', import.meta.url).href,
+  },
   allosaurus: {
     baby: new URL('./dino_allosaurus_character.png', import.meta.url).href,
     youth: new URL('./dino_allosaurus_youth_character.png', import.meta.url).href,

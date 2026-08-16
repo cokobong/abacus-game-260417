@@ -31,8 +31,8 @@ export const habitatBackgroundAssets = {
   'secret-land': collectionBgSecretLand,
 } as const;
 
-const longneckSpeciesIds = new Set(['long-brachio', 'diplodocus', 'parasaurolophus', 'plesiosaurus']);
-const theropodSpeciesIds = new Set(['tiny-tyranno', 'allosaurus', 'dilophosaurus', 'carnotaurus', 'spinosaurus', 'swift-raptor', 'mosasaurus']);
+const longneckSpeciesIds = new Set(['long-brachio', 'diplodocus', 'parasaurolophus']);
+const theropodSpeciesIds = new Set(['tiny-tyranno', 'allosaurus', 'dilophosaurus', 'carnotaurus', 'spinosaurus', 'swift-raptor', 'distortus-rex', 'indominus-rex']);
 
 export function getDexSilhouetteImage(speciesId: string) {
   if (longneckSpeciesIds.has(speciesId)) return silhouetteLongneck;
