@@ -44,7 +44,7 @@ import {
   TRAINING_INPUT_MODE_STORAGE_KEY,
 } from './utils/gameStorage';
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
-import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates } from './utils/hatchCandidates';
+import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates, selectHatchCandidate } from './utils/hatchCandidates';
 import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRewardResult } from './utils/trainingRewards';
 import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
@@ -1902,7 +1902,8 @@ export default function App() {
 
     isHatchingRef.current = true;
     const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(gameState.ownedDinosaurs);
-    const hatchedTemplate = getHatchCandidates(currentActiveEgg, uniqueOwnedDinosaurs, hatchableDinosaurPool).candidates[0];
+    const hatchCandidates = getHatchCandidates(currentActiveEgg, uniqueOwnedDinosaurs, hatchableDinosaurPool).candidates;
+    const hatchedTemplate = selectHatchCandidate(currentActiveEgg, hatchCandidates);
 
     if (!hatchedTemplate) {
       setGameState((current) => ({

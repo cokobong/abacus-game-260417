@@ -32,6 +32,14 @@ export function getHatchCandidates(egg: OwnedEgg | null, ownedDinosaurs: OwnedDi
   };
 }
 
+export function selectHatchCandidate(egg: OwnedEgg | null, candidates: DinosaurSpecies[], random: () => number = Math.random) {
+  if (!egg || candidates.length === 0) return null;
+  if (getEggCategoryForOwnedEgg(egg) === 'rare') return candidates[0] ?? null;
+
+  const randomIndex = Math.min(candidates.length - 1, Math.floor(random() * candidates.length));
+  return candidates[randomIndex] ?? null;
+}
+
 export function getRemainingSpeciesCountForEggCategory(eggCategory: EggCategory, ownedDinosaurs: OwnedDinosaur[], speciesPool: DinosaurSpecies[] = dinosaurSpecies) {
   return getRemainingSpeciesCountForEggScope(eggCategory, undefined, ownedDinosaurs, speciesPool);
 }
