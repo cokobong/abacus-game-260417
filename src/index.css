@@ -1878,6 +1878,449 @@ summary:focus-visible {
     @apply inline-flex items-center justify-center gap-2 rounded-[24px] border-4 border-white px-6 text-lg font-black text-white transition hover:brightness-105 active:translate-y-1;
   }
 
+  .nav-icon-frame {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: center;
+    height: 100%;
+    aspect-ratio: 322 / 327;
+    overflow: hidden;
+    border: clamp(2px, 0.35dvh, 4px) solid #d7ad68;
+    border-radius: 15%;
+    padding: 7% 9% 5%;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.72), 0 2px 3px rgba(92, 57, 18, 0.28);
+  }
+
+  .nav-icon-frame--default {
+    background: linear-gradient(145deg, #fffdf1, #fff4cf);
+    color: #334155;
+  }
+
+  .nav-icon-frame--selected {
+    border-color: #f2b51d;
+    background: linear-gradient(145deg, #f5ff8a, #b8ec35);
+    color: #713f12;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 175, 0.85), 0 3px 4px rgba(146, 64, 14, 0.32);
+  }
+
+  .nav-icon-frame__image {
+    display: block;
+    width: 76%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .nav-icon-frame__label {
+    display: block;
+    margin-top: 1%;
+    font-size: clamp(0.5rem, 1.2dvh, 0.72rem);
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .adventure-map-screen {
+    isolation: isolate;
+  }
+
+  .adventure-region-marker {
+    width: clamp(7.4rem, 28%, 11rem);
+    min-height: 4.75rem;
+    border: 3px solid rgba(255, 255, 255, 0.96);
+    border-radius: 1.15rem;
+    padding: 0.55rem 0.45rem;
+    transform-origin: center;
+  }
+
+  .adventure-region-marker--available {
+    border-color: #fde68a;
+    background: linear-gradient(to bottom, rgba(255, 247, 212, 0.98), rgba(253, 230, 138, 0.98));
+    color: #78350f;
+    box-shadow: 0 5px 0 #92400e, 0 10px 20px rgba(69, 26, 3, 0.28);
+  }
+
+  .adventure-region-marker--available:active {
+    margin-top: 3px;
+    box-shadow: 0 2px 0 #92400e, 0 6px 12px rgba(69, 26, 3, 0.24);
+  }
+
+  .adventure-region-marker--locked {
+    border-color: rgba(255, 255, 255, 0.82);
+    background: rgba(71, 85, 105, 0.82);
+    color: white;
+    box-shadow: 0 5px 0 rgba(30, 41, 59, 0.78), 0 9px 18px rgba(15, 23, 42, 0.22);
+    filter: saturate(0.65);
+  }
+
+  .lava-path-game {
+    display: flex;
+    flex-direction: column;
+    background: #4a2017;
+  }
+
+  .lava-path-game__background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 52%;
+    filter: saturate(1.04) contrast(1.02);
+    user-select: none;
+  }
+
+  .lava-path-game__tint {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 58%, rgba(255, 117, 18, 0.08), transparent 48%),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.08), transparent 30%, rgba(69, 26, 3, 0.16));
+  }
+
+  .lava-wood-panel {
+    border: 3px solid #91501e;
+    background: linear-gradient(to bottom, rgba(255, 244, 207, 0.98), rgba(250, 219, 153, 0.98));
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.52), 0 4px 0 #65320f, 0 8px 18px rgba(69, 26, 3, 0.24);
+  }
+
+  .lava-path-playfield {
+    display: grid;
+    grid-template-rows: repeat(var(--lava-stage-count, 3), minmax(0, 1fr));
+    gap: clamp(0.25rem, 1dvh, 0.7rem);
+    padding-top: clamp(2.1rem, 5dvh, 3.5rem);
+    padding-bottom: clamp(3.4rem, 7dvh, 5.2rem);
+  }
+
+  .lava-stage-row {
+    display: grid;
+    grid-template-columns: clamp(3.2rem, 11vw, 5rem) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(0.35rem, 1.4vw, 0.8rem);
+  }
+
+  .lava-stage-label {
+    border: 2px solid #8a4d1d;
+    border-radius: 0.65rem;
+    padding: 0.35rem 0.2rem;
+    background: linear-gradient(to bottom, #d69a4e, #9a5724);
+    color: #fff7d6;
+    text-align: center;
+    font-size: clamp(0.68rem, 2.2vw, 0.95rem);
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 1px 1px #5b2a0b;
+    box-shadow: 0 3px 0 #5b2a0b;
+  }
+
+  .lava-stone {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: clamp(3.2rem, 8dvh, 5.2rem);
+    place-items: center;
+    overflow: visible;
+    border: 0;
+    border-radius: 48%;
+    background: transparent;
+    color: #fff7df;
+    font-size: clamp(1.25rem, 4.5vw, 2.15rem);
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 2px 0 #3f2419;
+    box-shadow: none;
+    transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  }
+
+  .lava-stone--selected {
+    z-index: 2;
+    transform: translateY(-3px) scale(1.04);
+    filter: drop-shadow(0 0 8px rgba(250, 204, 21, .82));
+  }
+
+  .lava-stone--journey {
+    animation: lava-path-pulse 420ms ease-in-out infinite alternate;
+    filter: brightness(1.25);
+  }
+
+  .lava-stone__check {
+    position: absolute;
+    right: 5%;
+    top: 4%;
+    border-radius: 999px;
+    padding: 2px;
+    background: #2563eb;
+    color: white;
+    box-sizing: content-box;
+    z-index: 5;
+  }
+
+  .lava-stone__asset {
+    position: absolute;
+    inset: -8% -5%;
+    z-index: 0;
+    width: 110%;
+    height: 116%;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 5px 4px rgba(42, 20, 11, .42));
+  }
+
+  .lava-stone__value {
+    position: relative;
+    z-index: 4;
+    transform: translateY(-8%);
+    color: #fff7df;
+    text-shadow: 0 2px 0 #3f2419, 0 0 5px rgba(63, 36, 25, .85);
+  }
+
+  .lava-stone__effect {
+    position: absolute;
+    z-index: 3;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .lava-stone__effect--landing { inset: 28% -18% -22%; width: 136%; height: 94%; animation: lava-effect-burst 480ms ease-out both; }
+  .lava-stone__effect--crack { inset: 2% 4%; width: 92%; height: 88%; opacity: .8; mix-blend-mode: multiply; }
+  .lava-stone__effect--sparkles { inset: -34% -18%; width: 136%; height: 160%; animation: lava-effect-sparkle 800ms ease-in-out infinite alternate; }
+
+  .lava-stone--correct {
+    filter: drop-shadow(0 0 10px rgba(74, 222, 128, .9));
+  }
+
+  .lava-stone--wrong {
+    filter: drop-shadow(0 0 9px rgba(249, 115, 22, .9));
+  }
+
+  .lava-treasure {
+    position: absolute;
+    right: 5%;
+    top: 0;
+    display: grid;
+    width: clamp(4.4rem, 17vw, 7.2rem);
+    aspect-ratio: 1.12;
+    place-items: center;
+    color: #fff7d6;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-shadow: 0 2px 1px #78350f;
+  }
+
+  .lava-treasure > img { position: absolute; object-fit: contain; pointer-events: none; }
+  .lava-treasure__rock { inset: 30% -6% -10%; width: 112%; height: 80%; z-index: 0; }
+  .lava-treasure__reward { inset: 3% 14% 23%; width: 72%; height: 74%; z-index: 2; filter: drop-shadow(0 4px 3px rgba(42, 20, 11, .45)); }
+  .lava-treasure__rays { inset: -55%; width: 210%; height: 210%; z-index: 1; opacity: 0; }
+  .lava-treasure > span { position: absolute; z-index: 3; bottom: -3%; border-radius: 999px; padding: .1rem .45rem; background: rgba(120, 53, 15, .88); }
+
+  .lava-treasure--active {
+    animation: lava-path-pulse 520ms ease-in-out infinite alternate;
+  }
+
+  .lava-treasure--active .lava-treasure__rays { opacity: .92; animation: lava-rays-spin 8s linear infinite; }
+  .lava-treasure--locked .lava-treasure__reward { width: 62%; inset-inline: 19%; filter: saturate(.75) drop-shadow(0 4px 3px rgba(42, 20, 11, .45)); }
+
+  .lava-dinosaur-rock {
+    position: absolute;
+    bottom: 0;
+    left: 2%;
+    display: grid;
+    width: clamp(4.8rem, 17%, 7.6rem);
+    aspect-ratio: 1.15;
+    place-items: end center;
+    border-radius: 50% 50% 38% 38%;
+    background: transparent;
+    transform: translateY(calc(var(--lava-progress, 0) * (-1 * (100% + 2.2dvh))));
+    transition: transform 420ms cubic-bezier(.2,.8,.25,1);
+  }
+
+  .lava-dinosaur-rock > img { position: absolute; object-fit: contain; pointer-events: none; }
+  .lava-dinosaur-rock__platform { inset: 48% -15% -12%; z-index: 0; width: 130%; height: 68%; filter: drop-shadow(0 5px 4px rgba(42, 20, 11, .45)); }
+  .lava-dinosaur-rock__shadow { z-index: 1; left: 10%; bottom: 18%; width: 80%; height: 28%; opacity: .62; }
+  .lava-dinosaur-rock__dust { z-index: 2; left: -22%; bottom: 8%; width: 144%; height: 55%; animation: lava-effect-burst 520ms ease-out infinite; }
+
+  .lava-dinosaur-rock--failure {
+    animation: lava-dino-failure 420ms ease-in-out;
+    transform: translateY(0);
+  }
+
+  .lava-settings-button {
+    display: grid;
+    width: 3rem;
+    min-height: 3rem;
+    place-items: center;
+    border: 3px solid #92400e;
+    border-radius: 1rem;
+    background: linear-gradient(to bottom, #fde68a, #f59e0b);
+    color: #78350f;
+    box-shadow: 0 4px 0 #78350f;
+  }
+
+  .lava-settings-button:disabled { cursor: not-allowed; filter: grayscale(.7); opacity: .58; }
+
+  .lava-equation-panel--reveal { animation: lava-equation-reveal 230ms ease-out; }
+
+  .lava-result-message {
+    margin-top: .3rem;
+    text-align: center;
+    color: #fff7ed;
+    font-size: clamp(.72rem, 2.5vw, .9rem);
+    font-weight: 900;
+    text-shadow: 0 2px 1px #7c2d12;
+  }
+
+  .lava-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, .62);
+    backdrop-filter: blur(2px);
+  }
+
+  .lava-settings-panel,
+  .lava-success-panel {
+    width: 100%;
+    max-width: 32rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    border: 4px solid #fcd34d;
+    border-radius: 1.75rem;
+    padding: 1.25rem;
+    background: linear-gradient(to bottom, #fffbeb, #fef3c7);
+    box-shadow: 0 10px 0 #92400e, 0 22px 45px rgba(15, 23, 42, .38);
+  }
+
+  .lava-success-panel { padding: 2rem; text-align: center; background: linear-gradient(to bottom, #fffbeb, #ecfdf5); }
+
+  .lava-setting-choice {
+    min-height: 2.8rem;
+    flex: 1 1 4.7rem;
+    border: 2px solid #d6b06a;
+    border-radius: .9rem;
+    padding: .5rem .7rem;
+    background: white;
+    color: #78350f;
+    font-size: .85rem;
+    font-weight: 900;
+  }
+
+  .lava-setting-choice[aria-pressed='true'] { border-color: #2563eb; background: #dbeafe; color: #1e3a8a; box-shadow: inset 0 0 0 2px #60a5fa; }
+
+  .lava-modal-button { display: inline-flex; min-height: 3.5rem; align-items: center; justify-content: center; gap: .25rem; border: 2px solid; border-radius: 1.1rem; font-size: .88rem; font-weight: 900; }
+  .lava-modal-button--cancel { border-color: #d6b06a; background: white; color: #78350f; }
+  .lava-modal-button--apply { border-color: white; background: #22c55e; color: white; box-shadow: 0 4px 0 #15803d; }
+
+  .lava-dinosaur-rock .lava-dinosaur-rock__dinosaur {
+    position: relative;
+    z-index: 3;
+    width: 86%;
+    height: 110%;
+    object-fit: contain;
+    object-position: bottom center;
+    filter: drop-shadow(0 5px 3px rgba(42, 20, 11, 0.45));
+  }
+
+  .lava-success-reward { position: relative; display: grid; width: 6rem; aspect-ratio: 1; margin-inline: auto; place-items: center; }
+  .lava-success-reward > img { position: absolute; object-fit: contain; }
+  .lava-success-reward > img:not(.lava-success-reward__sparkles) { z-index: 2; width: 74%; height: 74%; filter: drop-shadow(0 5px 5px rgba(120, 53, 15, .3)); }
+  .lava-success-reward__sparkles { inset: -25%; width: 150%; height: 150%; animation: lava-effect-sparkle 700ms ease-in-out infinite alternate; }
+
+  .lava-depart-button:enabled {
+    border-color: #facc15;
+    background: linear-gradient(to bottom, #65e131, #22a919);
+    color: white;
+    text-shadow: 0 2px 0 #166534;
+    box-shadow: 0 6px 0 #166534, 0 9px 18px rgba(20, 83, 45, 0.32);
+  }
+
+  .lava-depart-button:disabled {
+    border-color: #cbd5e1;
+    background: #94a3b8;
+    color: #e2e8f0;
+    box-shadow: 0 4px 0 #64748b;
+  }
+
+  @keyframes lava-path-pulse {
+    from { transform: translateY(-3px) scale(1.04); }
+    to { transform: translateY(-6px) scale(1.09); }
+  }
+
+  @keyframes lava-equation-reveal {
+    from { opacity: .45; transform: scale(.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes lava-dino-failure {
+    0%, 100% { rotate: 0deg; }
+    30% { rotate: -5deg; }
+    65% { rotate: 5deg; }
+  }
+
+  @keyframes lava-effect-burst {
+    from { opacity: .95; transform: scale(.65); }
+    to { opacity: 0; transform: scale(1.08); }
+  }
+
+  @keyframes lava-effect-sparkle {
+    from { opacity: .5; transform: scale(.92) rotate(-3deg); }
+    to { opacity: 1; transform: scale(1.06) rotate(3deg); }
+  }
+
+  @keyframes lava-rays-spin { to { transform: rotate(360deg); } }
+
+  @media (max-height: 760px) {
+    .lava-path-header {
+      padding-top: 0.45rem;
+    }
+
+    .lava-goal-panel {
+      margin-top: 0.35rem;
+      padding-block: 0.25rem;
+    }
+
+    .lava-path-playfield {
+      padding-top: 1.8rem;
+      padding-bottom: 2.8rem;
+      gap: .2rem;
+    }
+
+    .lava-path-footer {
+      padding-bottom: 0.45rem;
+    }
+
+    .lava-equation-panel {
+      padding-block: 0.35rem;
+    }
+  }
+
+  @media (max-height: 680px) {
+    .lava-path-game--4-stages .lava-stage-label { padding-block: .2rem; }
+    .lava-path-game--4-stages .lava-stone { min-height: 2.7rem; font-size: clamp(1.05rem, 4vw, 1.55rem); }
+    .lava-path-game--4-stages .lava-path-playfield { padding-top: 1.45rem; padding-bottom: 2.25rem; }
+    .lava-path-game--4-stages .lava-goal-panel { padding-block: .15rem; }
+  }
+
+  @media (max-width: 480px), (max-height: 760px) {
+    .adventure-map-title {
+      top: 1.5%;
+    }
+
+    .adventure-region-marker {
+      width: clamp(6.7rem, 27%, 8.5rem);
+      min-height: 4rem;
+      padding: 0.4rem 0.35rem;
+    }
+
+    .adventure-region-description {
+      display: none;
+    }
+  }
+
   .shadow-cyan {
     box-shadow: 0 7px 0 #0891b2, 0 16px 24px rgba(8, 145, 178, 0.22);
   }
@@ -2452,42 +2895,36 @@ summary:focus-visible {
     backdrop-filter: blur(1px);
   }
 
-  .training-coin-bar {
-    position: relative;
-    container-type: inline-size;
-    justify-self: end;
-    width: clamp(7rem, 21cqw, 10.5rem);
-    aspect-ratio: 1906 / 825;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .training-coin-bar__image {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .training-coin-bar__value {
-    position: absolute;
-    inset: 0;
-    display: flex;
+  .training-change-button {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding-left: 21%;
-    padding-right: 7%;
-    padding-bottom: 1%;
+    gap: 0.4rem;
+    justify-self: end;
+    width: clamp(7rem, 21cqw, 10.5rem);
+    min-height: 2.75rem;
+    min-width: 0;
     overflow: hidden;
-    color: #fef08a;
-    font-size: clamp(0.85rem, 10.5cqw, 1.25rem);
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    border-radius: 0.9rem;
+    padding: 0.5rem 0.65rem;
+    background: linear-gradient(to bottom, #67e8f9, #22d3ee);
+    color: #164e63;
+    font-size: clamp(0.72rem, 2cqw, 0.95rem);
     font-weight: 900;
     line-height: 1;
-    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.38);
+    box-shadow: 0 4px 0 #0891b2;
     white-space: nowrap;
+  }
+
+  .training-change-button:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #0891b2;
+  }
+
+  .training-quick-settings-panel {
+    max-height: min(90dvh, 760px);
+    overscroll-behavior: contain;
   }
 
   .training-wrong-badge .training-status-banner__content {

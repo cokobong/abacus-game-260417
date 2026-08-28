@@ -31,6 +31,8 @@ export const NUMBER_COUNT_REWARD_MULTIPLIERS: Readonly<Record<number, number>> =
   6: 1.8,
   7: 2.2,
   8: 2.6,
+  9: 3,
+  10: 3.4,
 };
 
 export function getNumberCountRewardMultiplier(numberCount: number) {

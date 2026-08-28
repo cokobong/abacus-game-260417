@@ -8,10 +8,12 @@ import shopDefault from './nav_shop_default.png';
 import shopSelected from './nav_shop_selected.png';
 import trainingDefault from './nav_training_default.png';
 import trainingSelected from './nav_training_selected.png';
+import adventureIcon from '../../adventure/adventure_tab_icon.png';
 
 export const bottomNavAssets = {
   training: { default: trainingDefault, selected: trainingSelected },
   dino: { default: myDinosaurDefault, selected: myDinosaurSelected },
+  adventure: { default: adventureIcon, selected: adventureIcon },
   shop: { default: shopDefault, selected: shopSelected },
   pokedex: { default: dinopediaDefault, selected: dinopediaSelected },
   settings: { default: settingsDefault, selected: settingsSelected },

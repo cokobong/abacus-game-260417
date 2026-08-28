@@ -10,6 +10,7 @@ import {
   Play,
   Settings,
   ShoppingBag,
+  SlidersHorizontal,
   Sparkles,
   Star,
 } from 'lucide-react';
@@ -18,7 +19,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { NavigationArrow } from './components/NavigationArrow';
 import { SaveDataTransferControls } from './components/SaveDataTransferControls';
 import { TrainingReport } from './components/TrainingReport';
-import { DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, PlaygroundScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
+import { AdventureGameShell, AdventureMapScreen, DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
@@ -29,6 +30,7 @@ import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/ab
 import { adventureAreas } from './data/adventures';
 import { dinosaurSpecies, getDinosaurSpecies, getStarterSelectableSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
+import { useAbacusBLE } from './hooks/useAbacusBLE';
 import type { AbacusLevelConfig, AbacusStageConfig, AdminChangeLog, AudioSettings, DinosaurState, EggState, EquippedCostumes, LevelProgressRecord, NextTrainingRecommendation, OperationMode, OwnedDinosaur, OwnedEgg, Reward, StageProgressRecord, SubmissionResult, TrainingInputMode, TrainingProblem, TrainingProgressEvaluation, TrainingSession, TrainingSessionRecord, UserProfile } from './types/game';
 import { generateTrainingProblems } from './utils/generateTrainingProblems';
 import { evaluateLevelProgress, evaluateStageProgress, getNextTrainingRecommendation } from './utils/evaluateTrainingProgress';
@@ -53,7 +55,6 @@ import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type Gr
 import { trainingUiAssets } from './assets/ui/training';
 import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
-import homeCoinBar from './assets/home/home_coin_bar.png?url';
 import homeBackground from './assets/home/home_bg_farm_full.png?url';
 import { playBackgroundMusic, playSound, setAudioSettings, stopBackgroundMusic, unlockAndPlayBackgroundMusic, type BackgroundMusic } from './audio/audioManager';
 
@@ -63,10 +64,15 @@ type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
 type ProblemCountOverride = 5 | 10 | 15 | 20;
-type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6 | 7 | 8;
+type NumberCountOverride = 'stage-default' | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 type DigitTypeOverride = 'stage-default' | 'one-digit' | 'two-digit' | 'three-digit' | 'mixed-digit' | 'mixed-two-three-digit';
 type ResolvedDigitType = Exclude<DigitTypeOverride, 'stage-default'>;
 type OperationsOverride = 'stage-default' | 'add' | 'subtract' | 'mixed';
+type QuickTrainingSettings = {
+  inputMode: TrainingInputMode;
+  problemCountOverride: ProblemCountOverride | 'stage-default';
+  numberCountOverride: NumberCountOverride;
+};
 type CompletedTrainingSummary = TrainingRewardResult & {
   sessionId: string;
   totalProblems: number;
@@ -107,13 +113,22 @@ const mainTabs: Array<{ id: MainTab; label: string; icon: typeof Play; color: st
   { id: 'training', label: '훈련장', icon: Play, color: 'text-cyan-700', active: 'from-cyan-300 to-sky-300 border-cyan-200' },
   { id: 'dino', label: '우리 공룡', icon: Baby, color: 'text-amber-700', active: 'from-amber-300 to-orange-300 border-amber-200' },
   { id: 'hatchery', label: '알 부화장', icon: Egg, color: 'text-orange-700', active: 'from-orange-300 to-yellow-300 border-orange-200' },
+  { id: 'adventure', label: '모험', icon: MapIcon, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
   { id: 'shop', label: '상점', icon: ShoppingBag, color: 'text-violet-700', active: 'from-violet-300 to-fuchsia-300 border-violet-200' },
   { id: 'pokedex', label: '도감', icon: BookOpen, color: 'text-sky-700', active: 'from-sky-300 to-blue-300 border-sky-200' },
-  { id: 'adventure', label: '모험', icon: MapIcon, color: 'text-emerald-700', active: 'from-emerald-300 to-lime-300 border-emerald-200' },
   { id: 'settings', label: '설정', icon: Settings, color: 'text-slate-700', active: 'from-slate-200 to-slate-300 border-slate-200' },
 ];
 
-const visibleMainTabs = mainTabs.filter((tab) => tab.id === 'training' || tab.id === 'dino' || tab.id === 'shop' || tab.id === 'pokedex' || tab.id === 'settings');
+const visibleMainTabs = mainTabs.filter((tab) => tab.id !== 'hatchery');
+
+const trainingInputModeOptions = [
+  { value: 'pencil', label: '펜슬 입력', description: 'Apple Pencil Scribble 테스트용' },
+  { value: 'keypad', label: '화면 키패드', description: '화면의 숫자 버튼으로 입력' },
+  { value: 'bluetooth', label: '블루투스 주판', description: '연결된 주판 값으로 입력' },
+] as const satisfies ReadonlyArray<{ value: TrainingInputMode; label: string; description: string }>;
+
+const problemCountOptions = ['stage-default', 5, 10, 15, 20] as const satisfies ReadonlyArray<ProblemCountOverride | 'stage-default'>;
+const numberCountOptions = ['stage-default', 3, 4, 5, 6, 7, 8, 9, 10] as const satisfies ReadonlyArray<NumberCountOverride>;
 
 const backgroundMusicByScreen: Partial<Record<AppScreen, BackgroundMusic>> = {
   home: 'home',
@@ -536,7 +551,7 @@ function normalizeNumberCountOverride(value: unknown): NumberCountOverride {
   if (value === 'stage-default') return value;
 
   const numericValue = typeof value === 'string' ? Number(value) : value;
-  return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 || numericValue === 7 || numericValue === 8 ? numericValue : 'stage-default';
+  return numericValue === 3 || numericValue === 4 || numericValue === 5 || numericValue === 6 || numericValue === 7 || numericValue === 8 || numericValue === 9 || numericValue === 10 ? numericValue : 'stage-default';
 }
 
 function normalizeDigitTypeOverride(value: unknown): DigitTypeOverride {
@@ -947,6 +962,7 @@ export default function App() {
   const skipNextSaveRef = useRef(false);
   const [gameState, setGameState] = useState<GameState>(initialLoadResult.state);
   const [trainingInputMode, setTrainingInputMode] = useState<TrainingInputMode>(loadTrainingInputMode);
+  const abacusBluetooth = useAbacusBLE();
   const activeOwnedDinosaur = getSelectedOwnedDinosaur(gameState.ownedDinosaurs, getSelectedDinosaurId(gameState)) ?? initialOwnedDinosaur;
   const activeDinosaur = ownedDinosaurToDinosaurState(activeOwnedDinosaur);
   const activeEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
@@ -1037,8 +1053,10 @@ export default function App() {
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const [adventureFeedback, setAdventureFeedback] = useState('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
   const [adventureResult, setAdventureResult] = useState<AdventureRunResult | null>(null);
+  const [activeAdventureGameId, setActiveAdventureGameId] = useState<string | null>(null);
   const [storageFeedback, setStorageFeedback] = useState(initialLoadResult.message);
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
+  const isQuickTrainingSettingsOpenRef = useRef(false);
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
   const isFeedingRef = useRef(false);
@@ -1091,6 +1109,24 @@ export default function App() {
       // 저장소가 차단된 환경에서도 기본 입력 화면은 정상적으로 표시합니다.
     }
   }, [trainingInputMode]);
+
+  useEffect(() => {
+    const data = abacusBluetooth.lastData;
+    if (!data) return;
+
+    const now = Date.now();
+    handleBluetoothNotification({
+      id: now,
+      time: new Date(now).toLocaleTimeString(),
+      bytes: data.bytes,
+      raw: `[${data.bytes.join(', ')}]`,
+      hex: data.rawHex,
+      text: '',
+      parsedNumber: Number.isFinite(data.number) ? data.number : null,
+      isConfirmSignal: data.isConfirmed,
+      note: data.isConfirmed ? 'confirm signal received' : Number.isFinite(data.number) ? `number parsed: ${data.number}` : 'number parse skipped',
+    });
+  }, [abacusBluetooth.lastData]);
 
   function updateTrainingInputMode(mode: TrainingInputMode) {
     setTrainingInputMode(mode);
@@ -1215,9 +1251,11 @@ export default function App() {
   const activeMeta = useMemo(() => mainTabs.find((tab) => tab.id === activeTab) ?? mainTabs.find((tab) => tab.id === 'dino') ?? mainTabs[0], [activeTab]);
   const isHomeScreen = activeTab === 'home';
   const isTrainingScreen = activeTab === 'training';
-  const showAppHeader = !isHomeScreen && !isTrainingScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex' && activeTab !== 'settings';
-  const showBottomNav = !isHomeScreen && !isTrainingScreen;
-  const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop' && activeTab !== 'dino' && activeTab !== 'pokedex';
+  const isAdventureScreen = activeTab === 'adventure';
+  const isAdventureGameOpen = isAdventureScreen && activeAdventureGameId !== null;
+  const showAppHeader = !isHomeScreen && !isTrainingScreen && !isAdventureScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex' && activeTab !== 'settings';
+  const showBottomNav = !isHomeScreen && !isTrainingScreen && !isAdventureGameOpen;
+  const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop' && activeTab !== 'dino' && activeTab !== 'pokedex' && activeTab !== 'adventure';
 
   useEffect(() => {
     setCompletedTrainingSummary(null);
@@ -1569,6 +1607,16 @@ export default function App() {
     setLastRewards([]);
     setLastTrainingEffects([]);
     setTrainingRunId((current) => current + 1);
+  }
+
+  function startTrainingWithQuickSettings(settings: QuickTrainingSettings) {
+    updateTrainingInputMode(settings.inputMode);
+    setGameState((current) => ({
+      ...current,
+      problemCountOverride: settings.problemCountOverride === 'stage-default' ? undefined : settings.problemCountOverride,
+      numberCountOverride: settings.numberCountOverride,
+    }));
+    restartTrainingSet();
   }
 
   function applyDinosaurInteraction(changes: DinosaurInteractionChange, message: string) {
@@ -2163,6 +2211,8 @@ export default function App() {
 
   function handleBluetoothNotification(payload: BluetoothNotificationPayload) {
     setLastBluetoothInput(payload);
+    if (activeTab !== 'training') return;
+    if (isQuickTrainingSettingsOpenRef.current) return;
     if (trainingInputMode !== 'bluetooth') return;
 
     if (payload.parsedNumber !== null && !payload.isConfirmSignal) {
@@ -2270,8 +2320,8 @@ export default function App() {
         </div>
       </header>}
 
-      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen || isTrainingScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : `flex-1 overflow-hidden ${showBottomNav ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}`}>
-        <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' || activeTab === 'dino' || activeTab === 'shop' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
+      <main className={`relative z-10 mx-auto min-h-0 w-full overflow-x-hidden ${isHomeScreen || isTrainingScreen || isAdventureScreen ? 'flex-1 overflow-hidden p-0' : `px-3 py-3 md:px-5 md:py-4 ${allowsPageScroll ? `flex-1 overflow-y-auto ${showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}` : `flex-1 overflow-hidden ${showBottomNav ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}`}`}>
+        <section className={`${activeTab === 'pokedex' || activeTab === 'training' || activeTab === 'home' || activeTab === 'dino' || activeTab === 'shop' || activeTab === 'adventure' ? 'hidden' : 'flex'} mb-2 items-center gap-3 rounded-[24px] border-4 border-white bg-white/72 px-3 py-2 shadow-[0_10px_28px_rgba(14,116,144,0.12)] backdrop-blur`}>
           <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] border-4 border-white bg-gradient-to-b ${activeMeta.active} text-white shadow-md`}>
             <activeMeta.icon className={`h-7 w-7 ${activeMeta.color}`} />
           </div>
@@ -2313,7 +2363,11 @@ export default function App() {
               setCompleteRewards={setCompleteRewards}
               completedTrainingSummary={completedTrainingSummary}
               isSetComplete={training.isSetComplete}
-              currentCoins={gameState.player.coins}
+              problemCountOverride={gameState.problemCountOverride}
+              numberCountOverride={gameState.numberCountOverride}
+              hasTrainingAnswers={training.session.answers.length > 0}
+              bluetoothConnected={abacusBluetooth.isConnected}
+              bluetoothStatus={abacusBluetooth.status}
               selectedLevelConfig={selectedLevelConfig}
               effectiveProblemCount={effectiveProblemCount}
               effectiveNumberCountLabel={effectiveNumberCountLabel}
@@ -2327,6 +2381,9 @@ export default function App() {
               onCheck={() => training.submitAnswer('manual')}
               onChooseProblem={training.chooseProblem}
               onRestartTraining={restartTrainingSet}
+              onStartWithQuickSettings={startTrainingWithQuickSettings}
+              onQuickSettingsOpenChange={(isOpen) => { isQuickTrainingSettingsOpenRef.current = isOpen; }}
+              onConnectBluetooth={() => { void abacusBluetooth.connect(); }}
               onGoToShop={() => {
                 setIsHatcheryOpen(false);
                 setActiveTab('shop');
@@ -2418,24 +2475,9 @@ export default function App() {
           />
         )}
         {activeTab === 'adventure' && (
-          <PlaygroundScreen
-            activeDinosaur={activeDinosaur}
-            coins={gameState.player.coins}
-            inventory={gameState.inventory}
-            result={adventureResult}
-            feedback={adventureFeedback}
-            onExplore={runAdventure}
-            onCloseResult={() => setAdventureResult(null)}
-            onGoToDex={() => {
-              setAdventureResult(null);
-              setActiveTab('pokedex');
-            }}
-            onGoToHatchery={() => {
-              setAdventureResult(null);
-              setActiveTab('dino');
-              setIsHatcheryOpen(true);
-            }}
-          />
+          activeAdventureGameId
+            ? <AdventureGameShell gameId={activeAdventureGameId} dinosaur={activeOwnedDinosaur} onExit={() => setActiveAdventureGameId(null)} />
+            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen onStartGame={setActiveAdventureGameId} /></div>
         )}
         {activeTab === 'settings' && (
           <PortraitSettingsView
@@ -2479,7 +2521,7 @@ export default function App() {
       </main>
 
       {showBottomNav && <nav className="bottom-nav-wrapper absolute inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.35rem+env(safe-area-inset-bottom))] md:px-5 md:pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-        <div className="bottom-nav mx-auto grid grid-cols-5 place-items-center gap-1 rounded-[18px] border-[3px] border-white bg-white/90 p-1 shadow-[0_-8px_22px_rgba(14,116,144,0.18)] backdrop-blur md:gap-1.5 md:p-1.5">
+        <div className="bottom-nav mx-auto grid grid-cols-6 place-items-center gap-0.5 rounded-[18px] border-[3px] border-white bg-white/90 p-1 shadow-[0_-8px_22px_rgba(14,116,144,0.18)] backdrop-blur md:gap-1 md:p-1.5">
           {visibleMainTabs.map((tab) => {
             const active = tab.id === activeTab;
             const assets = bottomNavAssets[tab.id as keyof typeof bottomNavAssets];
@@ -2491,18 +2533,21 @@ export default function App() {
                     playSound('ui_tab_switch');
                   }
                   setIsHatcheryOpen(false);
+                  setActiveAdventureGameId(null);
                   setActiveTab(tab.id);
                 }}
                 aria-label={tab.label}
                 aria-current={active ? 'page' : undefined}
-                className="bottom-nav-item flex h-[clamp(52px,7.5dvh,72px)] w-full items-center justify-center border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-0.5"
+                className="bottom-nav-item relative flex h-[clamp(52px,7.5dvh,72px)] w-full items-center justify-center border-0 bg-transparent p-0 transition hover:brightness-105 active:translate-y-0.5"
               >
-                <img
-                  src={active ? assets.selected : assets.default}
-                  alt=""
-                  className="block h-full w-full object-contain"
-                  draggable={false}
-                />
+                {tab.id === 'adventure' ? (
+                  <span className={`nav-icon-frame ${active ? 'nav-icon-frame--selected' : 'nav-icon-frame--default'}`}>
+                    <img src={assets.default} alt="" className="nav-icon-frame__image" draggable={false} />
+                    <span className="nav-icon-frame__label">모험</span>
+                  </span>
+                ) : (
+                  <img src={active ? assets.selected : assets.default} alt="" className="block h-full w-full object-contain" draggable={false} />
+                )}
               </button>
             );
           })}
@@ -2692,11 +2737,7 @@ function PortraitSettingsView({
         <legend className="px-1 text-sm font-black text-violet-800">훈련장 입력 방식</legend>
         <p className="mb-3 mt-1 text-xs font-black leading-snug text-slate-500">훈련장에는 선택한 입력 화면 하나만 표시됩니다.</p>
         <div className="grid gap-2 sm:grid-cols-3">
-          {([
-            { value: 'pencil', label: '펜슬 입력', description: 'Apple Pencil Scribble 테스트용' },
-            { value: 'keypad', label: '화면 키패드', description: '화면의 숫자 버튼으로 입력' },
-            { value: 'bluetooth', label: '블루투스 주판', description: '연결된 주판 값으로 입력' },
-          ] as const).map((option) => {
+          {trainingInputModeOptions.map((option) => {
             const selected = trainingInputMode === option.value;
             return (
               <label
@@ -2749,11 +2790,9 @@ function PortraitSettingsView({
           }}
           className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
         >
-          <option value="stage-default">단계 기본값</option>
-          <option value="5">5문제</option>
-          <option value="10">10문제</option>
-          <option value="15">15문제</option>
-          <option value="20">20문제</option>
+          {problemCountOptions.map((value) => (
+            <option key={value} value={value}>{value === 'stage-default' ? '단계 기본값' : `${value}문제`}</option>
+          ))}
         </select>
       </label>
 
@@ -2764,13 +2803,11 @@ function PortraitSettingsView({
           onChange={(event) => onNumberCountOverride(normalizeNumberCountOverride(event.target.value))}
           className="min-h-12 w-full min-w-0 rounded-[16px] border-2 border-emerald-100 bg-white px-3 text-sm font-black text-slate-900 sm:text-base"
         >
-          <option value="stage-default">단계 기본값</option>
-          <option value="3">3개 · {formatNumberCountRewardLabel(3)}</option>
-          <option value="4">4개 · {formatNumberCountRewardLabel(4)}</option>
-          <option value="5">5개 · {formatNumberCountRewardLabel(5)}</option>
-          <option value="6">6개 · {formatNumberCountRewardLabel(6)}</option>
-          <option value="7">7개 · {formatNumberCountRewardLabel(7)}</option>
-          <option value="8">8개 · {formatNumberCountRewardLabel(8)}</option>
+          {numberCountOptions.map((value) => (
+            <option key={value} value={value}>
+              {value === 'stage-default' ? '단계 기본값' : `${value}개 · ${formatNumberCountRewardLabel(value)}`}
+            </option>
+          ))}
         </select>
         <span className="break-words text-xs font-black leading-snug text-slate-500">한 문제에 나오는 숫자 개수를 정합니다.</span>
       </label>
@@ -2960,7 +2997,11 @@ function TrainingView({
   setCompleteRewards,
   completedTrainingSummary,
   isSetComplete,
-  currentCoins,
+  problemCountOverride,
+  numberCountOverride,
+  hasTrainingAnswers,
+  bluetoothConnected,
+  bluetoothStatus,
   selectedLevelConfig,
   effectiveProblemCount,
   effectiveNumberCountLabel,
@@ -2974,6 +3015,9 @@ function TrainingView({
   onCheck,
   onChooseProblem,
   onRestartTraining,
+  onStartWithQuickSettings,
+  onQuickSettingsOpenChange,
+  onConnectBluetooth,
   onGoToShop,
   onExitTraining,
   onGoToDino,
@@ -2994,7 +3038,11 @@ function TrainingView({
   setCompleteRewards: Reward[];
   completedTrainingSummary: CompletedTrainingSummary | null;
   isSetComplete: boolean;
-  currentCoins: number;
+  problemCountOverride?: ProblemCountOverride;
+  numberCountOverride: NumberCountOverride;
+  hasTrainingAnswers: boolean;
+  bluetoothConnected: boolean;
+  bluetoothStatus: string;
   selectedLevelConfig: AbacusLevelConfig | null;
   effectiveProblemCount: number;
   effectiveNumberCountLabel: string;
@@ -3008,14 +3056,46 @@ function TrainingView({
   onCheck: () => void;
   onChooseProblem: (index: number) => void;
   onRestartTraining: () => void;
+  onStartWithQuickSettings: (settings: QuickTrainingSettings) => void;
+  onQuickSettingsOpenChange: (isOpen: boolean) => void;
+  onConnectBluetooth: () => void;
   onGoToShop: () => void;
   onExitTraining: () => void;
   onGoToDino: () => void;
   onGoToHatchery: () => void;
 }) {
+  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
+  const [isRestartConfirmationOpen, setIsRestartConfirmationOpen] = useState(false);
+  const [draftQuickSettings, setDraftQuickSettings] = useState<QuickTrainingSettings>({
+    inputMode,
+    problemCountOverride: problemCountOverride ?? 'stage-default',
+    numberCountOverride,
+  });
   const canSubmitAnswer = !isSetComplete;
   const problemExpression = currentProblem.expressionText ?? currentProblem.displayText;
   const mascotMessage = getTrainingMascotMessage({ answer, isSetComplete, submissionResult });
+
+  function openQuickSettings() {
+    setDraftQuickSettings({
+      inputMode,
+      problemCountOverride: problemCountOverride ?? 'stage-default',
+      numberCountOverride,
+    });
+    setIsRestartConfirmationOpen(false);
+    setIsQuickSettingsOpen(true);
+    onQuickSettingsOpenChange(true);
+  }
+
+  function closeQuickSettings() {
+    setIsRestartConfirmationOpen(false);
+    setIsQuickSettingsOpen(false);
+    onQuickSettingsOpenChange(false);
+  }
+
+  function applyQuickSettings() {
+    onStartWithQuickSettings(draftQuickSettings);
+    closeQuickSettings();
+  }
 
   return (
     <div className="training-screen h-full min-h-0" style={{ backgroundImage: `url(${trainingBackground})` }}>
@@ -3035,10 +3115,10 @@ function TrainingView({
             <div className="training-progress-sign min-w-[220px] max-w-[400px] justify-self-center rounded-[14px] bg-[#f6d89d] px-4 py-2 text-center text-base font-black text-amber-950 shadow-[inset_0_-3px_0_rgba(120,53,15,.18)]">
               문제 {Math.min(currentProblemIndex + 1, totalProblems)} / {totalProblems}
             </div>
-            <div className="training-coin-bar">
-              <img src={homeCoinBar} alt="" className="training-coin-bar__image" aria-hidden="true" />
-              <span className="training-coin-bar__value">{currentCoins.toLocaleString()}</span>
-            </div>
+            <button type="button" disabled={submissionResult === 'correct'} onClick={() => { playSound('ui_button_tap'); openQuickSettings(); }} className="training-change-button disabled:cursor-wait disabled:opacity-60">
+              <SlidersHorizontal aria-hidden="true" className="h-5 w-5" />
+              <span>훈련 바꾸기</span>
+            </button>
           </div>
           <div className="training-score-summary mx-auto grid h-[clamp(48px,7dvh,62px)] w-[82%] max-w-[520px] grid-cols-2 gap-3">
             <TrainingStatusBadge asset={trainingStatusCorrectBanner} className="training-correct-badge">
@@ -3048,6 +3128,17 @@ function TrainingView({
               <strong className="training-status-banner__value">{wrongCount}</strong>
             </TrainingStatusBadge>
           </div>
+          {inputMode === 'bluetooth' && (
+            <div className="training-bluetooth-bar mx-auto flex min-h-11 w-[94%] items-center justify-between gap-2 rounded-[16px] border-2 border-white/90 bg-white/85 px-3 py-1.5 shadow-sm">
+              <span className={`min-w-0 truncate text-xs font-black ${bluetoothConnected ? 'text-emerald-700' : 'text-slate-600'}`}>
+                {bluetoothConnected ? `● ${bluetoothStatus}` : bluetoothStatus}
+              </span>
+              <button type="button" disabled={bluetoothConnected} onClick={() => { playSound('ui_button_tap'); onConnectBluetooth(); }} className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-[13px] bg-violet-500 px-3 text-xs font-black text-white shadow-[0_3px_0_#6d28d9] active:translate-y-0.5 active:shadow-none disabled:bg-emerald-500 disabled:shadow-none">
+                <Bluetooth aria-hidden="true" className="h-4 w-4" />
+                {bluetoothConnected ? '연결됨' : '주판 연결'}
+              </button>
+            </div>
+          )}
         </div>}
 
         {isSetComplete ? (
@@ -3073,6 +3164,60 @@ function TrainingView({
               problemExpression={problemExpression}
               submissionResult={submissionResult}
             />
+          </div>
+        )}
+
+        {isQuickSettingsOpen && (
+          <div className="training-quick-settings-overlay absolute inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:items-center sm:p-5">
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="quick-training-settings-title"
+              className="training-quick-settings-panel w-full max-w-[620px] overflow-y-auto rounded-[28px] border-4 border-white bg-gradient-to-b from-cyan-50 to-emerald-50 p-4 shadow-2xl sm:p-5"
+            >
+              {isRestartConfirmationOpen ? (
+                <div className="grid gap-4 py-2 text-center">
+                  <h2 id="quick-training-settings-title" className="text-xl font-black text-slate-900 sm:text-2xl">지금 훈련을 끝내고 새로 시작할까요?</h2>
+                  <p className="text-sm font-bold text-slate-600">지금까지 푼 기록은 새 훈련으로 이어지지 않아요.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setIsRestartConfirmationOpen(false)} className="min-h-14 rounded-[18px] border-2 border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm">계속 풀기</button>
+                    <button type="button" onClick={applyQuickSettings} className="min-h-14 rounded-[18px] border-2 border-white bg-gradient-to-b from-cyan-400 to-cyan-500 px-3 text-sm font-black text-white shadow-[0_5px_0_#0891b2] active:translate-y-1 active:shadow-none">새로 시작</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 id="quick-training-settings-title" className="text-center text-2xl font-black text-slate-900">훈련 바꾸기</h2>
+                  <div className="mt-4 grid gap-4">
+                    <QuickSettingGroup title="입력 방식">
+                      {trainingInputModeOptions.map((option) => (
+                        <QuickSettingButton key={option.value} selected={draftQuickSettings.inputMode === option.value} onClick={() => setDraftQuickSettings((current) => ({ ...current, inputMode: option.value }))}>
+                          {option.label}
+                        </QuickSettingButton>
+                      ))}
+                    </QuickSettingGroup>
+                    <QuickSettingGroup title="한 세트 문제 수">
+                      {problemCountOptions.map((value) => (
+                        <QuickSettingButton key={value} selected={draftQuickSettings.problemCountOverride === value} onClick={() => setDraftQuickSettings((current) => ({ ...current, problemCountOverride: value }))}>
+                          {value === 'stage-default' ? '단계 기본' : `${value}문제`}
+                        </QuickSettingButton>
+                      ))}
+                    </QuickSettingGroup>
+                    <QuickSettingGroup title="숫자 개수">
+                      {numberCountOptions.map((value) => (
+                        <QuickSettingButton key={value} selected={draftQuickSettings.numberCountOverride === value} onClick={() => setDraftQuickSettings((current) => ({ ...current, numberCountOverride: value }))}>
+                          {value === 'stage-default' ? '단계 기본' : `${value}개`}
+                        </QuickSettingButton>
+                      ))}
+                    </QuickSettingGroup>
+                  </div>
+                  <p className="mt-4 text-center text-xs font-black text-amber-700">바꾸면 새로운 훈련이 시작돼요.</p>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button type="button" onClick={closeQuickSettings} className="min-h-14 rounded-[18px] border-2 border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm">취소</button>
+                    <button type="button" onClick={() => hasTrainingAnswers ? setIsRestartConfirmationOpen(true) : applyQuickSettings()} className="min-h-14 rounded-[18px] border-2 border-white bg-gradient-to-b from-emerald-400 to-emerald-500 px-3 text-sm font-black text-white shadow-[0_5px_0_#059669] active:translate-y-1 active:shadow-none">새 설정으로 시작</button>
+                  </div>
+                </>
+              )}
+            </section>
           </div>
         )}
 
@@ -3104,6 +3249,32 @@ function TrainingStatusBadge({ asset, className, children }: { asset?: string; c
       {asset && <img src={asset} alt="" className="training-status-banner__image" aria-hidden="true" />}
       <span className={asset ? 'training-status-banner__content' : 'relative z-10 text-base font-black'}>{children}</span>
     </span>
+  );
+}
+
+function QuickSettingGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset className="rounded-[20px] border-2 border-white bg-white/70 p-3 shadow-sm">
+      <legend className="px-1 text-sm font-black text-slate-700">{title}</legend>
+      <div className="mt-1 flex flex-wrap gap-2">{children}</div>
+    </fieldset>
+  );
+}
+
+function QuickSettingButton({ selected, onClick, children }: { key?: string | number; selected: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={`min-h-12 flex-1 basis-[28%] rounded-[16px] border-2 px-2 text-xs font-black transition active:translate-y-0.5 sm:text-sm ${
+        selected
+          ? 'border-cyan-400 bg-cyan-200 text-cyan-950 shadow-[0_3px_0_#22d3ee]'
+          : 'border-slate-100 bg-white text-slate-600 shadow-sm'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -3904,13 +4075,11 @@ function SettingsView({
               onChange={(event) => onNumberCountOverride(normalizeNumberCountOverride(event.target.value))}
               className="min-h-14 rounded-[18px] border-4 border-cyan-100 bg-white px-3 text-sm font-black text-slate-900 focus:border-cyan-300"
             >
-              <option value="stage-default">{formatNumberCountOverride('stage-default', selectedLevelStages)}</option>
-              <option value="3">3개 · {formatNumberCountRewardLabel(3)}</option>
-              <option value="4">4개 · {formatNumberCountRewardLabel(4)}</option>
-              <option value="5">5개 · {formatNumberCountRewardLabel(5)}</option>
-              <option value="6">6개 · {formatNumberCountRewardLabel(6)}</option>
-              <option value="7">7개 · {formatNumberCountRewardLabel(7)}</option>
-              <option value="8">8개 · {formatNumberCountRewardLabel(8)}</option>
+              {numberCountOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value === 'stage-default' ? formatNumberCountOverride(value, selectedLevelStages) : `${value}개 · ${formatNumberCountRewardLabel(value)}`}
+                </option>
+              ))}
             </select>
           </label>
           <label className="grid gap-2 text-sm font-black text-emerald-800">
