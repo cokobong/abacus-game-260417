@@ -376,8 +376,8 @@ export const itemConfigs: ItemConfig[] = [
     eggType: 'rare',
     eggCategory: 'rare',
     requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 20,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 20 }],
+    requiredFragmentAmount: 10,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
   },
   {
     id: 'hatch-warm-stone',
