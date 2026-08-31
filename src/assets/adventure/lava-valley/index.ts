@@ -1,4 +1,5 @@
 import background from './background/lava_valley_background.png';
+import runnerBackground from './background/lava_valley_background2.png';
 import platformDefault from './platforms/platform_default.png';
 import platformSelected from './platforms/platform_selected.png';
 import platformSuccess from './platforms/platform_success.png';
@@ -18,6 +19,7 @@ import treasureChestOpen from './rewards/treasure_chest_open.png';
 
 export const lavaValleyAssets = {
   background,
+  runnerBackground,
   platforms: {
     default: platformDefault,
     selected: platformSelected,

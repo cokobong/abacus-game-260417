@@ -2,6 +2,7 @@ export { TrainingScreen } from './TrainingScreen';
 export { AdventureMapScreen } from './AdventureMapScreen';
 export { AdventureGameShell } from './AdventureGameShell';
 export { LavaPathPrototype } from './LavaPathPrototype';
+export { SkyIslandPrototype } from './SkyIslandPrototype';
 export { HomeScreen } from './HomeScreen';
 export { DinosaurRoomScreen } from './DinosaurRoomScreen';
 export { PlaygroundScreen } from './PlaygroundScreen';

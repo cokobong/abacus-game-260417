@@ -1,5 +1,6 @@
 import type { OwnedDinosaur } from '../../types/game';
 import { LavaPathPrototype } from './LavaPathPrototype';
+import { SkyIslandPrototype } from './SkyIslandPrototype';
 
 export interface AdventureGameShellProps {
   gameId: string;
@@ -10,6 +11,10 @@ export interface AdventureGameShellProps {
 export function AdventureGameShell({ gameId, dinosaur, onExit }: AdventureGameShellProps) {
   if (gameId === 'lava-stepping-stones') {
     return <LavaPathPrototype dinosaur={dinosaur} onExit={onExit} />;
+  }
+
+  if (gameId === 'sky-number-clouds') {
+    return <SkyIslandPrototype dinosaur={dinosaur} onExit={onExit} />;
   }
 
   return (

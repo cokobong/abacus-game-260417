@@ -25,8 +25,9 @@ export const adventureRegions: AdventureRegion[] = [
     id: 'sky-island',
     name: '하늘섬',
     description: '구름 위의 비밀을 찾아요',
-    status: 'comingSoon',
+    status: 'available',
     position: { x: 76, y: 22 },
+    gameId: 'sky-number-clouds',
   },
   {
     id: 'number-ruins',
