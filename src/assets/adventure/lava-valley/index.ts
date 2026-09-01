@@ -16,6 +16,12 @@ import explorerRewardPouch from './rewards/explorer_reward_pouch.png';
 import ruinDoorLocked from './rewards/ruin_door_locked.png';
 import treasureChestClosed from './rewards/treasure_chest_closed.png';
 import treasureChestOpen from './rewards/treasure_chest_open.png';
+import lavaRockObstacle from './obstacles/lava_rock_obstacle.png';
+import lavaGeyserObstacle from './obstacles/lava_geyser_obstacle.png';
+import dinoCoin from './collectibles/dino_coin.png';
+import meatFoodItem from './collectibles/meat_food_item.png';
+import rareEggShard from './collectibles/rare_egg_shard.png';
+import checkpointFlag from './checkpoints/checkpoint_flag.png';
 
 export const lavaValleyAssets = {
   background,
@@ -42,4 +48,7 @@ export const lavaValleyAssets = {
     treasureChestClosed,
     treasureChestOpen,
   },
+  obstacles: { rock: lavaRockObstacle, geyser: lavaGeyserObstacle },
+  collectibles: { coin: dinoCoin, meat: meatFoodItem, rareEggShard },
+  checkpoint: checkpointFlag,
 } as const;
