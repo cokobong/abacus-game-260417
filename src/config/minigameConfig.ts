@@ -5,9 +5,12 @@ export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-
 
 export const MINIGAME_ENTRY_COST: Partial<Record<MinigameId, number>> = {
   'lava-stepping-stones': 150,
+  'sky-number-clouds': 0,
 };
 
 export const LAVA_VALLEY_ENTRY_COST = MINIGAME_ENTRY_COST['lava-stepping-stones']!;
+export const SKY_ISLAND_ENTRY_COST = MINIGAME_ENTRY_COST['sky-number-clouds']!;
+export const SKY_ISLAND_MOCK_MODE = true;
 export const LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID = 'rare-egg-fragment';
 export const LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE = 0.06;
 export const MAX_RARE_FRAGMENTS_PER_RUN = 2;

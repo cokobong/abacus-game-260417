@@ -1916,6 +1916,17 @@ export default function App() {
       return;
     }
 
+    if (entryCost === 0) {
+      const run = { gameId, runId: `sky-${Date.now()}-${Math.random().toString(36).slice(2, 9)}` };
+      entryProcessingRef.current = false;
+      activeAdventureRunRef.current = run;
+      setEntryProcessing(false);
+      setPendingAdventureEntry(null);
+      setAdventureEntryShortage(null);
+      setActiveAdventureRun(run);
+      return;
+    }
+
     const current = gameStateRef.current;
     if (current.player.coins < entryCost) {
       setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId });

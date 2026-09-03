@@ -20,7 +20,7 @@ export function AdventureGameShell({ gameId, dinosaur, onExit, runId, onFinishRu
   }
 
   if (gameId === 'sky-number-clouds') {
-    return <SkyIslandPrototype dinosaur={dinosaur} onExit={onExit} />;
+    return <SkyIslandPrototype dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} externalMainModalOpen={externalMainModalOpen} />;
   }
 
   return (

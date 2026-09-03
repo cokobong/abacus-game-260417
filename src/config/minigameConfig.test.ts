@@ -16,11 +16,11 @@ import {
 import { LAVA_VALLEY_SHOP_DROP_POOLS, SHOP_CATALOG } from './shopCatalog';
 import { itemConfigs } from './itemConfig';
 
-test('용암계곡 입장료는 성공할 때만 고정 150코인 차감한다', () => {
+test('용암계곡은 150코인이고 목업 하늘섬은 무료다', () => {
   assert.equal(LAVA_VALLEY_ENTRY_COST, 150);
   assert.equal(chargeMinigameEntry(1000, 'lava-stepping-stones'), 850);
   assert.equal(chargeMinigameEntry(149, 'lava-stepping-stones'), null);
-  assert.equal(chargeMinigameEntry(1000, 'sky-number-clouds'), null);
+  assert.equal(chargeMinigameEntry(1000, 'sky-number-clouds'), 1000);
 });
 
 test('수집물 lane은 LOW/HIGH만 사용하고 코인 패턴은 두 행동 의미를 유지한다', () => {

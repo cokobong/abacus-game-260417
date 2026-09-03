@@ -3,6 +3,7 @@ Add-Type -AssemblyName System.Drawing
 $sourceRoot = Join-Path $PSScriptRoot '..\src\assets\adventure\lava-valley'
 $playerRoot = Join-Path $sourceRoot 'player'
 $collectibleRoot = Join-Path $sourceRoot 'collectibles'
+$skyPlayerRoot = Join-Path $PSScriptRoot '..\src\assets\adventure\sky-island\player'
 
 function Resize-Png([string]$source, [string]$destination, [int]$size) {
   $inputImage = [Drawing.Image]::FromFile($source)
@@ -31,6 +32,9 @@ foreach ($name in $playerFiles) {
 foreach ($name in @('dino_coin.png', 'meat_food_item.png', 'rare_egg_shard.png')) {
   Resize-Png (Join-Path $collectibleRoot $name) (Join-Path $collectibleRoot ($name -replace '\.png$', '_optimized.png')) 256
 }
+
+New-Item -ItemType Directory -Force -Path $skyPlayerRoot | Out-Null
+Resize-Png (Join-Path $PSScriptRoot '..\src\assets\dex\dino_upgrade\dino_pteranodon_character.png') (Join-Path $skyPlayerRoot 'pteranodon_fly_placeholder.png') 512
 
 $sheet = [Drawing.Bitmap]::new(2048, 512, [Drawing.Imaging.PixelFormat]::Format32bppArgb)
 try {

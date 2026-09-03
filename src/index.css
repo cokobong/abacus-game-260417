@@ -3351,3 +3351,262 @@ summary:focus-visible {
     white-space: nowrap;
   }
 }
+
+/* Asset-relative panel coordinate system shared by Lava Valley overlays. */
+.lava-panel-root { position: relative; }
+.lava-panel-bg { display: block; width: 100%; height: auto; }
+.lava-panel-overlay { position: absolute; inset: 0; }
+
+.lava-runner-hud > .lava-panel-bg { position: static; object-fit: initial; }
+.lava-runner-hud > .lava-panel-overlay > span,
+.lava-runner-hud > .lava-panel-overlay > b { position: absolute; margin: 0; transform: none; white-space: nowrap; }
+.lava-runner-hud__health {
+  left: 19.1%;
+  top: 43.3%;
+  display: grid;
+  width: 18.8%;
+  height: 17.8%;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  justify-items: center;
+  color: #5b3034;
+  font-size: clamp(.58rem, 2.5vw, 1.2rem);
+  line-height: 1;
+}
+.lava-runner-hud__health i { display: grid; width: 80%; height: 80%; place-items: center; color: inherit; font-style: normal; }
+.lava-runner-hud__health i.is-filled { color: #ef4444; text-shadow: 0 1px #7f1d1d, 0 0 3px #fff7ed; }
+.lava-runner-hud__coin,
+.lava-runner-hud__rare,
+.lava-runner-hud__time { display: flex; align-items: center; justify-content: center; font-size: clamp(.55rem, 2.15vw, 1rem); line-height: 1; }
+.lava-runner-hud__coin { left: 47.1%; top: 43.5%; width: 11.4%; height: 17%; }
+.lava-runner-hud__rare { left: 65.1%; top: 43.5%; width: 10.9%; height: 17%; }
+.lava-runner-hud__time { left: 83.4%; top: 42.1%; width: 12.4%; height: 20.5%; flex-direction: column; gap: 4%; }
+.lava-runner-hud__time small { margin: 0; color: #fde68a; font-size: .64em; line-height: 1; }
+
+.lava-runner-speech { left: 34%; bottom: 46%; width: min(62%, 20rem); aspect-ratio: 736 / 283; }
+.lava-runner-speech > .lava-panel-bg { position: static; }
+.lava-runner-speech .lava-runner-speech__text {
+  position: absolute;
+  left: 38%;
+  top: 20%;
+  display: flex;
+  width: 54%;
+  height: 56%;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: clamp(.62rem, 2.15vw, .94rem);
+  font-weight: 1000;
+  line-height: 1.32;
+  text-align: center;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.lava-runner-modal .lava-runner-result-panel {
+  display: grid;
+  width: min(78%, 20rem) !important;
+  max-height: 94%;
+  gap: .55rem;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.lava-runner-result-panel__frame { width: 100%; aspect-ratio: 484 / 619; }
+.lava-runner-result-panel__frame > .lava-panel-bg { position: static; }
+.lava-runner-result-panel__coin,
+.lava-runner-result-panel__rare {
+  position: absolute;
+  top: 76.2%;
+  display: flex;
+  width: 13%;
+  height: 12.3%;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: clamp(.75rem, 3.4vw, 1.25rem);
+  line-height: 1;
+  text-shadow: 0 1px #fff7ed;
+}
+.lava-runner-result-panel__coin { left: 37.2%; }
+.lava-runner-result-panel__rare { left: 71.1%; }
+.lava-runner-result-panel .lava-runner-reward-items {
+  max-height: 4.4rem;
+  overflow: auto;
+  margin: 0;
+  padding: .35rem .55rem;
+  border-radius: .75rem;
+  background: rgb(255 247 237 / 92%);
+  font-size: clamp(.68rem, 2vw, .85rem);
+}
+.lava-runner-result-panel__empty { margin: 0 !important; color: #fff7ed; font-size: clamp(.65rem, 2vw, .82rem); text-shadow: 0 1px 2px #451a03; }
+.lava-runner-result-panel > .lava-runner-modal__actions { position: static; display: grid !important; grid-template-columns: 1fr 1fr; gap: .55rem; margin: 0; }
+.lava-runner-result-panel > .lava-runner-modal__actions button { min-height: 44px; }
+.lava-runner-result-panel--failure { padding: 1rem !important; background: linear-gradient(#fff7ed,#ffedd5) !important; box-shadow: 0 12px 35px rgb(69 10 10 / 40%) !important; }
+.lava-runner-result-panel__failure-copy { display: block !important; }
+
+.lava-runner-intro > div { transform: none; }
+
+@media (min-width: 768px) {
+  .lava-runner-hud { font-size: clamp(.72rem, 1.6vw, 1rem); }
+  .lava-runner-speech { width: min(54%, 22rem); }
+}
+
+/* Lava Valley result: panel, item summary and actions are three clear regions. */
+.lava-result-modal .lava-result-panel {
+  display: grid;
+  width: min(82%, 20rem);
+  max-height: 96%;
+  gap: clamp(.45rem, 1.4dvh, .75rem);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.lava-result-panel__frame {
+  width: min(100%, 17.5rem);
+  aspect-ratio: 484 / 619;
+  justify-self: center;
+}
+
+.lava-result-panel__frame > .lava-panel-bg { position: static; }
+
+.lava-result-coin-value,
+.lava-result-fragment-value {
+  position: absolute;
+  top: 76.4%;
+  display: flex;
+  height: 13.5%;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: clamp(.82rem, 3.5vw, 1.3rem);
+  font-weight: 1000;
+  line-height: 1;
+  text-shadow: 0 1px #fff7ed, 0 2px 2px rgb(69 10 10 / 24%);
+  white-space: nowrap;
+}
+
+.lava-result-coin-value { left: 42%; width: 10%; }
+.lava-result-fragment-value { left: 67%; width: 8.5%; }
+
+.lava-result-item-box {
+  display: grid;
+  width: 100%;
+  min-height: 4.6rem;
+  gap: .3rem;
+  justify-self: center;
+  border: 3px solid #fdba74;
+  border-radius: 1rem;
+  padding: .55rem .7rem;
+  color: #78350f;
+  background: #fff7ed;
+  box-shadow: 0 3px 0 #c2410c;
+}
+
+.lava-result-item-title {
+  color: #9a3412;
+  font-size: clamp(.75rem, 2.5vw, .95rem);
+  line-height: 1;
+  text-align: left;
+}
+
+.lava-result-item-list { display: grid; gap: .25rem; }
+
+.lava-result-item-row {
+  display: grid;
+  min-width: 0;
+  min-height: 2rem;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45rem;
+  border-radius: .65rem;
+  padding: .15rem .45rem;
+  background: #ffedd5;
+  font-size: clamp(.7rem, 2.35vw, .9rem);
+  font-weight: 900;
+  text-align: left;
+}
+
+.lava-result-item-row img { width: 2rem; height: 2rem; object-fit: contain; }
+.lava-result-item-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: keep-all; }
+.lava-result-item-row b { color: #c2410c; white-space: nowrap; }
+.lava-result-item-list small { color: #9a3412; font-weight: 900; text-align: right; }
+.lava-result-item-empty { display: flex; min-height: 2rem; align-items: center; justify-content: center; margin: 0 !important; color: #9a3412; font-size: clamp(.68rem, 2.2vw, .86rem); }
+
+.lava-result-actions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+}
+
+.lava-result-actions button { min-height: 44px; }
+
+.lava-result-panel--failure {
+  width: min(88%, 24rem) !important;
+  border: 5px solid #fed7aa !important;
+  padding: 1rem !important;
+  background: linear-gradient(#fff7ed,#ffedd5) !important;
+  box-shadow: 0 12px 35px rgb(69 10 10 / 40%) !important;
+}
+
+.lava-result-failure-copy { display: block !important; }
+
+@media (max-height: 720px) {
+  .lava-result-modal .lava-result-panel { width: min(72%, 17rem); gap: .35rem; }
+  .lava-result-panel__frame { width: min(100%, 14rem); }
+  .lava-result-item-box { min-height: 3.8rem; padding-block: .4rem; }
+  .lava-result-item-row { min-height: 1.7rem; grid-template-columns: 1.7rem minmax(0, 1fr) auto; }
+  .lava-result-item-row img { width: 1.7rem; height: 1.7rem; }
+}
+
+/* Sky Island runner mockup: transforms are written by one RAF loop. */
+.sky-runner { touch-action: none; }
+.sky-runner-hud { position: relative; z-index: 20; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: .45rem; padding: .45rem .55rem; border-bottom: 3px solid rgb(255 255 255 / 75%); background: rgb(255 255 255 / 90%); }
+.sky-runner-hud__stats { display: flex; min-width: 0; align-items: center; justify-content: space-around; gap: .25rem; color: #075985; font-size: clamp(.62rem,2.2vw,.95rem); font-weight: 1000; white-space: nowrap; }
+.sky-runner-hud__stats b { color: #ef4444; letter-spacing: -.12em; }
+.sky-runner-hud__stats strong { color: #92400e; }
+.sky-runner-hud__stats small { border-radius: 999px; padding: .12rem .3rem; color: white; background: #0284c7; font-size: .62rem; }
+.sky-runner-playfield { position: relative; min-height: 0; flex: 1; overflow: hidden; background: linear-gradient(#38bdf8 0%,#bae6fd 58%,#ecfeff 100%); }
+.sky-runner-playfield::before { content: ''; position: absolute; inset: 12% -45% auto 0; height: 3px; opacity: .2; background: repeating-linear-gradient(90deg,transparent 0 8%,white 8% 13%,transparent 13% 25%); animation: sky-runner-wind 2.1s linear infinite; }
+.sky-runner-playfield::after { content: ''; position: absolute; inset: auto -50% 0 0; height: 18%; background: radial-gradient(ellipse at 15% 100%,#94a3b8 0 7%,transparent 7.5%),radial-gradient(ellipse at 55% 100%,#64748b 0 9%,transparent 9.5%),linear-gradient(transparent,rgb(255 255 255 / 48%)); animation: sky-runner-islands 5.8s linear infinite; pointer-events: none; }
+.sky-runner-scenery { position: absolute; inset: 0 -100% 0 0; }
+.sky-runner-far-clouds { animation: sky-runner-forward 12.8s linear infinite; }
+.sky-runner-scenery i { position: absolute; width: 28%; height: 5%; border-radius: 999px; background: rgb(255 255 255 / 62%); filter: blur(1px); }
+.sky-runner-scenery i:nth-child(1) { left: -5%; top: 12%; }.sky-runner-scenery i:nth-child(2) { right: -8%; top: 36%; }.sky-runner-scenery i:nth-child(3) { left: 12%; top: 61%; }.sky-runner-scenery i:nth-child(4) { right: 8%; top: 85%; }
+.sky-runner-near-clouds { position: absolute; inset: 0 -100% 0 0; z-index: 6; pointer-events: none; animation: sky-runner-forward 2.6s linear infinite; }
+.sky-runner-near-clouds i { position: absolute; width: 18%; height: 4%; border-radius: 999px; background: rgb(255 255 255 / 42%); filter: blur(2px); }.sky-runner-near-clouds i:first-child { left: 42%; top: 16%; }.sky-runner-near-clouds i:last-child { left: 84%; top: 82%; }
+.sky-runner-player-anchor { position: absolute; left: 0; top: 0; z-index: 10; width: clamp(5.4rem,18vw,8rem); aspect-ratio: 1; margin: clamp(-4rem,-9vw,-2.7rem) 0 0 clamp(-4rem,-9vw,-2.7rem); will-change: transform; }
+.sky-runner-lane-guides { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.sky-runner-lane-guides i { position: absolute; left: 5%; right: 5%; top: var(--lane-y); height: clamp(2.8rem,14vw,5.5rem); transform: translateY(-50%); border-block: 1px dashed rgb(255 255 255 / 16%); border-radius: 999px; background: linear-gradient(90deg,rgb(255 255 255 / 8%),transparent 45%); }
+.sky-runner-player { width: 100%; height: 100%; animation: sky-runner-fly 420ms steps(2,end) infinite; }
+.sky-runner-player img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 4px rgb(3 105 161 / 32%)); }
+.sky-runner-player img { transition: transform 110ms ease-out; }.sky-runner-player--bank-up img { transform: rotate(-4deg); }.sky-runner-player--bank-down img { transform: rotate(4deg); }
+.sky-runner-player--invincible { opacity: .48; animation: sky-runner-fly 420ms steps(2,end) infinite,sky-runner-blink 180ms linear infinite alternate; }
+.sky-runner-object { position: absolute; left: 0; top: 0; z-index: 7; display: grid; width: clamp(3.2rem,12vw,5rem); aspect-ratio: 1; margin: clamp(-2.5rem,-6vw,-1.6rem); place-items: center; font-size: clamp(2.5rem,9vw,4rem); will-change: transform; }
+.sky-runner-object img { width: 100%; height: 100%; object-fit: contain; }
+.sky-runner-object--cloud { width: clamp(4.5rem,17vw,7rem); font-size: clamp(3.7rem,14vw,6rem); filter: drop-shadow(0 5px 3px rgb(30 41 59 / 35%)); }
+.sky-runner-object--rock,.sky-runner-object--thorn { filter: drop-shadow(0 4px 3px rgb(127 29 29 / 30%)); }
+.sky-runner-object--coin,.sky-runner-object--fragment,.sky-runner-object--shopItem { animation: sky-runner-treasure 700ms ease-in-out infinite alternate; }
+.sky-runner-controls { position: relative; z-index: 20; display: flex; justify-content: flex-end; padding: .55rem max(.8rem,env(safe-area-inset-right)) calc(.65rem + env(safe-area-inset-bottom)); background: rgb(255 255 255 / 92%); }
+.sky-runner-paddle { display: grid; gap: 10px; border: 3px solid rgb(255 255 255 / 92%); border-radius: 1.5rem; padding: 8px; background: linear-gradient(#bae6fd,#7dd3fc); box-shadow: 0 5px 12px rgb(3 105 161 / 22%); }
+.sky-runner-controls button { display: grid; width: 72px; min-height: 64px; touch-action: none; place-items: center; border: 4px solid white; border-radius: 1.15rem; color: white; background: linear-gradient(#38bdf8,#0284c7); box-shadow: 0 5px 0 #0369a1; font-weight: 1000; }
+.sky-runner-controls button b { font-size: 2rem; line-height: 1; }.sky-runner-controls button span { font-size: .78rem; }.sky-runner-controls button:active { transform: translateY(4px) scale(.97); filter: brightness(.9); box-shadow: 0 2px 0 #0369a1; }
+.sky-settings-pending { margin-top: .7rem; color: #0369a1; text-align: center; font-size: .78rem; font-weight: 900; }
+.sky-runner-overlay { position: absolute; inset: 0; z-index: 45; display: grid; place-content: center; gap: .55rem; border: 0; padding: 2rem; text-align: center; color: #075985; background: rgb(224 242 254 / 92%); font-weight: 900; }
+.sky-runner-tutorial strong { font-size: clamp(1.25rem,5vw,2rem); }.sky-runner-tutorial span { font-size: clamp(.85rem,3vw,1.1rem); }.sky-runner-tutorial small { margin-top: .5rem; color: #0284c7; }
+.sky-runner-feedback { position: absolute; left: var(--feedback-x); bottom: 27%; z-index: 18; transform: translateX(-50%); border: 3px solid white; border-radius: 999px; padding: .25rem .55rem; color: #075985; background: #fef08a; font-weight: 1000; animation: sky-hit-pop 520ms ease-out both; }
+.sky-runner-feedback--hurt { color: white; background: #ef4444; }
+.sky-runner-result { display: grid !important; gap: .4rem; margin: .8rem 0; }.sky-runner-result span { border-radius: .8rem; padding: .45rem; color: #075985; background: #e0f2fe; font-weight: 1000; }
+.sky-runner--paused * { animation-play-state: paused !important; }
+@keyframes sky-runner-forward { to { transform: translateX(-50%); } }
+@keyframes sky-runner-islands { to { transform: translateX(-50%); } }
+@keyframes sky-runner-wind { 0%,18%,100% { opacity: 0; transform: translateX(0); } 28%,72% { opacity: .22; } 82% { opacity: 0; transform: translateX(-25%); } }
+@keyframes sky-runner-fly { 50% { transform: translateY(-3%) rotate(-2deg); } }
+@keyframes sky-runner-blink { to { opacity: .85; } }
+@keyframes sky-runner-treasure { to { filter: brightness(1.08) drop-shadow(0 0 8px rgb(253 224 71 / 70%)); } }
+@media (max-width:480px) { .sky-runner-hud { gap: .2rem; padding-inline: .3rem; }.sky-runner-hud__stats { gap: .1rem; font-size: .56rem; }.sky-runner-hud__stats small { font-size: .5rem; }.sky-runner-controls button { width: 68px; min-height: 60px; } }
