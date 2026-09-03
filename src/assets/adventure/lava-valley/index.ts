@@ -1,14 +1,11 @@
 import background from './background/lava_valley_background.png';
 import runnerBackground from './background/lava_valley_background2.png';
-import carnotaurusIdle from './player/carnotaurus_idle.png';
-import carnotaurusRun1 from './player/carnotaurus_run_1.png';
-import carnotaurusRun2 from './player/carnotaurus_run_2.png';
-import carnotaurusRun3 from './player/carnotaurus_run_3.png';
-import carnotaurusRun4 from './player/carnotaurus_run_4.png';
-import carnotaurusJumpUp from './player/carnotaurus_jump_up.png';
-import carnotaurusFall from './player/carnotaurus_fall.png';
-import carnotaurusHurt from './player/carnotaurus_hurt.png';
-import carnotaurusVictory from './player/carnotaurus_victory.png';
+import carnotaurusIdle from './player/carnotaurus_idle_optimized.png';
+import carnotaurusRunSheet from './player/carnotaurus_run_sheet.png';
+import carnotaurusJumpUp from './player/carnotaurus_jump_up_optimized.png';
+import carnotaurusFall from './player/carnotaurus_fall_optimized.png';
+import carnotaurusHurt from './player/carnotaurus_hurt_optimized.png';
+import carnotaurusVictory from './player/carnotaurus_victory_optimized.png';
 import trackStart from './track/lava_track_start.png';
 import trackEnd from './track/lava_track_end.png';
 import trackCheckpoint from './track/lava_track_checkpoint.png';
@@ -19,9 +16,9 @@ import trackCrackOverlay from './track/lava_crack_overlay.png';
 import trackEdgeStrip from './track/lava_edge_strip.png';
 import lavaRockObstacle from './obstacles/lava_rock_obstacle.png';
 import lavaGeyserObstacle from './obstacles/lava_geyser_obstacle.png';
-import dinoCoin from './collectibles/dino_coin.png';
-import meatFoodItem from './collectibles/meat_food_item.png';
-import rareEggShard from './collectibles/rare_egg_shard.png';
+import dinoCoin from './collectibles/dino_coin_optimized.png';
+import meatFoodItem from './collectibles/meat_food_item_optimized.png';
+import rareEggShard from './collectibles/rare_egg_shard_optimized.png';
 import dinosaurContactShadow from './effects/dinosaur_contact_shadow.png';
 import jumpDust from './effects/jump_dust.png';
 import landingDust from './effects/landing_dust.png';
@@ -54,7 +51,7 @@ import comboPopup from './ui/events/combo_popup.png';
 
 export const lavaValleyPlayerAssets = {
   idle: carnotaurusIdle,
-  run: [carnotaurusRun1, carnotaurusRun2, carnotaurusRun3, carnotaurusRun4],
+  runSheet: carnotaurusRunSheet,
   jumpUp: carnotaurusJumpUp,
   fall: carnotaurusFall,
   hurt: carnotaurusHurt,

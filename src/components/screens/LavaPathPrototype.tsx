@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, RotateCcw } from 'lucide-react';
 import { lavaValleyAssets } from '../../assets/adventure/lava-valley';
 import type { OwnedDinosaur } from '../../types/game';
 import { createLavaValleyShopDropPlan, LAVA_VALLEY_COIN_PATTERNS, LAVA_VALLEY_COLLECTIBLE_LANES, LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE, LAVA_VALLEY_REWARDS_CONFIG, MAX_RARE_FRAGMENTS_PER_RUN, normalizeLavaValleyRewards, shouldCommitLavaValleyRewards, type LavaValleyEndReason, type MinigameItemReward, type MinigameRunRewards } from '../../config/minigameConfig';
 import { getItemConfig } from '../../config/itemConfig';
 import { shopItemImages } from '../../assets/shop';
+import { preloadImages } from '../../utils/preloadImages';
 
 export const LAVA_RUNNER_CONFIG = { gameDuration: LAVA_VALLEY_REWARDS_CONFIG.gameDurationSeconds, introMs: 1800, collectibleIntervalMin: 2600, collectibleIntervalMax: 3900, invincibleMs: 1400, playerX: 27, trackBottom: 12, maxObstacles: 2, checkpointProgress: .5 } as const;
 export const LAVA_VALLEY_DIFFICULTY = {
@@ -24,12 +25,23 @@ type Burst = { id: number; kind: 'jump' | 'landing' | 'coin' | 'item' | 'hurt' |
 
 const OBSTACLE_CLEARANCE: Record<ObstacleKind, number> = { rock: 6.5, geyser: 9 };
 const OBSTACLE_WIDTH: Record<ObstacleKind, number> = { rock: 7, geyser: 6 };
-const RUN_FRAME_MS = 105;
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 const isObstacle = (kind: RunnerItemKind): kind is ObstacleKind => kind === 'rock' || kind === 'geyser';
 const isCollectible = (kind: RunnerItemKind): kind is CollectibleKind => kind === 'coin' || kind === 'shard' || kind === 'shopItem';
 
 export interface LavaPathPrototypeProps { dinosaur: OwnedDinosaur; onExit: () => void; runId: string; onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards; onRetry: () => void; externalMainModalOpen?: boolean }
+
+const PLAYER_PRELOAD_ASSETS = [lavaValleyAssets.player.idle, lavaValleyAssets.player.runSheet, lavaValleyAssets.player.jumpUp, lavaValleyAssets.player.fall, lavaValleyAssets.player.hurt, lavaValleyAssets.player.victory] as const;
+
+type LavaValleyPlayerProps = { intro: boolean; invincible: boolean; jumping: boolean; jumpY: number; rising: boolean; success: boolean };
+
+const LavaValleyPlayer = memo(function LavaValleyPlayer({ intro, invincible, jumping, jumpY, rising, success }: LavaValleyPlayerProps) {
+  const stillImage = success ? lavaValleyAssets.player.victory : invincible ? lavaValleyAssets.player.hurt : jumping ? (rising ? lavaValleyAssets.player.jumpUp : lavaValleyAssets.player.fall) : intro ? lavaValleyAssets.player.idle : null;
+  return <div className={`lava-runner__dino ${jumping ? 'lava-runner__dino--jump' : ''} ${invincible ? 'lava-runner__dino--hit' : ''}`} style={{ '--lava-jump-y': `${jumpY}%` } as CSSProperties}>
+    {stillImage ? <img src={stillImage} alt="용암계곡 카르노타우루스" draggable={false} /> : <span className="lava-runner__run-sprite" role="img" aria-label="달리는 카르노타우루스" />}
+    <img className="lava-runner__shadow" src={lavaValleyAssets.effects.dinosaurContactShadow} alt="" aria-hidden="true" />
+  </div>;
+});
 
 export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externalMainModalOpen = false }: LavaPathPrototypeProps) {
   const [items, setItems] = useState<RunnerItem[]>([]);
@@ -38,7 +50,8 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
   const [intro, setIntro] = useState(true), [showResult, setShowResult] = useState(false), [finishStep, setFinishStep] = useState<0 | 1 | 2>(0);
   const [committedRewards, setCommittedRewards] = useState<MinigameRunRewards | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy'), [checkpointStage, setCheckpointStage] = useState<1 | 2>(1), [pickupFeedback, setPickupFeedback] = useState<PickupFeedback | null>(null);
-  const [jumpGuideActive, setJumpGuideActive] = useState(false), [jumpPressed, setJumpPressed] = useState(false), [runFrame, setRunFrame] = useState(0), [burst, setBurst] = useState<Burst | null>(null), [speech, setSpeech] = useState<string | null>(null), [combo, setCombo] = useState(false);
+  const [jumpGuideActive, setJumpGuideActive] = useState(false), [jumpPressed, setJumpPressed] = useState(false), [burst, setBurst] = useState<Burst | null>(null), [speech, setSpeech] = useState<string | null>(null), [combo, setCombo] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const itemsRef = useRef<RunnerItem[]>([]), healthRef = useRef(3), resultRef = useRef<Result>('playing'), jumpingRef = useRef(false), invincibleUntilRef = useRef(0), pausedRef = useRef(false), introRef = useRef(true);
   const startTimeRef = useRef(0), lastFrameRef = useRef(0), nextObstacleRef = useRef(0), nextCollectibleRef = useRef(0), nextIdRef = useRef(1), pauseStartedRef = useRef(0), checkpointSpawnedRef = useRef(false), checkpointPassedRef = useRef(false);
@@ -57,7 +70,7 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
     startTimeRef.current = 0; lastFrameRef.current = 0; nextObstacleRef.current = 0; nextCollectibleRef.current = 0; pauseStartedRef.current = 0; checkpointSpawnedRef.current = false; checkpointPassedRef.current = false;
     jumpYRef.current = 0; jumpVelocityRef.current = 0; apexHoldUntilRef.current = 0; lastGroundedAtRef.current = performance.now(); jumpBufferedUntilRef.current = 0; hasJumpedSinceGroundRef.current = false; guidedObstacleIdsRef.current.clear(); highGuideCountRef.current = 0;
     coinsRef.current = 0; rareShardsRef.current = 0; shopItemsRef.current = []; rewardCommittedRef.current = false; shopDropPlanRef.current = createLavaValleyShopDropPlan(); spawnedShopDropIdsRef.current.clear(); coinStreakRef.current = { count: 0, lastAt: 0, lastComboAt: 0 };
-    setItems([]); setCoins(0); setRareShards(0); setShopItemCount(0); setHealth(3); setTimeLeft(LAVA_RUNNER_CONFIG.gameDuration); setJumping(false); setJumpY(0); setInvincible(false); setPaused(false); setResult('playing'); setShowResult(false); setFinishStep(0); setCommittedRewards(null); setCheckpointStage(1); setPickupFeedback(null); setJumpGuideActive(false); setJumpPressed(false); setRunFrame(0); setBurst(null); setSpeech(null); setCombo(false); setIntro(true); setAttempt((value) => value + 1);
+    setItems([]); setCoins(0); setRareShards(0); setShopItemCount(0); setHealth(3); setTimeLeft(LAVA_RUNNER_CONFIG.gameDuration); setJumping(false); setJumpY(0); setInvincible(false); setPaused(false); setResult('playing'); setShowResult(false); setFinishStep(0); setCommittedRewards(null); setCheckpointStage(1); setPickupFeedback(null); setJumpGuideActive(false); setJumpPressed(false); setBurst(null); setSpeech(null); setCombo(false); setIntro(true); setAttempt((value) => value + 1);
   }, []);
 
   const startJump = useCallback(() => { const preset = LAVA_VALLEY_DIFFICULTY[difficultyRef.current]; jumpingRef.current = true; hasJumpedSinceGroundRef.current = true; jumpBufferedUntilRef.current = 0; apexHoldUntilRef.current = 0; jumpVelocityRef.current = preset.jumpVelocity; setJumping(true); showBurst('jump', LAVA_RUNNER_CONFIG.playerX, 7); }, [showBurst]);
@@ -67,8 +80,13 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
   const chooseDifficulty = (next: Difficulty) => { difficultyRef.current = next; setDifficulty(next); setJumpGuideActive(false); const preset = LAVA_VALLEY_DIFFICULTY[next]; nextObstacleRef.current = performance.now() + randomBetween(preset.obstacleSpawnIntervalMin, preset.obstacleSpawnIntervalMax); };
   const finish = useCallback((next: Exclude<Result, 'playing'>) => { if (resultRef.current !== 'playing') return; resultRef.current = next; itemsRef.current = []; setItems([]); const reason: LavaValleyEndReason = next === 'success' ? 'completed' : 'hp_depleted'; if (shouldCommitLavaValleyRewards(reason) && !rewardCommittedRef.current) { rewardCommittedRef.current = true; const rewards = normalizeLavaValleyRewards({ coins: coinsRef.current, rareFragments: rareShardsRef.current, shopItems: shopItemsRef.current }); setCommittedRewards(onFinishRun(runId, rewards)); } setResult(next); if (next === 'success') { setFinishStep(1); showBurst('clear', 70, 48); later(() => setFinishStep(2), 700); later(() => setShowResult(true), 1500); } else { setCommittedRewards(null); setShowResult(true); } }, [later, onFinishRun, runId, showBurst]);
 
-  useEffect(() => { const timer = later(() => { introRef.current = false; setIntro(false); const now = performance.now(); startTimeRef.current = now; lastFrameRef.current = now; nextObstacleRef.current = now + 1500; nextCollectibleRef.current = now + 1000; showSpeech('점프 버튼을 눌러 장애물을 피해요!'); }, LAVA_RUNNER_CONFIG.introMs); return () => window.clearTimeout(timer); }, [attempt, later, showSpeech]);
-  useEffect(() => { if (intro || paused || result !== 'playing') return; const timer = window.setInterval(() => setRunFrame((frame) => (frame + 1) % lavaValleyAssets.player.run.length), RUN_FRAME_MS); return () => window.clearInterval(timer); }, [intro, paused, result]);
+  useEffect(() => {
+    let cancelled = false;
+    setAssetsReady(false);
+    preloadImages(PLAYER_PRELOAD_ASSETS).then(() => { if (!cancelled) setAssetsReady(true); }).catch((error) => console.error(error));
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => { if (!assetsReady) return; const timer = later(() => { introRef.current = false; setIntro(false); const now = performance.now(); startTimeRef.current = now; lastFrameRef.current = now; nextObstacleRef.current = now + 1500; nextCollectibleRef.current = now + 1000; showSpeech('점프 버튼을 눌러 장애물을 피해요!'); }, LAVA_RUNNER_CONFIG.introMs); return () => window.clearTimeout(timer); }, [assetsReady, attempt, later, showSpeech]);
   useEffect(() => { const keyDown = (event: KeyboardEvent) => { if ((event.code === 'Space' || event.code === 'ArrowUp') && !event.repeat) { event.preventDefault(); jump(); } }; window.addEventListener('keydown', keyDown); return () => window.removeEventListener('keydown', keyDown); }, [jump]);
   useEffect(() => () => { if (jumpGuideTimerRef.current) window.clearTimeout(jumpGuideTimerRef.current); timersRef.current.forEach(window.clearTimeout); }, []);
   useEffect(() => {
@@ -103,7 +121,6 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
   const progress = ((LAVA_RUNNER_CONFIG.gameDuration - timeLeft) / LAVA_RUNNER_CONFIG.gameDuration) * 100;
   const trackCycle = useMemo(() => progress < 7 ? [lavaValleyAssets.track.start, ...lavaValleyAssets.track.tiles] : progress > 94 ? [...lavaValleyAssets.track.tiles, lavaValleyAssets.track.end] : checkpointStage === 1 && progress > 42 ? [lavaValleyAssets.track.tiles[0], lavaValleyAssets.track.checkpoint, lavaValleyAssets.track.tiles[1], lavaValleyAssets.track.tiles[2]] : [...lavaValleyAssets.track.tiles, lavaValleyAssets.track.tiles[1]], [checkpointStage, progress]);
   const itemImage = (item: RunnerItem) => item.kind === 'rock' ? lavaValleyAssets.obstacles.rock : item.kind === 'geyser' ? lavaValleyAssets.obstacles.geyser : item.kind === 'coin' ? lavaValleyAssets.collectibles.coin : item.kind === 'shopItem' && item.itemId ? shopItemImages[item.itemId] : item.kind === 'shard' ? lavaValleyAssets.collectibles.rareEggShard : lavaValleyAssets.environment.checkpoint;
-  const playerImage = result === 'success' ? lavaValleyAssets.player.victory : invincible ? lavaValleyAssets.player.hurt : jumping ? (jumpVelocityRef.current >= 0 ? lavaValleyAssets.player.jumpUp : lavaValleyAssets.player.fall) : intro ? lavaValleyAssets.player.idle : lavaValleyAssets.player.run[runFrame];
   const burstImage = burst ? lavaValleyAssets.effects[burst.kind === 'jump' ? 'jumpDust' : burst.kind === 'landing' ? 'landingDust' : burst.kind === 'coin' ? 'coinPickupSparkle' : burst.kind === 'item' ? 'itemPickupSparkle' : burst.kind === 'hurt' ? 'hurtImpact' : burst.kind === 'checkpoint' ? 'checkpointBurst' : 'clearBurst'] : null;
   const formatTime = (seconds: number) => String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
 
@@ -113,7 +130,7 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
     <main className="lava-runner__playfield"><div className="lava-runner__track"><div className="lava-runner__track-strip">{[...trackCycle, ...trackCycle].map((src, index) => <img key={index} src={src} alt="" aria-hidden="true" />)}</div><img className="lava-runner__track-edge" src={lavaValleyAssets.track.edgeStrip} alt="" aria-hidden="true" /></div>
       {progress < 12 && <img className="lava-runner-environment lava-runner-environment--warning" src={lavaValleyAssets.environment.warningSign} alt="장애물 주의" />}
       {items.map((item) => <div key={item.id} className={`lava-runner-item lava-runner-item--${item.kind} ${isCollectible(item.kind) && item.height === LAVA_VALLEY_COLLECTIBLE_LANES.high ? 'lava-runner-item--high' : ''}`} style={{ '--runner-x': `${item.x}%`, '--runner-y': `${item.height}%` } as CSSProperties}><img src={itemImage(item)} alt={item.kind === 'rock' ? '바위 장애물' : item.kind === 'geyser' ? '용암 분출 장애물' : item.kind === 'coin' ? '공룡 코인' : item.kind === 'shopItem' ? (item.label ?? '상점 아이템') + ' 보상' : item.kind === 'shard' ? '희귀 알 조각' : '체크포인트 깃발'} draggable={false} /></div>)}
-      <div className={`lava-runner__dino ${jumping ? 'lava-runner__dino--jump' : ''} ${invincible ? 'lava-runner__dino--hit' : ''}`} style={{ '--lava-jump-y': `${jumpY}%` } as CSSProperties}><img src={playerImage} alt="용암계곡 카르노타우루스" draggable={false} /><img className="lava-runner__shadow" src={lavaValleyAssets.effects.dinosaurContactShadow} alt="" aria-hidden="true" /></div>
+      <LavaValleyPlayer intro={intro} invincible={invincible} jumping={jumping} jumpY={jumpY} rising={jumpVelocityRef.current >= 0} success={result === 'success'} />
       {burst && burstImage && <img key={burst.id} className={`lava-runner-burst lava-runner-burst--${burst.kind}`} style={{ left: `${burst.x}%`, bottom: `${burst.y}%` }} src={burstImage} alt="" aria-hidden="true" onAnimationEnd={() => setBurst((current) => current?.id === burst.id ? null : current)} />}
       {pickupFeedback && <div key={pickupFeedback.id} className={`lava-runner-pickup lava-runner-pickup--${pickupFeedback.kind}`} role="status">{pickupFeedback.label}</div>}
       {speech && <div className="lava-runner-speech"><img src={lavaValleyAssets.events.speechBubble} alt="" /><span>{speech}</span></div>}
@@ -121,7 +138,8 @@ export function LavaPathPrototype({ onExit, runId, onFinishRun, onRetry, externa
       {result === 'success' && !showResult && <div className="lava-runner-finish"><img className="lava-runner-finish__gate" src={lavaValleyAssets.environment.raceGateArch} alt="도착 지점" /><img className="lava-runner-finish__portal" src={lavaValleyAssets.environment.goalPortal} alt="클리어 포털" /><img className="lava-runner-finish__chest" src={finishStep < 2 ? lavaValleyAssets.environment.treasureChestClosed : lavaValleyAssets.environment.treasureChestOpen} alt="보물 상자" /></div>}
     </main>
     <footer className="lava-runner__controls"><button type="button" className="lava-runner__dash" disabled>대시<small>준비 중</small></button><button type="button" className={`lava-runner__jump ${jumpGuideActive ? 'lava-runner__jump--guide' : ''}`} onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setJumpPressed(true); jump(); }} onPointerUp={() => setJumpPressed(false)} onPointerCancel={() => setJumpPressed(false)} onPointerLeave={() => setJumpPressed(false)} aria-label="점프"><img src={jumpPressed ? lavaValleyAssets.buttons.jumpPressed : lavaValleyAssets.buttons.jumpNormal} alt="" /></button></footer>
-    {intro && <div className="lava-runner-intro" role="status" aria-label="용암계곡 스테이지 시작"><div><img src={lavaValleyAssets.events.levelIntro} alt="STAGE 1 용암계곡" /></div></div>}
+    {!assetsReady && <div className="lava-runner-loading" role="status">모험 준비 중...</div>}
+    {assetsReady && intro && <div className="lava-runner-intro" role="status" aria-label="용암계곡 스테이지 시작"><div><img src={lavaValleyAssets.events.levelIntro} alt="STAGE 1 용암계곡" /></div></div>}
     {paused && !externalMainModalOpen && <div className="lava-runner-modal"><section role="dialog" aria-modal="true" aria-label="용암계곡 일시정지" className="lava-runner-pause-panel"><img src={lavaValleyAssets.events.pauseMenu} alt="PAUSE" /><div><button type="button" onClick={closeSettings}>계속하기</button><button type="button" onClick={() => restartCurrentSession('manual_restart')}>처음부터</button><button type="button" onClick={onExit}>지도</button></div><fieldset><legend>난이도</legend>{([['easy','쉬움'],['normal','보통'],['challenge','도전']] as const).map(([value,label]) => <button type="button" key={value} aria-pressed={difficulty === value} onClick={() => chooseDifficulty(value)}>{label}</button>)}</fieldset></section></div>}
     {showResult && !externalMainModalOpen && <div className="lava-runner-modal"><section role="dialog" aria-modal="true" className={`lava-runner-result-panel ${result === 'failure' ? 'lava-runner-result-panel--failure' : ''}`}>{result === 'success' && <img src={lavaValleyAssets.events.resultClear} alt="CLEAR" />}<div className="lava-runner-result-panel__content"><h2>{result === 'success' ? '용암계곡 탐험 완료!' : '아쉽다! 다시 도전해볼까?'}</h2>{result === 'success' ? <><p>코인 <b>+{committedRewards?.coins ?? 0}</b> · 희귀조각 <b>+{committedRewards?.rareFragments ?? 0}</b></p>{committedRewards?.shopItems.length ? <div className="lava-runner-reward-items"><strong>획득 아이템</strong>{committedRewards.shopItems.map((reward) => { const item = getItemConfig(reward.itemId); return <span key={reward.itemId}><img src={shopItemImages[reward.itemId]} alt="" />{item?.name ?? reward.itemId} x{reward.quantity}</span>; })}</div> : <p>획득한 상점 아이템이 없어요.</p>}</> : <p>이번 보상은 저장되지 않았어요. 무료로 다시 연습할 수 있어요!</p>}<div className="lava-runner-modal__actions"><button type="button" onClick={result === 'success' ? onRetry : () => restartCurrentSession('hp_depleted')}><RotateCcw /> {result === 'success' ? '한 번 더' : '다시 도전'}</button><button type="button" onClick={onExit}>지도</button></div></div></section></div>}
   </section>;

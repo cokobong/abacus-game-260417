@@ -15,6 +15,37 @@
   background: #d1fae5;
 }
 
+/* Lava Valley: one decoded RUN texture and compositor-driven frame changes. */
+.lava-runner__run-sprite {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: 90%;
+  background-image: url('./assets/adventure/lava-valley/player/carnotaurus_run_sheet.png');
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 400% 100%;
+  filter: drop-shadow(0 5px 3px rgb(69 10 10 / 45%));
+  animation: lava-carnotaurus-run 420ms steps(4, end) infinite;
+}
+
+.lava-runner-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 56;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: rgb(45 12 5 / 72%);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+@keyframes lava-carnotaurus-run {
+  to { background-position: 133.333% 0; }
+}
+
 .pet-screen__background,
 .pet-screen__shade {
   position: absolute;
