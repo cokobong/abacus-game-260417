@@ -2,6 +2,8 @@ import { LockKeyhole, Play } from 'lucide-react';
 import adventureMapBg from '../../assets/adventure/lava-valley/background/adventure_map_bg.png';
 import { adventureRegions, type AdventureRegion } from '../../data/adventureRegions';
 import { playSound } from '../../audio/audioManager';
+import { MINIGAME_ENTRY_COST } from '../../config/minigameConfig';
+import { trainingUiAssets } from '../../assets/ui/training';
 
 export interface AdventureMapScreenProps {
   onStartGame: (gameId: string) => void;
@@ -27,6 +29,7 @@ export function AdventureMapScreen({ onStartGame }: AdventureMapScreenProps) {
 
 function AdventureRegionMarker({ region, onStartGame }: { key?: string; region: AdventureRegion; onStartGame: (gameId: string) => void }) {
   const available = region.status === 'available' && Boolean(region.gameId);
+  const entryCost = region.gameId ? MINIGAME_ENTRY_COST[region.gameId as keyof typeof MINIGAME_ENTRY_COST] : undefined;
 
   return (
     <button
@@ -44,10 +47,11 @@ function AdventureRegionMarker({ region, onStartGame }: { key?: string; region: 
       <span className="block text-[clamp(.8rem,2.8vw,1.05rem)] font-black leading-tight">{region.name}</span>
       {available ? (
         <>
-          <span className="adventure-region-description mt-1 block text-[clamp(.58rem,1.7vw,.72rem)] font-bold leading-tight">{region.description}</span>
-          <span className="mt-1.5 inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-gradient-to-b from-yellow-300 to-amber-400 px-3 text-[clamp(.62rem,1.8vw,.78rem)] font-black text-amber-950 shadow-[0_3px_0_#b45309]">
+          <span className="adventure-region-description mt-1.5 block text-[clamp(.58rem,1.7vw,.72rem)] font-bold leading-snug">{region.description}</span>
+          <span className="mt-2 inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-gradient-to-b from-yellow-300 to-amber-400 px-3.5 text-[clamp(.62rem,1.8vw,.78rem)] font-black text-amber-950 shadow-[0_3px_0_#b45309]">
             <Play className="h-3.5 w-3.5 fill-current" /> 모험 시작
           </span>
+          {entryCost !== undefined && <span className="adventure-entry-cost mx-auto mt-2 flex items-center justify-center gap-1.5 rounded-full border-2 border-amber-300 bg-amber-50/95 px-3.5 py-1 text-[clamp(.7rem,2vw,.88rem)] font-black text-amber-950 shadow-sm"><img src={trainingUiAssets.rewardCoin} alt="코인" className="h-6 w-6 shrink-0 object-contain" /><span>입장 코인 {entryCost.toLocaleString()}</span></span>}
         </>
       ) : (
         <span className="mt-1 inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-slate-500/85 px-3 text-[clamp(.62rem,1.8vw,.78rem)] font-black text-white">

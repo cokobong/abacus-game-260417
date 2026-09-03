@@ -37,8 +37,12 @@ import { getEggRequiredFragments, itemConfigs, type ItemConfig } from '../../con
 import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { canBuyEggItem } from '../../utils/hatchCandidates';
 import { getFoodDietLabel } from '../../utils/dinosaurDiet';
-import homeCoinBar from '../../assets/home/home_coin_bar.png?url';
 import { playSound } from '../../audio/audioManager';
+import { trainingUiAssets } from '../../assets/ui/training';
+import { lavaValleyAssets } from '../../assets/adventure/lava-valley';
+import { LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID } from '../../config/minigameConfig';
+import { ResourceChip } from '../ResourceChip';
+import { SHOP_CATALOG } from '../../config/shopCatalog';
 
 type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'food' | 'egg' | 'hatchItem';
@@ -59,12 +63,6 @@ const shopCategories: Array<{ id: ShopCategoryId; label: string; defaultIcon: st
   { id: 'hatchItem', label: '부화 아이템', defaultIcon: shopIconCategoryHatchDefault, selectedIcon: shopIconCategoryHatchSelected },
 ];
 
-const shopCatalog: Record<ShopCategoryId, string[]> = {
-  food: Object.keys(shopFoodItemImages),
-  egg: ['green-starter-egg', 'rare-spark-egg', 'green-forest-rare-egg', 'volcano-island-rare-egg', 'ocean-blue-egg', 'legend-egg'],
-  hatchItem: ['hatch-warm-stone', 'hatch-warm-blanket', 'hatch-spark-energy', 'rare-egg-fragment'],
-};
-
 const shopItemAssets: Record<string, string> = {
   ...shopFoodItemImages,
   'green-starter-egg': shopItemEggGreen,
@@ -84,13 +82,14 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
   const visibleItems = useMemo(
     () =>
-      shopCatalog[activeCategory]
+      SHOP_CATALOG[activeCategory]
         .map((itemId) => itemConfigs.find((item) => item.id === itemId))
         .filter((item): item is ItemConfig => Boolean(item))
         .sort((a, b) => a.sortOrder - b.sortOrder),
     [activeCategory],
   );
   const detailItem = detailItemId ? itemConfigs.find((item) => item.id === detailItemId) ?? null : null;
+  const rareFragments = getOwnedInventoryQuantity(inventory, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID);
 
   useEffect(() => {
     if (!detailItem) return;
@@ -108,9 +107,9 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
       className="shop-screen relative mx-auto grid h-full min-h-0 w-full max-w-[860px] grid-rows-[auto_minmax(0,1fr)] gap-[clamp(10px,1.5dvh,16px)] overflow-hidden rounded-[30px] bg-cover bg-center p-2.5 text-emerald-950 md:p-3"
       style={{ backgroundImage: `url(${shopBackground})` }}
     >
-      <div className="shop-coin-bar relative z-10" aria-label={`보유 코인 ${coins.toLocaleString()}개`}>
-        <img src={homeCoinBar} alt="" className="shop-coin-bar__image" aria-hidden="true" />
-        <strong className="shop-coin-bar__value">{coins.toLocaleString()}</strong>
+      <div className="relative z-10 mx-auto flex max-w-full flex-wrap items-center justify-center gap-2 px-1" aria-label="보유 자원">
+        <ResourceChip label="코인" value={coins} icon={trainingUiAssets.rewardCoin} />
+        <ResourceChip label="희귀조각" value={rareFragments} icon={lavaValleyAssets.collectibles.rareEggShard} tone="rare" />
       </div>
 
       <div className="shop-main-content relative z-10 grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2">

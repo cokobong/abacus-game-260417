@@ -49,10 +49,17 @@ export { default as shopItemEggForestRare } from './items/eggs/shop_item_egg_for
 export { default as shopItemEggVolcanoRare } from './items/eggs/shop_item_egg_volcano_rare.png';
 export { default as shopItemEggOcean } from './items/eggs/shop_item_egg_ocean.png';
 export { default as shopItemEggLegendary } from './items/eggs/shop_item_egg_legendary.png';
-export { default as shopItemHatchWarmStone } from './items/hatch/shop_item_hatch_warm_stone.png';
-export { default as shopItemHatchWarmBlanket } from './items/hatch/shop_item_hatch_warm_blanket.png';
-export { default as shopItemHatchSparkleEnergy } from './items/hatch/shop_item_hatch_sparkle_energy.png';
+import shopItemHatchWarmStone from './items/hatch/shop_item_hatch_warm_stone.png';
+import shopItemHatchWarmBlanket from './items/hatch/shop_item_hatch_warm_blanket.png';
+import shopItemHatchSparkleEnergy from './items/hatch/shop_item_hatch_sparkle_energy.png';
+export { shopItemHatchWarmStone, shopItemHatchWarmBlanket, shopItemHatchSparkleEnergy };
 export { default as shopItemHatchRareFragment } from './items/hatch/shop_item_hatch_rare_fragment.png';
+export const shopItemImages: Readonly<Record<string, string>> = {
+  ...shopFoodItemImages,
+  'hatch-warm-stone': shopItemHatchWarmStone,
+  'hatch-warm-blanket': shopItemHatchWarmBlanket,
+  'hatch-spark-energy': shopItemHatchSparkleEnergy,
+};
 export { default as shopPopupPanel } from './popup/shop_popup_panel.png';
 export { default as shopPopupEffectPanel } from './popup/shop_popup_effect_panel.png';
 export { default as shopPopupPricePanel } from './popup/shop_popup_price_panel.png';

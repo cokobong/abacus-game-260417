@@ -1927,12 +1927,17 @@ summary:focus-visible {
   }
 
   .adventure-region-marker {
-    width: clamp(7.4rem, 28%, 11rem);
-    min-height: 4.75rem;
+    width: clamp(8.2rem, 31%, 12.25rem);
+    min-height: 5.25rem;
     border: 3px solid rgba(255, 255, 255, 0.96);
     border-radius: 1.15rem;
-    padding: 0.55rem 0.45rem;
+    padding: 0.68rem 0.6rem;
     transform-origin: center;
+  }
+
+  .adventure-entry-cost {
+    width: min(100%, 10.5rem);
+    white-space: nowrap;
   }
 
   .adventure-region-marker--available {
@@ -2026,8 +2031,11 @@ summary:focus-visible {
   .lava-runner__dino { position: absolute; left: var(--lava-player-x); bottom: calc(20% + var(--lava-jump-y,0%)); z-index: 11; width: clamp(5.5rem,22vw,9rem); height: clamp(6rem,24vw,10rem); transform: translateX(-50%) scale(var(--lava-player-scale,1)); transform-origin: center bottom; transition: opacity .2s; }.lava-runner__dino > img:not(.lava-runner__jump-dust):not(.lava-runner__shadow) { position: relative; z-index: 3; width: 100%; height: 90%; object-fit: contain; filter: drop-shadow(0 5px 3px rgb(69 10 10 / 45%)); }.lava-runner__dino--hit { opacity: .55; filter: drop-shadow(0 0 10px #fff7ed); }.lava-runner__shadow { position: absolute; left: 8%; bottom: -1%; z-index: 1; width: 84%; height: 20%; object-fit: contain; }.lava-runner__jump-dust { position: absolute; left: -12%; bottom: -4%; width: 125%; height: 42%; object-fit: contain; }
   .lava-runner-item { position: absolute; left: var(--runner-x); z-index: 10; display: grid; transform: translateX(-50%); place-items: center; filter: drop-shadow(0 5px 3px rgb(69 10 10 / 40%)); }
   .lava-runner__finish { position: absolute; right: -2%; bottom: 23%; z-index: 3; width: clamp(6rem,20vw,9rem); opacity: .7; }.lava-runner__finish img { width: 100%; }.lava-runner__finish span { position: absolute; inset: 20% 0 auto; text-align: center; color: #fef3c7; font-weight: 1000; text-shadow: 0 2px #7c2d12; }
-  .lava-runner__controls { position: relative; z-index: 20; display: grid; grid-template-columns: .62fr 1.38fr; gap: .75rem; padding: .35rem .85rem calc(.45rem + env(safe-area-inset-bottom)); background: rgb(55 18 35 / 88%); }.lava-runner__controls button { min-height: 4.2rem; border: 4px solid #fed7aa; border-radius: 1.35rem; font-size: 1.15rem; font-weight: 1000; }.lava-runner__jump { min-height: 6.4rem !important; border: 0 !important; padding: .7rem 0; touch-action: none; color: #78350f; background: transparent; }.lava-runner__jump span { display: flex; width: 78%; min-height: 5.1rem; align-items: center; justify-content: center; margin: auto; border: 4px solid #fed7aa; border-radius: 1.5rem; background: linear-gradient(#fde047,#fb923c); box-shadow: 0 6px 0 #c2410c; }.lava-runner__jump b { margin-left: .35rem; font-size: 1.65rem; }.lava-runner__dash { display: grid; place-items: center; color: #cbd5e1; background: #64748b; box-shadow: 0 6px 0 #334155; }.lava-runner__dash small { display: block; font-size: .62rem; }.lava-runner__jump:active span { transform: translateY(4px); box-shadow: 0 2px 0 #c2410c; }.lava-runner__jump--guide span { animation: lava-jump-guide 650ms ease-out 1; }
+  .lava-runner__controls { position: relative; z-index: 20; display: grid; grid-template-columns: .62fr 1.38fr; gap: .75rem; padding: .35rem .85rem calc(clamp(1.5rem,4dvh,2.5rem) + env(safe-area-inset-bottom)); background: rgb(55 18 35 / 88%); }.lava-runner__controls button { min-height: 4.2rem; border: 4px solid #fed7aa; border-radius: 1.35rem; font-size: 1.15rem; font-weight: 1000; }.lava-runner__jump { min-height: 6.4rem !important; border: 0 !important; padding: .7rem 0; touch-action: none; color: #78350f; background: transparent; }.lava-runner__jump span { display: flex; width: 78%; min-height: 5.1rem; align-items: center; justify-content: center; margin: auto; border: 4px solid #fed7aa; border-radius: 1.5rem; background: linear-gradient(#fde047,#fb923c); box-shadow: 0 6px 0 #c2410c; }.lava-runner__jump b { margin-left: .35rem; font-size: 1.65rem; }.lava-runner__dash { display: grid; place-items: center; color: #cbd5e1; background: #64748b; box-shadow: 0 6px 0 #334155; }.lava-runner__dash small { display: block; font-size: .62rem; }.lava-runner__jump:active span { transform: translateY(4px); box-shadow: 0 2px 0 #c2410c; }.lava-runner__jump--guide span { animation: lava-jump-guide 650ms ease-out 1; }
   .lava-runner-modal { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1rem; background: rgb(49 10 25 / 58%); backdrop-filter: blur(4px); }.lava-runner-modal section { width: min(92%,27rem); border: 5px solid #fed7aa; border-radius: 2rem; padding: 1.4rem; text-align: center; color: #78350f; background: linear-gradient(#fff7ed,#ffedd5); box-shadow: 0 12px 35px rgb(69 10 10 / 40%); }.lava-runner-modal section > div:first-child { display: flex; align-items: center; justify-content: space-between; }.lava-runner-modal h2 { font-size: 1.45rem; font-weight: 1000; }.lava-runner-modal p { margin: .7rem 0; font-weight: 800; }.lava-runner-modal button { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .25rem; border-radius: 1rem; padding: .5rem 1rem; color: white; background: #f97316; font-weight: 1000; }.lava-runner-modal__actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: .65rem; }
+  .lava-runner-reward-items { display: grid !important; gap: .45rem; margin: .8rem 0; border-radius: 1rem; padding: .75rem; background: rgb(255 255 255 / 70%); }
+  .lava-runner-reward-items span { display: flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 900; }
+  .lava-runner-reward-items img { width: 2.4rem; height: 2.4rem; object-fit: contain; }
   .lava-runner--paused * { animation-play-state: paused !important; }
   .lava-runner-settings-panel fieldset { display: grid; gap: .65rem; margin-top: 1rem; text-align: left; }
   .lava-runner-settings-panel legend { margin-bottom: .5rem; color: #9a3412; font-size: .9rem; font-weight: 1000; }
@@ -2042,6 +2050,7 @@ summary:focus-visible {
   .lava-runner-item--geyser { width: clamp(4rem,16vw,6.4rem); aspect-ratio: .78; transform: translateX(-50%) scale(var(--lava-obstacle-scale,1)); transform-origin: center bottom; }
   .lava-runner-item--coin { width: clamp(2rem,7.5vw,3rem); animation: lava-collectible-float 700ms ease-in-out infinite alternate; }
   .lava-runner-item--meat { width: clamp(2.7rem,10vw,3.8rem); animation: lava-collectible-float 760ms ease-in-out infinite alternate; }
+  .lava-runner-item--shopItem { width: clamp(3rem,11vw,4.4rem); animation: lava-collectible-float 760ms ease-in-out infinite alternate; filter: drop-shadow(0 0 8px rgb(253 224 71 / 75%)); }
   .lava-runner-item--shard { width: clamp(3rem,11vw,4.2rem); animation: lava-rare-shard-glow 620ms ease-in-out infinite alternate; }
   .lava-runner-item--checkpoint { z-index: 7; bottom: 19%; width: clamp(6.5rem,23vw,9.5rem); opacity: .94; filter: drop-shadow(0 6px 4px rgb(69 10 10 / 45%)); }
   @keyframes lava-jump-guide { 0%,100% { transform: scale(1); filter: brightness(1); } 45% { transform: scale(1.07); filter: brightness(1.12); box-shadow: 0 7px 0 #c2410c,0 0 0 7px rgb(254 240 138 / 22%); } }
@@ -2052,6 +2061,63 @@ summary:focus-visible {
   @keyframes lava-pickup-pop { 0% { opacity: 0; transform: translateX(-50%) scale(.65); } 25% { opacity: 1; transform: translateX(-50%) scale(1.12); } 100% { opacity: 0; transform: translateX(-50%) translateY(-2rem) scale(1); } }
   @keyframes lava-track-scroll { to { transform: translateX(-50%); } }
   @media (max-width:480px) { .lava-runner__header { gap: .25rem; padding-inline: .35rem; }.lava-runner__exit { min-height: 2.35rem; padding-inline: .3rem; font-size: .68rem; }.lava-runner__settings { width: 2.35rem; min-height: 2.35rem; }.lava-runner__hud { font-size: .62rem; }.lava-runner__title p { max-width: 9rem; }.lava-runner__controls { gap: .5rem; } }
+
+  .lava-runner__header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: .35rem .5rem 1rem;
+  }
+
+  .lava-runner-hud {
+    position: relative;
+    width: min(100%, 38rem);
+    aspect-ratio: 1916 / 821;
+    justify-self: center;
+    color: #fff7ed;
+    filter: drop-shadow(0 4px 4px rgb(69 10 10 / 45%));
+    font-size: clamp(.66rem, 2.25vw, 1rem);
+    font-weight: 1000;
+    text-shadow: 0 2px 2px #451a03;
+  }
+
+  .lava-runner-hud > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .lava-runner-hud > span,.lava-runner-hud > b { position: absolute; top: 51%; transform: translateY(-50%); white-space: nowrap; }
+  .lava-runner-hud__health { left: 19.2%; display: flex; width: 19%; align-items: center; justify-content: space-around; color: #ef4444; font-size: 1.2em; line-height: 1; letter-spacing: 0; }.lava-runner-hud__health i { display: contents; color: #a78b8b; font-style: normal; }
+  .lava-runner-hud__coin { left: 48%; }.lava-runner-hud__rare { left: 67%; }.lava-runner-hud__time { left: 84%; display: grid; line-height: 1; text-align: center; }.lava-runner-hud__time small { margin-top: .15rem; color: #fde68a; font-size: .65em; }
+  .lava-runner__settings { overflow: visible; border: 0; background: transparent; box-shadow: none; }.lava-runner__settings img { width: 3.1rem; max-width: none; filter: drop-shadow(0 4px 0 #7c2d12); }
+
+  .lava-runner__track { bottom: calc(var(--lava-track-bottom) - 2%); height: clamp(6.5rem, 25vw, 10rem); overflow: visible; }
+  .lava-runner__track-strip { overflow: hidden; }
+  .lava-runner__track-strip img { width: clamp(8.5rem, 29vw, 12.5rem); margin-left: clamp(-3.2rem, -7vw, -1.8rem); object-fit: contain; filter: drop-shadow(0 7px 4px rgb(69 10 10 / 42%)); }
+  .lava-runner__track-edge { position: absolute; right: 0; bottom: -12%; left: 0; z-index: 5; width: 100%; height: 42%; object-fit: cover; object-position: center; pointer-events: none; }
+  .lava-runner__dino { width: clamp(6.8rem, 28vw, 11.25rem); height: clamp(7.4rem, 30vw, 12.5rem); }
+  .lava-runner__dino > img:not(.lava-runner__shadow) { object-fit: contain; }
+  .lava-runner-item--rock { width: clamp(4.6rem, 18vw, 7.35rem); }.lava-runner-item--geyser { width: clamp(4.5rem, 18vw, 7.2rem); }
+  .lava-runner-item--coin { width: clamp(2.6rem, 9.75vw, 3.9rem); }.lava-runner-item--shopItem { width: clamp(3.7rem, 13.5vw, 5.5rem); }.lava-runner-item--shard { width: clamp(3.75rem, 13.75vw, 5.25rem); }
+  .lava-runner-item--high::after { content: ''; position: absolute; left: 50%; bottom: -18%; width: 70%; height: 24%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse, rgb(253 224 71 / 62%), transparent 72%); filter: blur(2px); animation: lava-high-guide 760ms ease-in-out infinite alternate; }
+
+  .lava-runner-environment { position: absolute; z-index: 6; object-fit: contain; pointer-events: none; }.lava-runner-environment--warning { right: 3%; bottom: 18%; width: clamp(4rem, 15vw, 6rem); animation: lava-environment-arrive .35s ease-out; }
+  .lava-runner-burst { position: absolute; z-index: 18; width: clamp(5rem, 19vw, 8rem); transform: translate(-50%, 50%); object-fit: contain; pointer-events: none; animation: lava-burst-once 620ms ease-out forwards; }
+  .lava-runner-burst--clear { width: clamp(11rem, 45vw, 19rem); animation-duration: 1.2s; }
+  .lava-runner-speech { position: absolute; left: 29%; bottom: 43%; z-index: 19; width: min(58%, 18rem); animation: lava-popup-in .25s ease-out; }.lava-runner-speech img { width: 100%; }.lava-runner-speech span { position: absolute; inset: 18% 13% 27%; display: grid; place-items: center; text-align: center; color: #78350f; font-size: clamp(.65rem, 2.2vw, .95rem); font-weight: 1000; line-height: 1.2; }
+  .lava-runner-combo { position: absolute; left: 58%; top: 22%; z-index: 19; width: clamp(6rem, 24vw, 9rem); animation: lava-popup-in .25s ease-out; }.lava-runner-combo img { width: 100%; }.lava-runner-combo b { position: absolute; inset: 42% 0 auto; text-align: center; color: #7c2d12; font-size: clamp(.8rem, 3vw, 1.25rem); font-weight: 1000; text-shadow: 0 2px #fef3c7; }
+
+  .lava-runner__jump { position: relative; min-height: 7.2rem !important; padding: 0; }.lava-runner__jump img { width: min(72%, 8.8rem); max-height: 7.2rem; margin: auto; object-fit: contain; filter: drop-shadow(0 5px 0 #7c2d12); pointer-events: none; }.lava-runner__jump:active { transform: translateY(2px); }.lava-runner__jump--guide img { animation: lava-jump-guide 650ms ease-out 1; }
+
+  .lava-runner-intro { position: absolute; inset: 0; z-index: 55; display: grid; place-items: center; background: rgb(45 12 5 / 42%); backdrop-filter: blur(2px); }.lava-runner-intro > div { display: grid; width: min(72%, 20rem); max-height: 76%; transform: translateX(10px); place-items: center; }.lava-runner-intro img { width: 100%; max-height: 76dvh; object-fit: contain; animation: lava-intro-pop 1.8s ease both; }
+  .lava-runner-pause-panel,.lava-runner-result-panel { position: relative; border: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; }
+  .lava-runner-pause-panel { width: min(78%, 21rem) !important; }.lava-runner-pause-panel > img { width: 100%; }.lava-runner-pause-panel > div { position: absolute !important; inset: 33% 16% 12%; display: grid !important; grid-template-rows: repeat(3, 1fr); gap: 3%; }.lava-runner-pause-panel > div button { opacity: .01; width: 100%; min-height: 0; }.lava-runner-pause-panel fieldset { position: absolute; right: 8%; bottom: -3.2rem; left: 8%; display: flex; justify-content: center; gap: .35rem; }.lava-runner-pause-panel legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }.lava-runner-pause-panel fieldset button { min-height: 2.4rem; border: 2px solid #fed7aa; padding: .25rem .65rem; }.lava-runner-pause-panel fieldset button[aria-pressed='true'] { outline: 3px solid #facc15; }
+  .lava-runner-result-panel { width: min(86%, 22rem) !important; }.lava-runner-result-panel > img { width: 100%; }.lava-runner-result-panel__content { position: absolute !important; inset: 68% 11% auto; display: grid !important; gap: .25rem; color: #78350f; text-align: center; }.lava-runner-result-panel__content h2 { font-size: clamp(.88rem, 3.2vw, 1.2rem); }.lava-runner-result-panel__content p { margin: 0; font-size: clamp(.68rem, 2.3vw, .9rem); }.lava-runner-result-panel__content .lava-runner-reward-items { max-height: 5rem; overflow: auto; margin: .15rem 0; padding: .25rem; }.lava-runner-result-panel__content .lava-runner-reward-items img { width: 1.7rem; height: 1.7rem; }.lava-runner-result-panel__content .lava-runner-modal__actions { margin-top: .25rem; }.lava-runner-result-panel--failure { width: min(90%, 25rem) !important; border: 5px solid #fed7aa !important; padding: 1rem !important; background: linear-gradient(#fff7ed,#ffedd5) !important; }.lava-runner-result-panel--failure .lava-runner-result-panel__content { position: static !important; }
+  .lava-runner-finish { position: absolute; inset: 0; z-index: 15; pointer-events: none; }.lava-runner-finish img { position: absolute; object-fit: contain; animation: lava-environment-arrive .45s ease-out; }.lava-runner-finish__gate { right: 5%; bottom: 12%; width: min(50%, 17rem); }.lava-runner-finish__portal { right: 17%; bottom: 29%; width: min(26%, 9rem); }.lava-runner-finish__chest { right: 34%; bottom: 14%; z-index: 2; width: min(25%, 8rem); }
+
+  @keyframes lava-burst-once { 0% { opacity: 0; transform: translate(-50%, 50%) scale(.5); } 35% { opacity: 1; transform: translate(-50%, 50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, 50%) scale(1.25); } }
+  @keyframes lava-popup-in { from { opacity: 0; transform: translateY(.75rem) scale(.85); } to { opacity: 1; transform: none; } }
+  @keyframes lava-environment-arrive { from { opacity: 0; transform: translateX(20%) scale(.8); } to { opacity: 1; transform: none; } }
+  @keyframes lava-intro-pop { 0% { opacity: 0; transform: scale(.72); } 18%,82% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.04); } }
+  @keyframes lava-high-guide { to { opacity: .45; transform: translateX(-50%) scale(1.18); } }
+
+  @media (max-width: 480px), (max-height: 760px) {
+    .lava-runner__header { padding-top: .2rem; }.lava-runner-hud { width: min(100%, 29rem); }.lava-runner__settings img { width: 2.6rem; }.lava-runner__track { height: clamp(5.6rem, 23vw, 7.5rem); }.lava-runner__dino { width: clamp(6rem, 26vw, 8.5rem); height: clamp(6.5rem, 28vw, 9.2rem); }.lava-runner__jump { min-height: 6.3rem !important; }.lava-runner__jump img { max-height: 6.25rem; }.lava-runner-speech { bottom: 39%; }
+  }
 
   .lava-path-game {
     display: flex;
@@ -2409,13 +2475,15 @@ summary:focus-visible {
     }
 
     .adventure-region-marker {
-      width: clamp(6.7rem, 27%, 8.5rem);
-      min-height: 4rem;
-      padding: 0.4rem 0.35rem;
+      width: clamp(7.4rem, 30%, 9.4rem);
+      min-height: 4.5rem;
+      padding: 0.5rem 0.45rem;
     }
 
     .adventure-region-description {
-      display: none;
+      margin-top: 0.25rem;
+      font-size: 0.58rem;
+      line-height: 1.25;
     }
   }
 

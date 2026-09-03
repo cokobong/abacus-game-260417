@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { BluetoothTestPanel, type BluetoothNotificationPayload } from './components/BluetoothTestPanel';
 import { AdminPanel } from './components/AdminPanel';
+import { MinigameEntryConfirm, MinigameEntryShortage } from './components/MinigameEntryConfirm';
 import { NavigationArrow } from './components/NavigationArrow';
 import { SaveDataTransferControls } from './components/SaveDataTransferControls';
 import { TrainingReport } from './components/TrainingReport';
@@ -23,7 +24,7 @@ import { AdventureGameShell, AdventureMapScreen, DexScreen, DinosaurRoomScreen, 
 import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
-import { coinRewardOptions, defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
+import { defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
 import { ADMIN_LIMITS } from './config/adminConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
@@ -51,7 +52,8 @@ import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRe
 import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { canDinosaurEat, getIncompatibleFoodMessage } from './utils/dinosaurDiet';
-import { defaultGrowthSpeedMultiplier, growthConfig, growthSpeedOptions, type GrowthSpeedMultiplier } from './config/growthConfig';
+import { defaultGrowthSpeedMultiplier, growthConfig, type GrowthSpeedMultiplier } from './config/growthConfig';
+import { applyLavaValleyRewards, chargeMinigameEntry, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID, MINIGAME_ENTRY_COST, normalizeLavaValleyRewards, type MinigameId, type MinigameRunRewards } from './config/minigameConfig';
 import { trainingUiAssets } from './assets/ui/training';
 import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
@@ -60,6 +62,8 @@ import { playBackgroundMusic, playSound, setAudioSettings, stopBackgroundMusic, 
 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type AppScreen = 'home' | MainTab;
+type ActiveAdventureRun = { gameId: string; runId: string };
+type PendingAdventureEntry = { gameId: string; expectedRunId?: string };
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
@@ -1053,13 +1057,21 @@ export default function App() {
   const [shopFeedback, setShopFeedback] = useState('상점은 목업입니다. 실제 구매는 아직 연결하지 않았습니다.');
   const [adventureFeedback, setAdventureFeedback] = useState('모험 티켓은 훈련 보상과 연결할 예정이에요. 지금은 무료 테스트 지역을 열어두었습니다.');
   const [adventureResult, setAdventureResult] = useState<AdventureRunResult | null>(null);
-  const [activeAdventureGameId, setActiveAdventureGameId] = useState<string | null>(null);
+  const [activeAdventureRun, setActiveAdventureRun] = useState<ActiveAdventureRun | null>(null);
+  const [pendingAdventureEntry, setPendingAdventureEntry] = useState<PendingAdventureEntry | null>(null);
+  const [adventureEntryShortage, setAdventureEntryShortage] = useState<{ coins: number; entryCost: number; expectedRunId?: string } | null>(null);
+  const [entryProcessing, setEntryProcessing] = useState(false);
   const [storageFeedback, setStorageFeedback] = useState(initialLoadResult.message);
   const lastBluetoothConfirmRef = useRef<{ hex: string; time: number; problemIndex: number } | null>(null);
   const isQuickTrainingSettingsOpenRef = useRef(false);
   const rewardedSessionIdsRef = useRef<Set<string>>(new Set(initialLoadResult.state.rewardedTrainingSessionIds));
   const isHatchingRef = useRef(false);
   const isFeedingRef = useRef(false);
+  const activeAdventureRunRef = useRef<ActiveAdventureRun | null>(null);
+  const committedAdventureRunIdsRef = useRef(new Set<string>());
+  const entryProcessingRef = useRef(false);
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
   const dinoHappyTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -1252,7 +1264,7 @@ export default function App() {
   const isHomeScreen = activeTab === 'home';
   const isTrainingScreen = activeTab === 'training';
   const isAdventureScreen = activeTab === 'adventure';
-  const isAdventureGameOpen = isAdventureScreen && activeAdventureGameId !== null;
+  const isAdventureGameOpen = isAdventureScreen && activeAdventureRun !== null;
   const showAppHeader = !isHomeScreen && !isTrainingScreen && !isAdventureScreen && activeTab !== 'dino' && activeTab !== 'shop' && activeTab !== 'pokedex' && activeTab !== 'settings';
   const showBottomNav = !isHomeScreen && !isTrainingScreen && !isAdventureGameOpen;
   const allowsPageScroll = activeTab !== 'training' && activeTab !== 'shop' && activeTab !== 'dino' && activeTab !== 'pokedex' && activeTab !== 'adventure';
@@ -1756,6 +1768,10 @@ export default function App() {
   }
 
   function purchaseItem(itemId: string) {
+    if (itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID) {
+      setShopFeedback('희귀조각은 용암계곡 같은 미니게임에서 발견할 수 있어요.');
+      return;
+    }
     const item = getItemConfig(itemId);
     if (!item) {
       setShopFeedback(`아이템 정보를 찾지 못했어요. itemId: ${itemId}`);
@@ -1886,6 +1902,85 @@ export default function App() {
     });
 
     setShopFeedback(`${item.name}를 구매했어요! 코인 -${item.price}`);
+  }
+
+  function startAdventureGame(gameId: string, expectedRunId?: string) {
+    if (expectedRunId) {
+      if (activeAdventureRunRef.current?.runId !== expectedRunId) return;
+    } else if (activeAdventureRunRef.current) {
+      return;
+    }
+
+    const entryCost = MINIGAME_ENTRY_COST[gameId as keyof typeof MINIGAME_ENTRY_COST];
+    if (entryCost === undefined) {
+      return;
+    }
+
+    const current = gameStateRef.current;
+    if (current.player.coins < entryCost) {
+      setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId });
+      return;
+    }
+
+    entryProcessingRef.current = false;
+    setEntryProcessing(false);
+    setPendingAdventureEntry({ gameId, expectedRunId });
+  }
+
+  function confirmAdventureEntry() {
+    const pending = pendingAdventureEntry;
+    if (!pending || entryProcessingRef.current) return;
+    if (pending.expectedRunId && activeAdventureRunRef.current?.runId !== pending.expectedRunId) return;
+    if (!pending.expectedRunId && activeAdventureRunRef.current) return;
+
+    entryProcessingRef.current = true;
+    setEntryProcessing(true);
+    const entryCost = MINIGAME_ENTRY_COST[pending.gameId as keyof typeof MINIGAME_ENTRY_COST];
+    const current = gameStateRef.current;
+    const nextCoins = chargeMinigameEntry(current.player.coins, pending.gameId as MinigameId);
+    if (entryCost === undefined || nextCoins === null) {
+      entryProcessingRef.current = false;
+      setEntryProcessing(false);
+      setPendingAdventureEntry(null);
+      if (entryCost !== undefined) setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId: pending.expectedRunId });
+      return;
+    }
+
+    const run = { gameId: pending.gameId, runId: `lava-${Date.now()}-${Math.random().toString(36).slice(2, 9)}` };
+    const nextState = {
+      ...current,
+      player: { ...current.player, coins: nextCoins },
+    };
+    gameStateRef.current = nextState;
+    activeAdventureRunRef.current = run;
+    saveGameState(nextState);
+    setGameState(nextState);
+    setPendingAdventureEntry(null);
+    setActiveAdventureRun(run);
+  }
+
+  function finishAdventureRun(runId: string, rawRewards: MinigameRunRewards) {
+    const rewards = normalizeLavaValleyRewards(rawRewards);
+    const current = gameStateRef.current;
+    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier);
+    const adjustedRewards = applied.rewards;
+    if (committedAdventureRunIdsRef.current.has(runId)) return adjustedRewards;
+    committedAdventureRunIdsRef.current.add(runId);
+
+    const nextState = {
+      ...current,
+      player: { ...current.player, coins: applied.state.coins },
+      inventory: applied.state.inventory,
+    };
+    gameStateRef.current = nextState;
+    setGameState(nextState);
+    if (adjustedRewards.coins > 0) playSound('reward_coin');
+    return adjustedRewards;
+  }
+
+  function exitAdventureGame() {
+    activeAdventureRunRef.current = null;
+    setActiveAdventureRun(null);
   }
 
   function runAdventure(areaId: string) {
@@ -2475,10 +2570,12 @@ export default function App() {
           />
         )}
         {activeTab === 'adventure' && (
-          activeAdventureGameId
-            ? <AdventureGameShell gameId={activeAdventureGameId} dinosaur={activeOwnedDinosaur} onExit={() => setActiveAdventureGameId(null)} />
-            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen onStartGame={setActiveAdventureGameId} /></div>
+          activeAdventureRun
+            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={() => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId)} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
+            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen onStartGame={startAdventureGame} /></div>
         )}
+        {pendingAdventureEntry && <MinigameEntryConfirm title="용암계곡 탐험" coins={gameState.player.coins} entryCost={MINIGAME_ENTRY_COST[pendingAdventureEntry.gameId as keyof typeof MINIGAME_ENTRY_COST]!} processing={entryProcessing} onCancel={() => { if (!entryProcessingRef.current) setPendingAdventureEntry(null); }} onConfirm={confirmAdventureEntry} />}
+        {adventureEntryShortage && <MinigameEntryShortage coins={adventureEntryShortage.coins} entryCost={adventureEntryShortage.entryCost} onClose={() => setAdventureEntryShortage(null)} />}
         {activeTab === 'settings' && (
           <PortraitSettingsView
             levels={abacusLevels}
@@ -2533,7 +2630,8 @@ export default function App() {
                     playSound('ui_tab_switch');
                   }
                   setIsHatcheryOpen(false);
-                  setActiveAdventureGameId(null);
+                  activeAdventureRunRef.current = null;
+                  setActiveAdventureRun(null);
                   setActiveTab(tab.id);
                 }}
                 aria-label={tab.label}
@@ -2850,48 +2948,6 @@ function PortraitSettingsView({
         </div>
       </section>
 
-      <section className="grid min-w-0 gap-3 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
-        <h4 className="text-sm font-black text-amber-800">성장 속도</h4>
-        <div className="grid grid-cols-3 gap-2">
-          {growthSpeedOptions.map((option) => {
-            const selected = growthSpeedMultiplier === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onGrowthSpeedMultiplier(option.value)}
-                className={`min-h-12 rounded-[16px] px-2 text-xs font-black transition active:translate-y-1 ${
-                  selected ? 'bg-emerald-400 text-emerald-950 shadow-[0_4px_0_#059669]' : 'bg-emerald-50 text-emerald-800'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="grid min-w-0 gap-3 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
-        <h4 className="text-sm font-black text-amber-800">코인 보상 배율</h4>
-        <div className="grid grid-cols-3 gap-2">
-          {coinRewardOptions.map((option) => {
-            const selected = coinRewardMultiplier === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onCoinRewardMultiplier(option.value)}
-                className={`min-h-12 rounded-[16px] px-2 text-xs font-black transition active:translate-y-1 ${
-                  selected ? 'bg-amber-300 text-amber-950 shadow-[0_4px_0_#d97706]' : 'bg-amber-50 text-amber-800'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="min-w-0 overflow-hidden rounded-[24px] border-4 border-white bg-white/80 p-3 shadow-sm sm:p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -2940,6 +2996,10 @@ function PortraitSettingsView({
             onClearLogs={onClearAdminChangeLogs}
             onExport={onExportSavedData}
             onImport={onImportSavedData}
+            growthSpeedMultiplier={growthSpeedMultiplier}
+            coinRewardMultiplier={coinRewardMultiplier}
+            onGrowthSpeedMultiplier={onGrowthSpeedMultiplier}
+            onCoinRewardMultiplier={onCoinRewardMultiplier}
           />
         )}
       </section>
@@ -4185,55 +4245,8 @@ function SettingsView({
         </details>}
       </section>
       <section className="rounded-[30px] border-4 border-white bg-white/84 p-5 shadow-lg">
-        <h3 className="text-2xl font-black text-emerald-950">보상 밸런스</h3>
-        <p className="mt-2 text-sm font-black text-slate-500">아이의 훈련량에 맞춰 공룡 성장과 코인 보상을 조절해요.</p>
-        <h4 className="mt-5 text-sm font-black text-emerald-800">공룡 성장 속도</h4>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {growthSpeedOptions.map((option) => {
-            const isSelected = growthSpeedMultiplier === option.value;
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => onGrowthSpeedMultiplier(option.value)}
-                className={`min-h-14 rounded-[20px] border-4 px-4 py-3 text-sm font-black transition ${
-                  isSelected
-                    ? 'border-emerald-400 bg-emerald-100 text-emerald-900 shadow-sm'
-                    : 'border-white bg-slate-50 text-slate-600 hover:bg-emerald-50'
-                }`}
-              >
-                {option.label} {option.percent}%
-              </button>
-            );
-          })}
-        </div>
-        <h4 className="mt-5 text-sm font-black text-amber-800">코인 보상량</h4>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {coinRewardOptions.map((option) => {
-            const isSelected = coinRewardMultiplier === option.value;
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => onCoinRewardMultiplier(option.value)}
-                className={`min-h-14 rounded-[20px] border-4 px-4 py-3 text-sm font-black transition ${
-                  isSelected
-                    ? 'border-amber-400 bg-amber-100 text-amber-900 shadow-sm'
-                    : 'border-white bg-slate-50 text-slate-600 hover:bg-amber-50'
-                }`}
-              >
-                {option.label} {option.percent}%
-              </button>
-            );
-          })}
-        </div>
-        <p className="mt-3 rounded-[18px] bg-cyan-50 px-4 py-3 text-xs font-black text-cyan-800">
-          각 설정은 공룡 EXP와 코인에만 독립 적용되며, 난이도·행복·체력·아이템에는 영향을 주지 않습니다.
-        </p>
+        <h3 className="text-2xl font-black text-emerald-950">현재 해금 현황</h3>
+        <p className="mt-2 text-sm font-black text-slate-500">게임 밸런스 설정은 관리자 기능에서만 변경할 수 있어요.</p>
         <div className="mt-5">
           <h4 className="text-base font-black text-slate-800">현재 해금 현황</h4>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

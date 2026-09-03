@@ -3,6 +3,8 @@ import { ADMIN_LIMITS, ADMIN_PIN } from '../config/adminConfig';
 import type { ItemConfig } from '../config/itemConfig';
 import type { AdminChangeLog, OwnedEgg } from '../types/game';
 import { SaveDataTransferControls } from './SaveDataTransferControls';
+import { coinRewardOptions, type CoinRewardMultiplier } from '../config/rewardConfig';
+import { growthSpeedOptions, type GrowthSpeedMultiplier } from '../config/growthConfig';
 
 type QuantityTarget = Pick<ItemConfig, 'id' | 'name' | 'category'>;
 
@@ -20,6 +22,10 @@ export interface AdminPanelProps {
   onClearLogs: () => void;
   onExport: () => void;
   onImport: (file: File) => Promise<void>;
+  growthSpeedMultiplier: GrowthSpeedMultiplier;
+  coinRewardMultiplier: CoinRewardMultiplier;
+  onGrowthSpeedMultiplier: (value: GrowthSpeedMultiplier) => void;
+  onCoinRewardMultiplier: (value: CoinRewardMultiplier) => void;
 }
 
 function parseInteger(value: string, min: number, max: number) {
@@ -94,6 +100,12 @@ export function AdminPanel(props: AdminPanelProps) {
 
       {feedback && <p className="rounded-xl bg-white p-3 text-sm font-black text-slate-700">{feedback}</p>}
 
+      <section className="rounded-2xl bg-white p-3">
+        <h5 className="font-black">게임 밸런스</h5>
+        <BalanceOptions title="성장 속도" options={growthSpeedOptions} value={props.growthSpeedMultiplier} onChange={props.onGrowthSpeedMultiplier} />
+        <BalanceOptions title="코인 보상 배율" options={coinRewardOptions} value={props.coinRewardMultiplier} onChange={props.onCoinRewardMultiplier} />
+      </section>
+
       <AdminQuantitySection
         title="코인 관리"
         target={{ id: 'coins', name: '코인', category: 'misc' }}
@@ -155,6 +167,10 @@ export function AdminPanel(props: AdminPanelProps) {
       </section>
     </div>
   );
+}
+
+function BalanceOptions<T extends number>({ title, options, value, onChange }: { title: string; options: Array<{ value: T; label: string; percent: number }>; value: T; onChange: (value: T) => void }) {
+  return <fieldset className="mt-3"><legend className="text-sm font-black text-slate-700">{title}</legend><div className="mt-2 grid grid-cols-3 gap-2">{options.map((option) => <button key={option.value} type="button" aria-pressed={value === option.value} onClick={() => onChange(option.value)} className={`min-h-12 rounded-xl px-2 text-xs font-black ${value === option.value ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-700'}`}>{option.label} {option.percent}%</button>)}</div></fieldset>;
 }
 
 function AdminItemList({
