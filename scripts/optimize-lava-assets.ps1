@@ -45,9 +45,12 @@ try {
     $graphics.CompositingQuality = [Drawing.Drawing2D.CompositingQuality]::HighQuality
     $graphics.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $graphics.PixelOffsetMode = [Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-    for ($frame = 1; $frame -le 4; $frame++) {
+    # Note: the natural forward run cycle uses frames 4 -> 3 -> 2 -> 1.
+    $runFrameOrder = @(4, 3, 2, 1)
+    for ($sheetIndex = 0; $sheetIndex -lt $runFrameOrder.Count; $sheetIndex++) {
+      $frame = $runFrameOrder[$sheetIndex]
       $inputImage = [Drawing.Image]::FromFile((Join-Path $playerRoot "carnotaurus_run_$frame.png"))
-      try { $graphics.DrawImage($inputImage, (($frame - 1) * 512), 0, 512, 512) } finally { $inputImage.Dispose() }
+      try { $graphics.DrawImage($inputImage, ($sheetIndex * 512), 0, 512, 512) } finally { $inputImage.Dispose() }
     }
   } finally { $graphics.Dispose() }
   $sheet.Save((Join-Path $playerRoot 'carnotaurus_run_sheet.png'), [Drawing.Imaging.ImageFormat]::Png)

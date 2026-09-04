@@ -15,7 +15,8 @@
   background: #d1fae5;
 }
 
-/* Lava Valley: one decoded RUN texture and compositor-driven frame changes. */
+/* Lava Valley: one decoded RUN texture. Its canonical left-to-right order is
+   run_4 -> run_3 -> run_2 -> run_1 for a natural forward run cycle. */
 .lava-runner__run-sprite {
   position: relative;
   z-index: 3;
@@ -27,7 +28,7 @@
   background-position: 0 0;
   background-size: 400% 100%;
   filter: drop-shadow(0 5px 3px rgb(69 10 10 / 45%));
-  animation: lava-carnotaurus-run 420ms steps(4, end) infinite;
+  animation: lava-carnotaurus-run 420ms step-end infinite;
 }
 
 .lava-runner-loading {
@@ -43,7 +44,10 @@
 }
 
 @keyframes lava-carnotaurus-run {
-  to { background-position: 133.333% 0; }
+  0%, 24.999% { background-position: 0 0; }
+  25%, 49.999% { background-position: 33.333% 0; }
+  50%, 74.999% { background-position: 66.667% 0; }
+  75%, 100% { background-position: 100% 0; }
 }
 
 .pet-screen__background,
@@ -2149,6 +2153,32 @@ summary:focus-visible {
   @media (max-width: 480px), (max-height: 760px) {
     .lava-runner__header { padding-top: .2rem; }.lava-runner-hud { width: min(100%, 29rem); }.lava-runner__settings img { width: 2.6rem; }.lava-runner__track { height: clamp(5.6rem, 23vw, 7.5rem); }.lava-runner__dino { width: clamp(6rem, 26vw, 8.5rem); height: clamp(6.5rem, 28vw, 9.2rem); }.lava-runner__jump { min-height: 6.3rem !important; }.lava-runner__jump img { max-height: 6.25rem; }.lava-runner-speech { bottom: 39%; }
   }
+
+  /* Lava Valley playtest polish: responsive dash, grounded effects and joined track layers. */
+  .lava-runner__controls { display: flex; align-items: center; justify-content: center; gap: clamp(.75rem,2.2vw,1.5rem); }
+  .lava-runner__controls button { flex: 0 0 auto; border: 0; padding: .45rem; background: transparent; box-shadow: none; }
+  .lava-runner__dash { position: relative; width: clamp(10.1rem,28vw,13rem); min-height: 0; aspect-ratio: 4 / 3; touch-action: none; }
+  .lava-runner__dash img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 5px 0 rgb(69 10 10 / 55%)); pointer-events: none; }
+  .lava-runner__dash small { position: absolute; right: 0; bottom: .45rem; left: 0; color: #fff7ed; font-size: clamp(.65rem,2.4vw,.85rem); font-weight: 1000; text-align: center; text-shadow: 0 2px 2px #450a0a; pointer-events: none; }
+  .lava-runner__dash:active:not(:disabled),.lava-runner__dash.is-active { transform: translateY(2px); filter: brightness(1.08); }
+  .lava-runner__dash:disabled { opacity: 1; }
+  .lava-runner__jump { width: clamp(6.4rem,18vw,8rem); padding: .45rem; }
+  .lava-runner__track { bottom: calc(var(--lava-track-bottom) - 1%); height: clamp(6.8rem,26vw,10.4rem); filter: drop-shadow(0 10px 8px rgb(45 12 5 / 42%)); }
+  .lava-runner__track-cracks { position: absolute; right: 0; bottom: 5%; left: 0; z-index: 4; width: 100%; height: 48%; object-fit: cover; object-position: center bottom; opacity: .42; mix-blend-mode: screen; pointer-events: none; }
+  .lava-runner__track-edge { bottom: -4%; height: 46%; object-position: center top; filter: saturate(1.12) drop-shadow(0 5px 4px rgb(69 10 10 / 60%)); }
+  .lava-runner-item--coin { width: clamp(3.1rem,11.6vw,4.65rem); }
+  .lava-runner-ground-shadow { position: absolute; left: var(--lava-player-x); bottom: 19.2%; z-index: 9; width: clamp(5rem,20vw,8.5rem); transform: translateX(-50%); transform-origin: center; opacity: .72; pointer-events: none; transition: transform 90ms linear,opacity 90ms linear; }
+  .lava-runner-ground-shadow.is-jumping { transform: translateX(-50%) scale(.72); opacity: .38; }
+  .lava-runner-ground-shadow.is-dashing { transform: translateX(-58%) scaleX(1.25); opacity: .82; }
+  .lava-runner__dino { transition: opacity .2s,transform 120ms ease-out,filter 120ms ease-out; }
+  .lava-runner--dashing .lava-runner__dino { transform: translateX(calc(-50% + .55rem)) scale(var(--lava-player-scale,1)) rotate(2.5deg); filter: brightness(1.08) drop-shadow(-10px 2px 4px rgb(251 146 60 / 68%)); }
+  .lava-runner-speed-lines { position: absolute; left: calc(var(--lava-player-x) - 13%); bottom: 28%; z-index: 10; width: clamp(4.5rem,18vw,7.5rem); opacity: 0; transform: translateX(-.5rem); pointer-events: none; transition: opacity 80ms linear,transform 180ms ease-out; }
+  .lava-runner-speed-lines i { display: block; height: 3px; margin: .52rem 0; border-radius: 999px; background: linear-gradient(90deg,transparent,#fde68a 38%,#fff7ed); box-shadow: 0 0 4px rgb(251 146 60 / 72%); transform-origin: right; }
+  .lava-runner-speed-lines i:nth-child(1) { width: 76%; margin-left: 24%; }.lava-runner-speed-lines i:nth-child(2) { width: 100%; }.lava-runner-speed-lines i:nth-child(3) { width: 62%; margin-left: 38%; }
+  .lava-runner--dashing .lava-runner-speed-lines { opacity: .9; transform: translateX(.35rem); animation: lava-speed-lines 180ms linear infinite; }
+  .lava-runner-burst--jump,.lava-runner-burst--landing { width: clamp(4rem,15vw,6.5rem); }
+
+  @keyframes lava-speed-lines { 0% { transform: translateX(.35rem) scaleX(.82); } 100% { transform: translateX(-.35rem) scaleX(1); } }
 
   .lava-path-game {
     display: flex;

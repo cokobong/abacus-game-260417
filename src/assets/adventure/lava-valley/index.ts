@@ -42,6 +42,10 @@ import rareFragmentPanel from './ui/hud/rare_fragment_panel.png';
 import distanceTimePanel from './ui/hud/distance_time_panel.png';
 import jumpButtonNormal from './ui/buttons/jump_button_normal.png';
 import jumpButtonPressed from './ui/buttons/jump_button_pressed.png';
+import dashButtonReady from './ui/buttons/dash_button_ready.png';
+import dashButtonPressed from './ui/buttons/dash_button_pressed.png';
+import dashButtonCooldown from './ui/buttons/dash_button_cooldown.png';
+import dashButtonDisabled from './ui/buttons/dash_button_disabled.png';
 import pauseSettingsButton from './ui/buttons/pause_settings_button.png';
 import levelIntroPanel from './ui/events/level_intro_panel.png';
 import pauseMenuPanel from './ui/events/pause_menu_panel.png';
@@ -68,7 +72,15 @@ export const lavaValleyTrackAssets = {
 } as const;
 
 export const lavaValleyHudAssets = { top: topHudPanel, health: healthPanel, coin: coinCounterPanel, rareFragment: rareFragmentPanel, distanceTime: distanceTimePanel } as const;
-export const lavaValleyButtonAssets = { jumpNormal: jumpButtonNormal, jumpPressed: jumpButtonPressed, pauseSettings: pauseSettingsButton } as const;
+export const lavaValleyButtonAssets = {
+  jumpNormal: jumpButtonNormal,
+  jumpPressed: jumpButtonPressed,
+  dashReady: dashButtonReady,
+  dashPressed: dashButtonPressed,
+  dashCooldown: dashButtonCooldown,
+  dashDisabled: dashButtonDisabled,
+  pauseSettings: pauseSettingsButton,
+} as const;
 export const lavaValleyEffectAssets = { dinosaurContactShadow, jumpDust, landingDust, coinPickupSparkle, itemPickupSparkle, hurtImpact, checkpointBurst, clearBurst } as const;
 export const lavaValleyEnvironmentAssets = { checkpoint: upgradedCheckpointFlag, warningSign, lavaTorchTotem, magmaCrystalAltar, raceGateArch, goalPortal, treasureChestClosed, treasureChestOpen } as const;
 export const lavaValleyEventUiAssets = { levelIntro: levelIntroPanel, pauseMenu: pauseMenuPanel, resultClear: resultClearPanel, speechBubble: dinoSpeechBubble, comboPopup } as const;
