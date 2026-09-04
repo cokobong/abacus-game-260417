@@ -8,8 +8,11 @@ import {
   LAVA_VALLEY_COLLECTIBLE_LANES,
   LAVA_VALLEY_ENTRY_COST,
   LAVA_VALLEY_DURATION_SECONDS,
+  SKY_ISLAND_DURATION_SECONDS,
+  SKY_ISLAND_ENTRY_COST,
   LAVA_VALLEY_REWARDS_CONFIG,
-  LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE,
+  createRareFragmentSpawnPlan,
+  RARE_FRAGMENT_COUNT_WEIGHTS,
   LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID,
   MAX_RARE_FRAGMENTS_PER_RUN,
   lavaValleyRetryRequiresEntry,
@@ -18,11 +21,13 @@ import {
 import { LAVA_VALLEY_SHOP_DROP_POOLS, SHOP_CATALOG } from './shopCatalog';
 import { itemConfigs } from './itemConfig';
 
-test('용암계곡은 150코인이고 목업 하늘섬은 무료다', () => {
+test('용암계곡과 하늘섬은 동일하게 입장료 150코인을 차감한다', () => {
   assert.equal(LAVA_VALLEY_ENTRY_COST, 150);
   assert.equal(chargeMinigameEntry(1000, 'lava-stepping-stones'), 850);
   assert.equal(chargeMinigameEntry(149, 'lava-stepping-stones'), null);
-  assert.equal(chargeMinigameEntry(1000, 'sky-number-clouds'), 1000);
+  assert.equal(SKY_ISLAND_ENTRY_COST, 150);
+  assert.equal(chargeMinigameEntry(1000, 'sky-number-clouds'), 850);
+  assert.equal(chargeMinigameEntry(149, 'sky-number-clouds'), null);
 });
 
 test('수집물 lane은 LOW/HIGH만 사용하고 코인 패턴은 두 행동 의미를 유지한다', () => {
@@ -63,11 +68,12 @@ test('코인 배율은 보상에만 적용하고 희귀조각은 판당 2개로 
   assert.equal(result.rewards.coins, 65);
   assert.equal(result.state.coins, 915);
   assert.equal(result.rewards.rareFragments, MAX_RARE_FRAGMENTS_PER_RUN);
-  assert.equal(result.state.inventory.find((item) => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 2);
+  assert.equal(result.state.inventory.find((item) => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 3);
 });
 
 test('용암계곡은 120초이며 한 판 드롭 계획은 판매 중인 비알 아이템 1~2개만 포함한다', () => {
   assert.equal(LAVA_VALLEY_DURATION_SECONDS, 120);
+  assert.equal(SKY_ISLAND_DURATION_SECONDS, 120);
   assert.equal(LAVA_VALLEY_REWARDS_CONFIG.gameDurationSeconds, LAVA_VALLEY_DURATION_SECONDS);
   for (let index = 0; index < 200; index += 1) {
     const plan = createLavaValleyShopDropPlan();
@@ -79,9 +85,17 @@ test('용암계곡은 120초이며 한 판 드롭 계획은 판매 중인 비알
   }
 });
 
-test('희귀조각은 수집물 판정당 2%이며 획득 보상은 판당 2개로 제한한다', () => {
-  assert.equal(LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE, 0.02);
-  assert.equal(MAX_RARE_FRAGMENTS_PER_RUN, 2);
+test('희귀조각은 난이도별 예약 분포를 사용하고 획득 보상은 판당 3개로 제한한다', () => {
+  assert.deepEqual(RARE_FRAGMENT_COUNT_WEIGHTS.normal, [0.22, 0.50, 0.23, 0.05]);
+  assert.equal(MAX_RARE_FRAGMENTS_PER_RUN, 3);
+  for (const difficulty of ['easy', 'normal', 'challenge'] as const) {
+    let seed = 246813579; const random = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 0x100000000; };
+    const plans = Array.from({ length: 1000 }, () => createRareFragmentSpawnPlan(difficulty, 120, random));
+    const average = plans.reduce((sum, plan) => sum + plan.length, 0) / plans.length;
+    const expectedRange = difficulty === 'easy' ? [0.8, 1.0] : difficulty === 'normal' ? [1.0, 1.2] : [1.2, 1.4];
+    assert.ok(average >= expectedRange[0] && average <= expectedRange[1]);
+    assert.ok(plans.every((plan) => plan.length <= 3 && plan.every((entry, index) => index === 0 || entry.spawnAtSeconds - plan[index - 1].spawnAtSeconds >= 20)));
+  }
 });
 
 test('상점 드롭 개수는 늘리지 않고 120초 진행률에 맞춘 시간대에 배치한다', () => {

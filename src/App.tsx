@@ -1903,7 +1903,7 @@ export default function App() {
     setShopFeedback(`${item.name}를 구매했어요! 코인 -${item.price}`);
   }
 
-  function startAdventureGame(gameId: string, expectedRunId?: string) {
+  function startAdventureGame(gameId: string, expectedRunId?: string, entryConfirmed = false) {
     if (expectedRunId) {
       if (activeAdventureRunRef.current?.runId !== expectedRunId) return;
     } else if (activeAdventureRunRef.current) {
@@ -1929,6 +1929,27 @@ export default function App() {
     const current = gameStateRef.current;
     if (current.player.coins < entryCost) {
       setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId });
+      return;
+    }
+
+    if (entryConfirmed) {
+      if (entryProcessingRef.current) return;
+      entryProcessingRef.current = true;
+      const nextCoins = chargeMinigameEntry(current.player.coins, gameId as MinigameId);
+      if (nextCoins === null) {
+        entryProcessingRef.current = false;
+        setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId });
+        return;
+      }
+      const run = { gameId, runId: `adventure-${Date.now()}-${Math.random().toString(36).slice(2, 9)}` };
+      const nextState = { ...current, player: { ...current.player, coins: nextCoins } };
+      gameStateRef.current = nextState;
+      activeAdventureRunRef.current = run;
+      saveGameState(nextState);
+      setGameState(nextState);
+      setAdventureEntryShortage(null);
+      setActiveAdventureRun(run);
+      entryProcessingRef.current = false;
       return;
     }
 
@@ -2582,7 +2603,7 @@ export default function App() {
         {activeTab === 'adventure' && (
           activeAdventureRun
             ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={() => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId)} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
-            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen onStartGame={startAdventureGame} /></div>
+            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} onStartGame={(gameId) => startAdventureGame(gameId, undefined, true)} /></div>
         )}
         {pendingAdventureEntry && <MinigameEntryConfirm title="용암계곡 탐험" coins={gameState.player.coins} entryCost={MINIGAME_ENTRY_COST[pendingAdventureEntry.gameId as keyof typeof MINIGAME_ENTRY_COST]!} processing={entryProcessing} onCancel={() => { if (!entryProcessingRef.current) setPendingAdventureEntry(null); }} onConfirm={confirmAdventureEntry} />}
         {adventureEntryShortage && <MinigameEntryShortage coins={adventureEntryShortage.coins} entryCost={adventureEntryShortage.entryCost} onClose={() => setAdventureEntryShortage(null)} />}

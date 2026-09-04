@@ -1,63 +1,136 @@
-import { LockKeyhole, Play } from 'lucide-react';
-import adventureMapBg from '../../assets/adventure/lava-valley/background/adventure_map_bg.png';
-import { adventureRegions, type AdventureRegion } from '../../data/adventureRegions';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { LockKeyhole, X } from 'lucide-react';
+import { adventureMapAssets } from '../../assets/adventure';
+import { ADVENTURE_REGIONS, adventureRegions, type AdventureRegion, type AdventureRegionId } from '../../data/adventureRegions';
 import { playSound } from '../../audio/audioManager';
-import { MINIGAME_ENTRY_COST } from '../../config/minigameConfig';
-import { trainingUiAssets } from '../../assets/ui/training';
 
 export interface AdventureMapScreenProps {
+  coins: number;
   onStartGame: (gameId: string) => void;
 }
 
-export function AdventureMapScreen({ onStartGame }: AdventureMapScreenProps) {
+export function AdventureMapScreen({ coins, onStartGame }: AdventureMapScreenProps) {
+  const [selectedRegionId, setSelectedRegionId] = useState<AdventureRegionId | null>(null);
+  const selectedRegion = selectedRegionId ? ADVENTURE_REGIONS[selectedRegionId] : null;
+  const openRegionModal = (regionId: AdventureRegionId) => setSelectedRegionId(regionId);
+
+  useEffect(() => {
+    if (!selectedRegionId) return undefined;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedRegionId(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [selectedRegionId]);
+
   return (
     <section className="adventure-map-screen relative h-full min-h-0 w-full overflow-hidden">
-      <img src={adventureMapBg} alt="용암 계곡과 하늘섬, 숫자 유적이 있는 탐험 지도" className="absolute inset-0 h-full w-full object-cover object-center" draggable={false} />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-100/10 via-transparent to-emerald-950/10" />
+      <div className="adventure-world-map absolute">
+        <img src={adventureMapAssets.worldMap} alt="다섯 모험 지역이 이어진 세계 지도" className="h-full w-full object-contain" draggable={false} />
+        {adventureRegions.map((region) => (
+          <AdventureRegionHotspot key={region.id} region={region} onSelect={openRegionModal} />
+        ))}
+      </div>
 
-      <header className="adventure-map-title absolute left-1/2 top-[2.5%] z-10 w-[min(88%,590px)] -translate-x-1/2 rounded-[22px] border-4 border-[#9a6632] bg-[#fff1c7]/95 px-4 py-2 text-center shadow-[0_6px_0_#75451f,0_12px_24px_rgba(61,35,16,.22)]">
-        <h1 className="text-[clamp(1.05rem,3.5vw,1.55rem)] font-black text-amber-950">탐험할 지역을 골라요</h1>
-        <p className="mt-0.5 text-[clamp(.65rem,1.8vw,.85rem)] font-black text-emerald-800">공룡과 함께 새로운 장소를 탐험해 보세요!</p>
-      </header>
+      <img className="adventure-map-title pointer-events-none absolute left-1/2 top-[1.5%] z-20 w-[min(72%,31rem)] -translate-x-1/2 object-contain" src={adventureMapAssets.titleBanner} alt="모험 지도" draggable={false} />
 
-      {adventureRegions.map((region) => (
-        <AdventureRegionMarker key={region.id} region={region} onStartGame={onStartGame} />
-      ))}
+      {selectedRegion && (
+        <RegionDetailModal
+          region={selectedRegion}
+          coins={coins}
+          onClose={() => setSelectedRegionId(null)}
+          onStart={() => {
+            if (!selectedRegion.gameId) return;
+            playSound('ui_button_tap');
+            onStartGame(selectedRegion.gameId);
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function AdventureRegionMarker({ region, onStartGame }: { key?: string; region: AdventureRegion; onStartGame: (gameId: string) => void }) {
-  const available = region.status === 'available' && Boolean(region.gameId);
-  const entryCost = region.gameId ? MINIGAME_ENTRY_COST[region.gameId as keyof typeof MINIGAME_ENTRY_COST] : undefined;
-
+function AdventureRegionHotspot({ region, onSelect }: { key?: string; region: AdventureRegion; onSelect: (regionId: AdventureRegionId) => void }) {
+  const statusLabel = region.status === 'open' ? '입장하기' : region.unavailableLabel;
   return (
-    <button
-      type="button"
-      disabled={!available}
-      onClick={() => {
-        if (!region.gameId) return;
-        playSound('ui_button_tap');
-        onStartGame(region.gameId);
-      }}
-      style={{ left: `${region.position.x}%`, top: `${region.position.y}%` }}
-      className={`adventure-region-marker absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center ${available ? 'adventure-region-marker--available' : 'adventure-region-marker--locked'}`}
-      aria-label={available ? `${region.name} 모험 시작` : `${region.name} 준비 중`}
+    <div
+      style={{ left: `${region.position.left}%`, top: `${region.position.top}%` }}
+      className="adventure-region-hotspot-anchor absolute z-10"
     >
-      <span className="block text-[clamp(.8rem,2.8vw,1.05rem)] font-black leading-tight">{region.name}</span>
-      {available ? (
-        <>
-          <span className="adventure-region-description mt-1.5 block text-[clamp(.58rem,1.7vw,.72rem)] font-bold leading-snug">{region.description}</span>
-          <span className="mt-2 inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-gradient-to-b from-yellow-300 to-amber-400 px-3.5 text-[clamp(.62rem,1.8vw,.78rem)] font-black text-amber-950 shadow-[0_3px_0_#b45309]">
-            <Play className="h-3.5 w-3.5 fill-current" /> 모험 시작
-          </span>
-          {entryCost !== undefined && <span className="adventure-entry-cost mx-auto mt-2 flex items-center justify-center gap-1.5 rounded-full border-2 border-amber-300 bg-amber-50/95 px-3.5 py-1 text-[clamp(.7rem,2vw,.88rem)] font-black text-amber-950 shadow-sm"><img src={trainingUiAssets.rewardCoin} alt="코인" className="h-6 w-6 shrink-0 object-contain" /><span>입장 코인 {entryCost.toLocaleString()}</span></span>}
-        </>
-      ) : (
-        <span className="mt-1 inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-slate-500/85 px-3 text-[clamp(.62rem,1.8vw,.78rem)] font-black text-white">
-          <LockKeyhole className="h-3.5 w-3.5" /> 준비 중
+      <button
+        type="button"
+        draggable={false}
+        onDragStart={(event) => event.preventDefault()}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          if (import.meta.env.DEV) console.debug('[Adventure hotspot] pointerdown', region.id, event.currentTarget.getBoundingClientRect());
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (import.meta.env.DEV) console.debug('[Adventure hotspot] click', region.id, event.detail, event.currentTarget.getBoundingClientRect());
+          playSound('ui_button_tap');
+          onSelect(region.id);
+        }}
+        className={`adventure-region-hotspot adventure-region-hotspot--${region.status}`}
+        aria-label={`${region.name} 상세 정보 열기`}
+      >
+        <span className="adventure-region-hotspot__dot" aria-hidden="true" />
+        <span className="adventure-region-hotspot__label">
+          <strong>{region.name}</strong>
+          <small>{region.status === 'locked' && <LockKeyhole aria-hidden="true" />} {statusLabel}</small>
         </span>
-      )}
-    </button>
+      </button>
+    </div>
+  );
+}
+
+function RegionDetailModal({ region, coins, onClose, onStart }: { region: AdventureRegion; coins: number; onClose: () => void; onStart: () => void }) {
+  const entryCost = region.entryCost ?? 0;
+  const isOpen = region.status === 'open' && Boolean(region.gameId);
+  const canAfford = coins >= entryCost;
+  const remainingCoins = Math.max(0, coins - entryCost);
+
+  return createPortal(
+    <div className="adventure-region-modal fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-3" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="adventure-region-title" className="adventure-region-modal__panel relative overflow-hidden rounded-[1.75rem] border-4 border-amber-200 bg-[#fff3ce] shadow-2xl">
+        <button type="button" onClick={onClose} className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-md" aria-label="상세 창 닫기"><X /></button>
+        <img src={region.poster} alt={`${region.name} 포스터`} className="adventure-region-modal__poster object-contain" draggable={false} />
+        <div className="adventure-region-modal__body text-center">
+          <h2 id="adventure-region-title" className="text-2xl font-black text-amber-950">{region.name}</h2>
+          <p className="mt-1 text-sm font-bold text-amber-800">{region.description}</p>
+
+          {isOpen ? (
+            <>
+              <div className="adventure-entry-summary relative mt-3">
+                <img src={adventureMapAssets.entryCoinBanner} alt="" className="block w-full object-contain" draggable={false} />
+                <strong className="adventure-entry-summary__value absolute flex items-center justify-center">{entryCost === 0 ? '무료' : entryCost.toLocaleString()}</strong>
+              </div>
+              <div className="adventure-region-summary mt-2 grid grid-cols-3 rounded-2xl bg-white/75 text-xs font-black text-amber-900">
+                <span>현재 코인<strong className="block text-base">{coins.toLocaleString()}</strong></span>
+                <span>입장 비용<strong className="block text-base">{entryCost === 0 ? '무료' : entryCost.toLocaleString()}</strong></span>
+                <span>입장 후<strong className="block text-base text-emerald-700">{remainingCoins.toLocaleString()}</strong></span>
+              </div>
+              {!canAfford && <p className="mt-2 font-black text-red-600">코인이 {(entryCost - coins).toLocaleString()}개 부족해요.</p>}
+              <div className="adventure-region-modal__footer mt-3 grid grid-cols-[1fr_1.4fr] items-center gap-3">
+                <button type="button" onClick={onClose} className="min-h-12 rounded-2xl bg-white font-black text-amber-900 shadow-[0_4px_0_#d6b77a]">취소</button>
+                <button type="button" disabled={!canAfford} onClick={onStart} className="adventure-start-button disabled:cursor-not-allowed disabled:grayscale">
+                  <img src={adventureMapAssets.startButton} alt="모험 시작" className="block w-full object-contain" draggable={false} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mt-3 rounded-2xl bg-slate-700 px-4 py-3 font-black text-white">{region.status === 'comingSoon' ? '준비 중' : '🔒 잠김'}</div>
+              <div className="adventure-region-modal__footer mt-3 grid grid-cols-2 items-center gap-3">
+                <button type="button" onClick={onClose} className="min-h-12 rounded-2xl bg-white font-black text-amber-900 shadow-[0_4px_0_#d6b77a]">취소</button>
+                <button type="button" disabled className="min-h-12 cursor-not-allowed rounded-2xl bg-slate-500 font-black text-white opacity-80">{region.status === 'comingSoon' ? '준비 중' : '잠겨 있음'}</button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </div>,
+    document.body,
   );
 }

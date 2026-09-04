@@ -5,7 +5,7 @@ export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-
 
 export const MINIGAME_ENTRY_COST: Partial<Record<MinigameId, number>> = {
   'lava-stepping-stones': 150,
-  'sky-number-clouds': 0,
+  'sky-number-clouds': 150,
 };
 
 export const LAVA_VALLEY_ENTRY_COST = MINIGAME_ENTRY_COST['lava-stepping-stones']!;
@@ -13,8 +13,31 @@ export const SKY_ISLAND_ENTRY_COST = MINIGAME_ENTRY_COST['sky-number-clouds']!;
 export const SKY_ISLAND_MOCK_MODE = true;
 export const LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID = 'rare-egg-fragment';
 export const LAVA_VALLEY_DURATION_SECONDS = 120;
-export const LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE = 0.02;
-export const MAX_RARE_FRAGMENTS_PER_RUN = 2;
+export const SKY_ISLAND_DURATION_SECONDS = 120;
+export const MAX_RARE_FRAGMENTS_PER_RUN = 3;
+export type RareFragmentDifficulty = 'easy' | 'normal' | 'challenge';
+export const RARE_FRAGMENT_COUNT_WEIGHTS: Record<RareFragmentDifficulty, readonly [number, number, number, number]> = {
+  easy: [0.30, 0.52, 0.15, 0.03],
+  normal: [0.22, 0.50, 0.23, 0.05],
+  challenge: [0.15, 0.48, 0.28, 0.09],
+};
+export interface RareFragmentSpawn { id: number; spawnAtSeconds: number }
+
+export function rollRareFragmentCount(difficulty: RareFragmentDifficulty, random: () => number = Math.random) {
+  const roll = random(); let cumulative = 0;
+  for (let count = 0; count <= MAX_RARE_FRAGMENTS_PER_RUN; count += 1) { cumulative += RARE_FRAGMENT_COUNT_WEIGHTS[difficulty][count]; if (roll < cumulative) return count; }
+  return MAX_RARE_FRAGMENTS_PER_RUN;
+}
+
+export function scheduleRareFragmentSpawns(count: number, durationSeconds: number, random: () => number = Math.random): RareFragmentSpawn[] {
+  const normalizedCount = Math.min(MAX_RARE_FRAGMENTS_PER_RUN, Math.max(0, Math.floor(count)));
+  const ranges = normalizedCount === 1 ? [[.29, .75]] : normalizedCount === 2 ? [[.21, .42], [.63, .88]] : normalizedCount === 3 ? [[.17, .29], [.46, .58], [.79, .92]] : [];
+  return ranges.map(([start, end], index) => ({ id: index + 1, spawnAtSeconds: durationSeconds * (start + random() * (end - start)) }));
+}
+
+export function createRareFragmentSpawnPlan(difficulty: RareFragmentDifficulty, durationSeconds: number, random: () => number = Math.random) {
+  return scheduleRareFragmentSpawns(rollRareFragmentCount(difficulty, random), durationSeconds, random);
+}
 const LAVA_VALLEY_TIMING_REFERENCE_SECONDS = 90;
 export const LAVA_VALLEY_COLLECTIBLE_LANES = { low: 4, high: 18 } as const;
 export const LAVA_VALLEY_COIN_PATTERNS = [

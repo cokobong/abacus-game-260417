@@ -47,7 +47,6 @@ import dashButtonPressed from './ui/buttons/dash_button_pressed.png';
 import dashButtonCooldown from './ui/buttons/dash_button_cooldown.png';
 import dashButtonDisabled from './ui/buttons/dash_button_disabled.png';
 import pauseSettingsButton from './ui/buttons/pause_settings_button.png';
-import levelIntroPanel from './ui/events/level_intro_panel.png';
 import pauseMenuPanel from './ui/events/pause_menu_panel.png';
 import resultClearPanel from './ui/events/result_clear_panel.png';
 import dinoSpeechBubble from './ui/events/dino_speech_bubble.png';
@@ -83,7 +82,7 @@ export const lavaValleyButtonAssets = {
 } as const;
 export const lavaValleyEffectAssets = { dinosaurContactShadow, jumpDust, landingDust, coinPickupSparkle, itemPickupSparkle, hurtImpact, checkpointBurst, clearBurst } as const;
 export const lavaValleyEnvironmentAssets = { checkpoint: upgradedCheckpointFlag, warningSign, lavaTorchTotem, magmaCrystalAltar, raceGateArch, goalPortal, treasureChestClosed, treasureChestOpen } as const;
-export const lavaValleyEventUiAssets = { levelIntro: levelIntroPanel, pauseMenu: pauseMenuPanel, resultClear: resultClearPanel, speechBubble: dinoSpeechBubble, comboPopup } as const;
+export const lavaValleyEventUiAssets = { pauseMenu: pauseMenuPanel, resultClear: resultClearPanel, speechBubble: dinoSpeechBubble, comboPopup } as const;
 
 export const lavaValleyAssets = {
   background,
