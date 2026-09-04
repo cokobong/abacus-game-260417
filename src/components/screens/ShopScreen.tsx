@@ -14,12 +14,10 @@ import {
   shopIconCategoryHatchSelected,
   shopFoodItemImages,
   shopItemCard,
-  shopItemEggForestRare,
-  shopItemEggGreen,
-  shopItemEggLegendary,
-  shopItemEggOcean,
-  shopItemEggSparkle,
-  shopItemEggVolcanoRare,
+  eggCommon,
+  eggLegendary,
+  eggRare,
+  eggSpecial,
   shopItemHatchRareFragment,
   shopItemHatchSparkleEnergy,
   shopItemHatchWarmBlanket,
@@ -35,7 +33,7 @@ import {
 } from '../../assets/shop';
 import { getEggRequiredFragments, itemConfigs, type ItemConfig } from '../../config/itemConfig';
 import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
-import { canBuyEggItem } from '../../utils/hatchCandidates';
+import { getEggPurchaseState, getLegendaryCategoryStates } from '../../utils/eggPurchaseState';
 import { getFoodDietLabel } from '../../utils/dinosaurDiet';
 import { playSound } from '../../audio/audioManager';
 import { trainingUiAssets } from '../../assets/ui/training';
@@ -65,12 +63,10 @@ const shopCategories: Array<{ id: ShopCategoryId; label: string; defaultIcon: st
 
 const shopItemAssets: Record<string, string> = {
   ...shopFoodItemImages,
-  'green-starter-egg': shopItemEggGreen,
-  'rare-spark-egg': shopItemEggSparkle,
-  'green-forest-rare-egg': shopItemEggForestRare,
-  'volcano-island-rare-egg': shopItemEggVolcanoRare,
-  'ocean-blue-egg': shopItemEggOcean,
-  'legend-egg': shopItemEggLegendary,
+  'green-starter-egg': eggCommon,
+  'rare-spark-egg': eggSpecial,
+  'rare-egg': eggRare,
+  'legend-egg': eggLegendary,
   'hatch-warm-stone': shopItemHatchWarmStone,
   'hatch-warm-blanket': shopItemHatchWarmBlanket,
   'hatch-spark-energy': shopItemHatchSparkleEnergy,
@@ -304,6 +300,7 @@ function ShopItemDetailDialog({
   const effectLabel = getShopItemEffectLabel(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
+  const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary' ? getLegendaryCategoryStates(ownedDinosaurs) : [];
 
   return (
     <div
@@ -367,6 +364,12 @@ function ShopItemDetailDialog({
             </p>
           )}
 
+          {legendaryCategories.length > 0 && (
+            <div className="mt-[1%] grid w-[90%] grid-cols-2 gap-1 text-[clamp(0.58rem,1.15dvh,0.72rem)] font-black">
+              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} {category.discovered}/{category.required} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
+            </div>
+          )}
+
           <div className="mt-auto grid w-[92%] flex-none grid-cols-2 items-center gap-[3%]">
             <button
               type="button"
@@ -412,32 +415,17 @@ function getCategoryLead(category: ShopCategoryId) {
 }
 
 function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
+  if (item.category === 'egg') {
+    const purchaseState = getEggPurchaseState(item, coins, inventory, ownedDinosaurs, ownedEggs);
+    return { ownedQuantity: purchaseState.ownedQuantity, actionLabel: purchaseState.label, canBuy: !purchaseState.disabled };
+  }
   const ownedQuantity = getOwnedQuantity(item, inventory, ownedEggs, ownedCostumeIds);
-  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
-  const eggAvailability = item.category === 'egg' ? canBuyEggItem(item, ownedDinosaurs, ownedEggs) : null;
-  const hasEnoughFragments = item.category === 'egg' && isRareEgg ? hasEnoughRequiredFragments(inventory, item) : false;
   const hasEnoughCoins = coins >= item.price;
-  const hasEggInCategory = item.category === 'egg' && Boolean(eggAvailability?.hasEggInCategory);
-  const hasThisEgg = item.category === 'egg' && ownedQuantity > 0;
-  const hasOtherEggInCategory = hasEggInCategory && !hasThisEgg;
-  const eggSoldOut = item.category === 'egg' && !hasEggInCategory && eggAvailability?.remainingCandidateCount === 0;
-  const canBuyEggMore = item.category !== 'egg' || Boolean(eggAvailability?.canBuyMore);
-  const canBuy = canBuyEggMore && !hasEggInCategory && !eggSoldOut && (isRareEgg ? hasEnoughFragments && hasEnoughCoins : hasEnoughCoins);
 
   return {
     ownedQuantity,
-    actionLabel: hasThisEgg
-      ? '이미 보유'
-      : hasOtherEggInCategory
-        ? `${getEggCategoryLabel(item)} 보유 중`
-        : eggSoldOut
-          ? '품절'
-          : isRareEgg
-            ? (!hasEnoughFragments ? '조각 부족' : !hasEnoughCoins ? '코인 부족' : '구매 가능')
-            : hasEnoughCoins
-              ? '구매 가능'
-              : '코인 부족',
-    canBuy,
+    actionLabel: hasEnoughCoins ? '구매 가능' : '코인 부족',
+    canBuy: hasEnoughCoins,
   };
 }
 
@@ -445,6 +433,7 @@ function getEggCategoryLabel(item: ItemConfig) {
   if (item.category !== 'egg') return '';
   if (item.eggCategory === 'normal') return '일반알';
   if (item.eggCategory === 'special') return '특수알';
+  if (item.eggCategory === 'legendary') return '전설알';
   return '희귀알';
 }
 
@@ -462,7 +451,6 @@ function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
   return item.eggCategory === 'rare' && getEggRequiredFragments(item).length > 0;
 }
 
-function hasEnoughRequiredFragments(inventory: InventoryItemState[], item: Extract<ItemConfig, { category: 'egg' }>) {
-  const requiredFragments = getEggRequiredFragments(item);
-  return requiredFragments.length > 0 && requiredFragments.every((fragment) => getOwnedInventoryQuantity(inventory, fragment.itemId) >= fragment.amount);
+function getHabitatLabel(habitatId: string) {
+  return ({ 'green-forest': '초록 숲', 'sparkle-cave': '반짝 동굴', 'volcano-island': '화산섬', 'secret-land': '비밀의 땅' } as Record<string, string>)[habitatId] ?? habitatId;
 }

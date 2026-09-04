@@ -7,7 +7,9 @@ import {
   LAVA_VALLEY_COIN_PATTERNS,
   LAVA_VALLEY_COLLECTIBLE_LANES,
   LAVA_VALLEY_ENTRY_COST,
+  LAVA_VALLEY_DURATION_SECONDS,
   LAVA_VALLEY_REWARDS_CONFIG,
+  LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE,
   LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID,
   MAX_RARE_FRAGMENTS_PER_RUN,
   lavaValleyRetryRequiresEntry,
@@ -64,8 +66,9 @@ test('코인 배율은 보상에만 적용하고 희귀조각은 판당 2개로 
   assert.equal(result.state.inventory.find((item) => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 2);
 });
 
-test('용암계곡은 90초이며 한 판 드롭 계획은 판매 중인 비알 아이템 1~2개만 포함한다', () => {
-  assert.equal(LAVA_VALLEY_REWARDS_CONFIG.gameDurationSeconds, 90);
+test('용암계곡은 120초이며 한 판 드롭 계획은 판매 중인 비알 아이템 1~2개만 포함한다', () => {
+  assert.equal(LAVA_VALLEY_DURATION_SECONDS, 120);
+  assert.equal(LAVA_VALLEY_REWARDS_CONFIG.gameDurationSeconds, LAVA_VALLEY_DURATION_SECONDS);
   for (let index = 0; index < 200; index += 1) {
     const plan = createLavaValleyShopDropPlan();
     assert.ok(plan.length >= 1 && plan.length <= 2);
@@ -74,6 +77,23 @@ test('용암계곡은 90초이며 한 판 드롭 계획은 판매 중인 비알 
     assert.ok(plan.every((drop) => itemConfigs.some((item) => item.id === drop.itemId && item.category === drop.category)));
     if (plan.length === 2) assert.ok(plan[1].spawnAtSeconds - plan[0].spawnAtSeconds >= 20);
   }
+});
+
+test('희귀조각은 수집물 판정당 2%이며 획득 보상은 판당 2개로 제한한다', () => {
+  assert.equal(LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE, 0.02);
+  assert.equal(MAX_RARE_FRAGMENTS_PER_RUN, 2);
+});
+
+test('상점 드롭 개수는 늘리지 않고 120초 진행률에 맞춘 시간대에 배치한다', () => {
+  const oneDrop = createLavaValleyShopDropPlan(() => 0);
+  assert.equal(oneDrop.length, 1);
+  assert.equal(oneDrop[0].spawnAtSeconds, 25 * (120 / 90));
+
+  const randomValues = [0.75, 0, 0, 0, 0, 0, 0];
+  const twoDrops = createLavaValleyShopDropPlan(() => randomValues.shift() ?? 0);
+  assert.equal(twoDrops.length, 2);
+  assert.equal(twoDrops[0].spawnAtSeconds, 20 * (120 / 90));
+  assert.equal(twoDrops[1].spawnAtSeconds, 55 * (120 / 90));
 });
 
 test('상점 아이템 카테고리 선택은 장기적으로 약 70:30이다', () => {

@@ -27,10 +27,12 @@ import {
 } from '../../assets/pet/mydino';
 import {
   shopItemEggForestRare,
-  shopItemEggGreen,
-  shopItemEggLegendary,
+  eggCommon,
+  eggLegendary,
+  eggRare,
+  eggSpecial,
   shopItemEggOcean,
-  shopItemEggSparkle,
+  shopItemEggLegacyLegendary,
   shopItemEggVolcanoRare,
   shopItemHatchRareFragment,
   shopItemHatchSparkleEnergy,
@@ -42,12 +44,16 @@ type InventoryItemState = { itemId: string; quantity: number };
 type HatchInventoryItem = { config: HatchItemConfig; quantity: number };
 
 const eggImages: Readonly<Record<string, string>> = {
-  'green-starter-egg': shopItemEggGreen,
-  'rare-spark-egg': shopItemEggSparkle,
+  'green-starter-egg': eggCommon,
+  'rare-spark-egg': eggSpecial,
+  'rare-egg': eggRare,
   'green-forest-rare-egg': shopItemEggForestRare,
   'volcano-island-rare-egg': shopItemEggVolcanoRare,
   'ocean-blue-egg': shopItemEggOcean,
-  'legend-egg': shopItemEggLegendary,
+  'legend-egg': eggLegendary,
+  'sparkle-cave-rare-egg': shopItemEggOcean,
+  'secret-land-rare-egg': shopItemEggLegacyLegendary,
+  'legacy-legend-rare-egg': shopItemEggLegacyLegendary,
 };
 
 const hatchItemImages: Readonly<Record<string, string>> = {
@@ -358,15 +364,15 @@ function groupOwnedEggs(eggs: OwnedEgg[], activeEggId: string | null) {
 }
 
 function getEggCategory(egg: OwnedEgg): EggCategory {
-  return egg.eggCategory ?? getEggItemConfig(egg.eggItemId)?.eggCategory ?? (egg.rarity === 'rare' ? 'rare' : egg.rarity === 'special' ? 'special' : 'normal');
+  return egg.eggCategory ?? getEggItemConfig(egg.eggItemId)?.eggCategory ?? (egg.rarity === 'legendary' ? 'legendary' : egg.rarity === 'rare' ? 'rare' : egg.rarity === 'special' ? 'special' : 'normal');
 }
 
 function getEggImage(egg: OwnedEgg) {
-  return eggImages[egg.eggItemId] ?? (getEggCategory(egg) === 'normal' ? shopItemEggGreen : getEggCategory(egg) === 'rare' ? shopItemEggForestRare : shopItemEggSparkle);
+  return eggImages[egg.eggItemId] ?? (getEggCategory(egg) === 'normal' ? eggCommon : getEggCategory(egg) === 'rare' ? eggRare : getEggCategory(egg) === 'legendary' ? eggLegendary : eggSpecial);
 }
 
 function getRarityLabel(rarity: EggState['rarity']) {
-  return rarity === 'normal' ? '일반' : rarity === 'rare' ? '희귀' : '특별';
+  return rarity === 'normal' || rarity === 'common' ? '일반' : rarity === 'rare' ? '희귀' : rarity === 'legendary' ? '전설' : '특별';
 }
 
 function clampProgress(value: number) {

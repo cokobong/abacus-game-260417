@@ -23,7 +23,8 @@ export function getHatchCandidates(egg: OwnedEgg | null, ownedDinosaurs: OwnedDi
   const eggCategory = getEggCategoryForOwnedEgg(egg);
   const eggHabitatId = getEggHabitatForOwnedEgg(egg);
   const implementedSpecies = getImplementedSpecies(speciesPool);
-  const matchingSpecies = sortSpeciesByCollectionOrder(implementedSpecies.filter((species) => isSpeciesMatchForEgg(species, eggCategory, eggHabitatId)));
+  const linkedSpeciesId = getEggItemConfig(egg.eggItemId)?.linkedSpeciesId;
+  const matchingSpecies = sortSpeciesByCollectionOrder(implementedSpecies.filter((species) => linkedSpeciesId ? species.speciesId === linkedSpeciesId : isSpeciesMatchForEgg(species, eggCategory, eggHabitatId)));
   const ownedSpeciesIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));
 
   return {
@@ -75,7 +76,16 @@ function canBuyEggByScope(eggCategory: EggCategory, eggHabitatId: DinosaurHabita
 }
 
 export function canBuyEggItem(item: EggItemConfig, ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], speciesPool: DinosaurSpecies[] = dinosaurSpecies) {
-  return canBuyEggByScope(item.eggCategory, item.eggHabitatId, ownedDinosaurs, ownedEggs, speciesPool);
+  if (!item.linkedSpeciesId) return canBuyEggByScope(item.eggCategory, item.eggHabitatId, ownedDinosaurs, ownedEggs, speciesPool);
+  const linkedSpecies = getImplementedSpecies(speciesPool).find((species) => species.speciesId === item.linkedSpeciesId);
+  const alreadyOwned = ownedDinosaurs.some((dinosaur) => dinosaur.speciesId === item.linkedSpeciesId);
+  const ownedEggCountByCategory = getOwnedEggCountByCategory(item.eggCategory, ownedEggs);
+  const hasEggInCategory = ownedEggCountByCategory > 0;
+  const remainingCandidateCount = linkedSpecies && !alreadyOwned ? 1 : 0;
+  const ownedThisEggCount = ownedEggs.filter((egg) => egg.eggItemId === item.id).length;
+  const purchaseLimitReached = ownedThisEggCount >= (item.purchaseLimit ?? 1);
+  const availablePurchaseCount = hasEggInCategory || purchaseLimitReached ? 0 : remainingCandidateCount;
+  return { eggCategory: item.eggCategory, eggHabitatId: item.eggHabitatId, remainingCandidateCount, ownedEggCountByCategory, hasEggInCategory, availablePurchaseCount, canBuyMore: availablePurchaseCount > 0 };
 }
 
 export function getEggCategoryForOwnedEgg(egg: OwnedEgg): EggCategory {
@@ -101,6 +111,7 @@ function sortSpeciesByCollectionOrder(species: DinosaurSpecies[]) {
 }
 
 function getLegacyEggCategory(egg: OwnedEgg): EggCategory {
+  if (egg.eggType === 'legendary') return 'legendary';
   if (egg.eggType === 'rare-spark' || egg.eggType === 'special') return 'special';
   if (egg.eggType === 'rare') return 'rare';
   return 'normal';
@@ -108,6 +119,7 @@ function getLegacyEggCategory(egg: OwnedEgg): EggCategory {
 
 function isSpeciesMatchForEgg(species: DinosaurSpecies, eggCategory: EggCategory, eggHabitatId?: DinosaurHabitatId) {
   if (eggHabitatId && species.habitat !== eggHabitatId) return false;
+  if (eggCategory === 'legendary') return species.rarity === 'legendary';
   if (species.eggCategory === eggCategory) return true;
   if (eggCategory === 'normal') return species.unlockSource === 'normal-egg';
   if (eggCategory === 'special') return species.unlockSource === 'special-egg';

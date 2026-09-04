@@ -3,7 +3,7 @@ import type { DinosaurDiet, DinosaurHabitatId } from '../data/dinosaurSpecies';
 
 export type ItemCategory = 'food' | 'costume' | 'dinosaur' | 'egg' | 'hatchItem' | 'toy' | 'misc';
 export type DinosaurStatEffect = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
-export type EggCategory = 'normal' | 'special' | 'rare';
+export type EggCategory = 'normal' | 'special' | 'rare' | 'legendary';
 
 interface BaseItemConfig {
   id: string;
@@ -41,10 +41,12 @@ export interface EggRequiredFragmentConfig {
 
 export interface EggItemConfig extends BaseItemConfig {
   category: 'egg';
-  rarity: 'normal' | 'rare' | 'special';
+  rarity: 'normal' | 'common' | 'rare' | 'special' | 'legendary';
   eggType: string;
   eggCategory: EggCategory;
   eggHabitatId?: DinosaurHabitatId;
+  linkedSpeciesId?: string;
+  purchaseLimit?: number;
   requiredFragmentId?: string;
   requiredFragmentAmount?: number;
   requiredFragments?: EggRequiredFragmentConfig[];
@@ -265,7 +267,7 @@ export const itemConfigs: ItemConfig[] = [
     price: 500,
     description: '일반 공룡을 만날 수 있는 기본 알이에요.',
     sortOrder: 20,
-    rarity: 'normal',
+    rarity: 'common',
     eggType: 'normal',
     eggCategory: 'normal',
   },
@@ -292,89 +294,29 @@ export const itemConfigs: ItemConfig[] = [
     eggCategory: 'special',
   },
   {
-    id: 'green-forest-rare-egg',
-    name: '초록 숲 희귀알',
+    id: 'rare-egg',
+    name: '희귀 알',
     category: 'egg',
-    price: 500,
-    description: '초록 숲에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
+    price: 1200,
+    description: '아직 만나지 못한 희귀 공룡을 만날 수 있는 알이에요.',
     sortOrder: 31,
     rarity: 'rare',
     eggType: 'rare',
     eggCategory: 'rare',
-    eggHabitatId: 'green-forest',
     requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 5,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 5 }],
-  },
-  {
-    id: 'sparkle-cave-rare-egg',
-    name: '반짝 동굴 희귀알',
-    category: 'egg',
-    price: 0,
-    description: '반짝 동굴에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
-    sortOrder: 32,
-    rarity: 'rare',
-    eggType: 'rare',
-    eggCategory: 'rare',
-    eggHabitatId: 'sparkle-cave',
-    requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 10,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
-  },
-  {
-    id: 'volcano-island-rare-egg',
-    name: '화산섬 희귀알',
-    category: 'egg',
-    price: 900,
-    description: '화산섬에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
-    sortOrder: 33,
-    rarity: 'rare',
-    eggType: 'rare',
-    eggCategory: 'rare',
-    eggHabitatId: 'volcano-island',
-    requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 15,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 15 }],
-  },
-  {
-    id: 'secret-land-rare-egg',
-    name: '비밀의 땅 희귀알',
-    category: 'egg',
-    price: 0,
-    description: '비밀의 땅에서 만날 희귀 공룡을 기대하게 만드는 알이에요.',
-    sortOrder: 34,
-    rarity: 'rare',
-    eggType: 'rare',
-    eggCategory: 'rare',
-    eggHabitatId: 'secret-land',
-    requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 20,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 20 }],
-  },
-  {
-    id: 'ocean-blue-egg',
-    name: '바다빛 알',
-    category: 'egg',
-    price: 700,
-    description: '바다빛을 닮은 희귀한 알이에요.',
-    sortOrder: 35,
-    rarity: 'rare',
-    eggType: 'rare',
-    eggCategory: 'rare',
-    requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 10,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
+    requiredFragmentAmount: 3,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 3 }],
   },
   {
     id: 'legend-egg',
     name: '전설 알',
     category: 'egg',
-    price: 1200,
-    description: '아주 특별한 공룡을 기대하게 만드는 전설 알이에요.',
-    sortOrder: 36,
-    rarity: 'rare',
-    eggType: 'rare',
-    eggCategory: 'rare',
+    price: 0,
+    description: '도감 카테고리를 완성해 전설 공룡을 깨우는 알이에요.',
+    sortOrder: 32,
+    rarity: 'legendary',
+    eggType: 'legendary',
+    eggCategory: 'legendary',
     requiredFragmentId: 'rare-egg-fragment',
     requiredFragmentAmount: 10,
     requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
@@ -414,6 +356,16 @@ export const itemConfigs: ItemConfig[] = [
   },
 ];
 
+/** Read-only compatibility records for already-owned regional rare eggs. */
+export const legacyEggItemConfigs: EggItemConfig[] = [
+  { id: 'green-forest-rare-egg', name: '초록 숲 희귀알', category: 'egg', price: 500, description: '기존 보유 알', sortOrder: 101, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'green-forest', linkedSpeciesId: 'leafcera', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 5 }] },
+  { id: 'sparkle-cave-rare-egg', name: '반짝 동굴 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 102, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'sparkle-cave', linkedSpeciesId: 'crystalo', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }] },
+  { id: 'volcano-island-rare-egg', name: '화산섬 희귀알', category: 'egg', price: 900, description: '기존 보유 알', sortOrder: 103, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'volcano-island', linkedSpeciesId: 'volcanodon', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 15 }] },
+  { id: 'ocean-blue-egg', name: '바다빛 알', category: 'egg', price: 700, description: '기존 보유 알', sortOrder: 104, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'sparkle-cave', linkedSpeciesId: 'crystalo', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }] },
+  { id: 'secret-land-rare-egg', name: '비밀의 땅 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 105, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', linkedSpeciesId: 'starano', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 20 }] },
+  { id: 'legacy-legend-rare-egg', name: '전설 알 (구형)', category: 'egg', price: 1200, description: '기존 보유 알', sortOrder: 106, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', linkedSpeciesId: 'starano', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }] },
+];
+
 export function getItemConfig(itemId: string) {
   return itemConfigs.find((item) => item.id === itemId) ?? null;
 }
@@ -424,7 +376,7 @@ export function getFoodItemConfig(itemId: string) {
 }
 
 export function getEggItemConfig(itemId: string) {
-  const item = getItemConfig(itemId);
+  const item = getItemConfig(itemId) ?? legacyEggItemConfigs.find((candidate) => candidate.id === itemId) ?? null;
   return item?.category === 'egg' ? item : null;
 }
 

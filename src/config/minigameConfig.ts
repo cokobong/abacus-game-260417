@@ -12,8 +12,10 @@ export const LAVA_VALLEY_ENTRY_COST = MINIGAME_ENTRY_COST['lava-stepping-stones'
 export const SKY_ISLAND_ENTRY_COST = MINIGAME_ENTRY_COST['sky-number-clouds']!;
 export const SKY_ISLAND_MOCK_MODE = true;
 export const LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID = 'rare-egg-fragment';
-export const LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE = 0.06;
+export const LAVA_VALLEY_DURATION_SECONDS = 120;
+export const LAVA_VALLEY_RARE_FRAGMENT_SPAWN_CHANCE = 0.02;
 export const MAX_RARE_FRAGMENTS_PER_RUN = 2;
+const LAVA_VALLEY_TIMING_REFERENCE_SECONDS = 90;
 export const LAVA_VALLEY_COLLECTIBLE_LANES = { low: 4, high: 18 } as const;
 export const LAVA_VALLEY_COIN_PATTERNS = [
   [LAVA_VALLEY_COLLECTIBLE_LANES.low, LAVA_VALLEY_COLLECTIBLE_LANES.low, LAVA_VALLEY_COLLECTIBLE_LANES.low],
@@ -22,7 +24,7 @@ export const LAVA_VALLEY_COIN_PATTERNS = [
 ] as const;
 export type LavaValleyEndReason = 'completed' | 'hp_depleted' | 'manual_restart' | 'exit';
 export const LAVA_VALLEY_REWARDS_CONFIG = {
-  gameDurationSeconds: 90,
+  gameDurationSeconds: LAVA_VALLEY_DURATION_SECONDS,
   shopItemDrops: {
     minPerRun: 1,
     maxPerRun: 2,
@@ -89,7 +91,8 @@ export function normalizeLavaValleyRewards(rewards: MinigameRunRewards): Minigam
 
 export function createLavaValleyShopDropPlan(random: () => number = Math.random): LavaValleyShopDropPlanItem[] {
   const count = random() < 0.5 ? LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.minPerRun : LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.maxPerRun;
-  const timingRanges = count === 1 ? [[25, 65]] : [[20, 35], [55, 75]];
+  const durationScale = LAVA_VALLEY_DURATION_SECONDS / LAVA_VALLEY_TIMING_REFERENCE_SECONDS;
+  const timingRanges = (count === 1 ? [[25, 65]] : [[20, 35], [55, 75]]).map(([min, max]) => [min * durationScale, max * durationScale]);
   return timingRanges.map(([min, max], index) => {
     const category: LavaValleyShopDropCategory = random() < LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.categoryWeights.food ? 'food' : 'hatchItem';
     const pool = LAVA_VALLEY_SHOP_DROP_POOLS[category];

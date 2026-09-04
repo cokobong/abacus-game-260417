@@ -251,9 +251,9 @@ export interface OwnedDinosaur {
 export interface EggState {
   id: Id;
   name: string;
-  rarity: 'normal' | 'rare' | 'special';
+  rarity: 'normal' | 'common' | 'rare' | 'special' | 'legendary';
   eggType: string;
-  eggCategory?: 'normal' | 'special' | 'rare';
+  eggCategory?: 'normal' | 'special' | 'rare' | 'legendary';
   hatchProgress: number;
   lastHatchedDinosaurName?: string;
   lastHatchedDinosaurRarity?: OwnedDinosaur['rarity'];

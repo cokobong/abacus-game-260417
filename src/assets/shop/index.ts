@@ -43,12 +43,14 @@ export const shopFoodItemImages: Readonly<Record<string, string>> = {
   'strong-meat': shopItemFoodToughMeat,
   'sweet-berry': shopItemFoodSweetBerry,
 };
-export { default as shopItemEggGreen } from './items/eggs/shop_item_egg_green.png';
-export { default as shopItemEggSparkle } from './items/eggs/shop_item_egg_sparkle.png';
-export { default as shopItemEggForestRare } from './items/eggs/shop_item_egg_forest_rare.png';
-export { default as shopItemEggVolcanoRare } from './items/eggs/shop_item_egg_volcano_rare.png';
-export { default as shopItemEggOcean } from './items/eggs/shop_item_egg_ocean.png';
-export { default as shopItemEggLegendary } from './items/eggs/shop_item_egg_legendary.png';
+export { default as eggCommon } from './items/eggs/egg_common.png';
+export { default as eggSpecial } from './items/eggs/egg_special.png';
+export { default as eggRare } from './items/eggs/egg_rare.png';
+export { default as eggLegendary } from './items/eggs/egg_legendary.png';
+export { default as shopItemEggForestRare } from './items/eggs/old/shop_item_egg_forest_rare.png';
+export { default as shopItemEggVolcanoRare } from './items/eggs/old/shop_item_egg_volcano_rare.png';
+export { default as shopItemEggOcean } from './items/eggs/old/shop_item_egg_ocean.png';
+export { default as shopItemEggLegacyLegendary } from './items/eggs/old/shop_item_egg_legendary.png';
 import shopItemHatchWarmStone from './items/hatch/shop_item_hatch_warm_stone.png';
 import shopItemHatchWarmBlanket from './items/hatch/shop_item_hatch_warm_blanket.png';
 import shopItemHatchSparkleEnergy from './items/hatch/shop_item_hatch_sparkle_energy.png';

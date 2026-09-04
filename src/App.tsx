@@ -47,7 +47,8 @@ import {
   TRAINING_INPUT_MODE_STORAGE_KEY,
 } from './utils/gameStorage';
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
-import { canBuyEggItem, getEggCategoryForOwnedEgg, getHatchCandidates, selectHatchCandidate } from './utils/hatchCandidates';
+import { getEggCategoryForOwnedEgg, getHatchCandidates, selectHatchCandidate } from './utils/hatchCandidates';
+import { getEggPurchaseState } from './utils/eggPurchaseState';
 import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRewardResult } from './utils/trainingRewards';
 import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
@@ -466,8 +467,10 @@ function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg
   const normalizedEggs: OwnedEgg[] = sourceEggs
     .filter((egg): egg is OwnedEgg => isRecord(egg) && typeof egg.id === 'string')
     .map((egg) => {
-      const eggItemId = typeof egg.eggItemId === 'string' ? egg.eggItemId : egg.eggType === 'rare-spark' || egg.eggType === 'special' ? 'rare-spark-egg' : 'green-starter-egg';
-      const eggConfig = getEggItemConfig(eggItemId);
+      const rawEggItemId = typeof egg.eggItemId === 'string' ? egg.eggItemId : egg.eggType === 'rare-spark' || egg.eggType === 'special' ? 'rare-spark-egg' : 'green-starter-egg';
+      const storedEggItemId = rawEggItemId === 'legend-egg' && (egg.eggCategory === 'rare' || egg.eggType === 'rare') ? 'legacy-legend-rare-egg' : rawEggItemId;
+      const eggConfig = getEggItemConfig(storedEggItemId);
+      const eggItemId = eggConfig?.id ?? storedEggItemId;
 
       return {
         ...egg,
@@ -490,6 +493,7 @@ function getEggCategoryLabel(category: NonNullable<OwnedEgg['eggCategory']>) {
     normal: '일반알',
     special: '특수알',
     rare: '희귀알',
+    legendary: '전설알',
   };
   return labels[category];
 }
@@ -1784,14 +1788,23 @@ export default function App() {
     }
 
     if (item.category === 'egg') {
-      const eggAvailability = canBuyEggItem(item, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool);
-      if (eggAvailability.hasEggInCategory) {
+      const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool);
+      if (purchaseState.status === 'soldOut') {
+        setShopFeedback('이 알에서 만날 수 있는 공룡을 이미 만났어요. 품절된 알이에요.');
+        return;
+      }
+      if (purchaseState.status === 'locked') {
         setShopFeedback(`${getEggCategoryLabel(item.eggCategory)}은 이미 부화장에 있어요. 부화 후 다음 알을 준비할 수 있어요.`);
         return;
       }
-
-      if (!eggAvailability.canBuyMore) {
-        setShopFeedback('이 알에서 만날 수 있는 공룡을 모두 만났어요. 다른 알을 선택해보세요.');
+      if (purchaseState.status === 'insufficientCoins') {
+        setShopFeedback(`코인이 부족해요. 내 코인 ${gameState.player.coins.toLocaleString()} · 필요 ${item.price.toLocaleString()}`);
+        return;
+      }
+      if (purchaseState.status === 'insufficientFragments') {
+        const missingFragment = getEggRequiredFragments(item).find((fragment) => (gameState.inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) < fragment.amount);
+        const currentQuantity = missingFragment ? gameState.inventory.find((entry) => entry.itemId === missingFragment.itemId)?.quantity ?? 0 : 0;
+        setShopFeedback(missingFragment ? `공통 희귀알 조각이 부족해요. 내 조각 ${currentQuantity}개 · 필요 ${missingFragment.amount}개 · 부족 ${missingFragment.amount - currentQuantity}개` : '필요한 재료가 부족해요.');
         return;
       }
     }
@@ -1799,20 +1812,6 @@ export default function App() {
     const requiredEggFragments = item.category === 'egg' ? getEggRequiredFragments(item) : [];
     if (item.category === 'egg' && item.eggCategory === 'rare' && requiredEggFragments.length > 0) {
       const requiredFragments = requiredEggFragments;
-      const missingFragment = requiredFragments.find((fragment) => (gameState.inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) < fragment.amount);
-
-      if (gameState.player.coins < item.price) {
-        setShopFeedback(`코인이 부족해요. 내 코인 ${gameState.player.coins.toLocaleString()} · 필요 ${item.price.toLocaleString()}`);
-        return;
-      }
-
-      if (missingFragment) {
-        const currentFragmentQuantity = gameState.inventory.find((entry) => entry.itemId === missingFragment.itemId)?.quantity ?? 0;
-        const missingFragmentAmount = Math.max(0, missingFragment.amount - currentFragmentQuantity);
-        setShopFeedback(`공통 희귀알 조각이 부족해요. 내 조각 ${currentFragmentQuantity}개 · 필요 ${missingFragment.amount}개 · 부족 ${missingFragmentAmount}개`);
-        return;
-      }
-
       const newEgg = createOwnedEggFromItem(item.id);
       if (!newEgg) {
         setShopFeedback(`알 정보를 찾지 못했어요. itemId: ${item.id}`);

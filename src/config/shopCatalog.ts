@@ -1,6 +1,6 @@
 export const SHOP_CATALOG = {
   food: ['basic-meat', 'soft-berry', 'leaf-snack', 'dino-cookie', 'fish-bite', 'berry-basket', 'strong-meat', 'sweet-berry'],
-  egg: ['green-starter-egg', 'rare-spark-egg', 'green-forest-rare-egg', 'volcano-island-rare-egg', 'ocean-blue-egg', 'legend-egg'],
+  egg: ['green-starter-egg', 'rare-spark-egg', 'rare-egg', 'legend-egg'],
   hatchItem: ['hatch-warm-stone', 'hatch-warm-blanket', 'hatch-spark-energy'],
 } as const;
 
