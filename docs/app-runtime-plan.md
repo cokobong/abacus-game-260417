@@ -389,3 +389,9 @@ interface AdventureState {
 이 프로젝트는 단순 웹페이지가 아니라, 터치 노트북에서 고정적으로 실행하는 주판 훈련용 로컬 웹앱이다.
 초기에는 `localStorage` 기반으로 게임 상태를 저장하고, 앱을 껐다 켜도 모험/부화/공룡 성장/보유 아이템이 이어지도록 설계한다.
 나중에 PWA로 전환하면 설치형 앱처럼 사용할 수 있다.
+## Local Dev Port Policy
+
+- Run the local dev server with `npm run dev`.
+- Open the app at `http://localhost:3000`.
+- Port `3000` is the only supported local dev server port for this project.
+- Vite must not auto-fallback to another port; if port `3000` is busy, stop the existing process and run `npm run dev` again.

@@ -1,0 +1,87 @@
+import { growthConfig } from '../config/growthConfig';
+import type { DinosaurCharacterImages } from '../assets/dex/dinosaurs';
+import type { DinosaurGrowthStage, OwnedDinosaur } from '../types/game';
+
+export function getExpToNextLevel(level: number) {
+  return 20 + Math.max(1, level) * 5;
+}
+
+export function getGrowthStageForLevel(level: number): DinosaurGrowthStage {
+  return growthConfig.growthStageByLevel.find((stage) => level >= stage.minLevel)?.stage ?? 'baby';
+}
+
+export function getGrowthStageLabel(stage: DinosaurGrowthStage) {
+  return growthConfig.growthStageByLevel.find((entry) => entry.stage === stage)?.label ?? '아기';
+}
+
+export function getGrowthStageReaction(stage: DinosaurGrowthStage) {
+  return growthConfig.growthStageByLevel.find((entry) => entry.stage === stage)?.reaction ?? '조금씩 자라고 있어요!';
+}
+
+export function getDinosaurImageForGrowthStage(
+  images: DinosaurCharacterImages | undefined,
+  stage: DinosaurGrowthStage,
+  fallback?: string,
+) {
+  if (!images) return fallback;
+  if (stage === 'adult') return images.adult || images.youth || images.baby || fallback;
+  if (stage === 'child' || stage === 'teen') return images.youth || images.baby || images.adult || fallback;
+  return images.baby || images.youth || images.adult || fallback;
+}
+
+export function getMaxStaminaForLevel(level: number) {
+  return growthConfig.baseMaxStamina + Math.max(0, level - 1) * growthConfig.maxStaminaPerLevel;
+}
+
+export function getStaminaRecoveryMultiplier(happiness: number) {
+  return growthConfig.staminaRecoveryMultiplierByHappiness.find((entry) => happiness >= entry.minHappiness)?.multiplier ?? 1;
+}
+
+export function getAdjustedStaminaRecovery(baseRecovery: number, happiness: number) {
+  return Math.round(baseRecovery * getStaminaRecoveryMultiplier(happiness));
+}
+
+// Dinosaur EXP is stored as raw points. Percentages are derived only by UI
+// meters as rawExp / expToNextLevel * 100.
+export function applyDinosaurExp(dinosaur: OwnedDinosaur, gainedRawExp: number): OwnedDinosaur {
+  let level = Math.min(20, Math.max(1, dinosaur.level ?? 1));
+  let rawExp = Math.max(0, (dinosaur.exp ?? 0) + gainedRawExp);
+  let expToNextLevel = dinosaur.expToNextLevel ?? getExpToNextLevel(level);
+
+  while (rawExp >= expToNextLevel && level < 20) {
+    rawExp -= expToNextLevel;
+    level += 1;
+    expToNextLevel = getExpToNextLevel(level);
+  }
+
+  if (level >= 20) {
+    level = 20;
+    rawExp = 0;
+    expToNextLevel = getExpToNextLevel(20);
+  }
+
+  const maxStamina = getMaxStaminaForLevel(level);
+
+  return {
+    ...dinosaur,
+    level,
+    exp: rawExp,
+    expToNextLevel,
+    growthStage: getGrowthStageForLevel(level),
+    maxStamina,
+    stamina: clampStat(dinosaur.stamina ?? growthConfig.defaultStamina, 0, maxStamina),
+  };
+}
+
+export function clampHappiness(value: number) {
+  return clampStat(value, growthConfig.statBounds.happiness.min, growthConfig.statBounds.happiness.max);
+}
+
+export function clampStamina(value: number, maxStamina = growthConfig.statBounds.stamina.max) {
+  return clampStat(value, growthConfig.statBounds.stamina.min, maxStamina);
+}
+
+function clampStat(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
