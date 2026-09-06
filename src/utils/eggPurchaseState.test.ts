@@ -34,13 +34,12 @@ test('희귀 알은 pool empty를 재화 부족보다 먼저 품절 판정한다
   assert.equal(getEggPurchaseState(item, 1200, [{ itemId: 'rare-egg-fragment', quantity: 3 }], [], []).status, 'available');
 });
 
-test('legacy 지역 희귀알은 판매하지 않지만 기존 linked creature를 그대로 부화한다', () => {
+test('legacy 지역 희귀알은 판매 카탈로그에 노출되지 않는다', () => {
   assert.ok(legacyEggItemConfigs.every((item) => !SHOP_CATALOG.egg.includes(item.id as never)));
-  for (const item of legacyEggItemConfigs) assert.deepEqual(getHatchCandidates(ownedEgg(item.id), []).candidates.map((species) => species.speciesId), [item.linkedSpeciesId]);
 });
 
 test('전설 도감 조건은 non-legendary 수에 맞춰 5 이하로 clamp하고 중복을 막는다', () => {
-  const base = dinosaurSpecies.filter((species) => species.habitat === 'green-forest').slice(0, 3);
+  const base = dinosaurSpecies.filter((species) => species.habitat === 'volcano-island').slice(0, 3);
   const legendary: DinosaurSpecies = { ...base[0], speciesId: 'forest-legend-test', displayName: '숲 전설', name: '숲 전설', defaultName: '숲 전설', rarity: 'legendary', starterSelectable: false };
   const pool = [...base, legendary];
   assert.equal(getLegendaryCategoryStates([], pool)[0].required, 3);
@@ -48,7 +47,3 @@ test('전설 도감 조건은 non-legendary 수에 맞춰 5 이하로 clamp하�
   assert.equal(getLegendaryCategoryStates([...base.map((species) => ownedDinosaur(species.speciesId)), ownedDinosaur(legendary.speciesId)], pool)[0].status, 'completed');
 });
 
-test('직렬화 후에도 legacy eggItemId와 연결 공룡이 유지된다', () => {
-  const restored = JSON.parse(JSON.stringify(ownedEgg('ocean-blue-egg'))) as OwnedEgg;
-  assert.equal(getHatchCandidates(restored, []).candidates[0]?.speciesId, 'crystalo');
-});

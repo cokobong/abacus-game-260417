@@ -57,7 +57,7 @@ export function DinosaurRoomScreen({
 
   return (
     <div className="pet-screen">
-      <img src={habitatBackgroundAssets[activeSpecies?.habitat ?? 'green-forest']} alt="" className="pet-screen__background" />
+      <img src={habitatBackgroundAssets[activeSpecies?.habitat ?? 'volcano-island']} alt="" className="pet-screen__background" />
       <div className="pet-screen__shade" />
 
       <div className="dinosaur-room-content">

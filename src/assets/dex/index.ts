@@ -1,6 +1,8 @@
-import collectionBgCrystalCave from './collection/collection_bg_crystal_cave.png';
-import collectionBgGreenForest from './collection/collection_bg_green_forest.png';
-import collectionBgSecretLand from './collection/collection_bg_secret_land.png';
+import type { DinosaurHabitatId } from '../../data/dinosaurSpecies';
+import collectionBgDeepSea from './collection/collection_bg_deep_sea.png';
+import collectionBgSkyIsland from './collection/collection_bg_sky_island.png';
+import collectionBgIceContinent from './collection/collection_bg_ice_continent.png';
+import collectionBgAncientRuins from './collection/collection_bg_ancient_ruins.png';
 import collectionBgVolcanoIsland from './collection/collection_bg_volcano_island.png';
 import eggCommon from './eggs/egg_common.png';
 import eggRare from './eggs/egg_rare.png';
@@ -25,13 +27,16 @@ import silhouetteLongneck from './silhouettes/silhouette_longneck.png';
 import silhouetteTrex from './silhouettes/silhouette_trex.png';
 
 export const habitatBackgroundAssets = {
-  'green-forest': collectionBgGreenForest,
-  'sparkle-cave': collectionBgCrystalCave,
   'volcano-island': collectionBgVolcanoIsland,
-  'secret-land': collectionBgSecretLand,
-} as const;
+  'sky-island': collectionBgSkyIsland,
+  'ancient-ruins': collectionBgAncientRuins,
+  'deep-sea': collectionBgDeepSea,
+  'ice-continent': collectionBgIceContinent,
+} as const satisfies Record<DinosaurHabitatId, string>;
 
-const longneckSpeciesIds = new Set(['long-brachio', 'diplodocus', 'parasaurolophus']);
+export { collectionBgVolcanoIsland, collectionBgSkyIsland, collectionBgAncientRuins, collectionBgDeepSea, collectionBgIceContinent };
+
+const longneckSpeciesIds = new Set(['long-brachio', 'parasaurolophus']);
 const theropodSpeciesIds = new Set(['tiny-tyranno', 'allosaurus', 'dilophosaurus', 'carnotaurus', 'spinosaurus', 'swift-raptor', 'distortus-rex', 'indominus-rex']);
 
 export function getDexSilhouetteImage(speciesId: string) {
@@ -46,10 +51,11 @@ export const dexEggImages = {
 } as const;
 
 export const dexHabitatImages = {
-  'green-forest': habitatForest,
-  'sparkle-cave': habitatCave,
   'volcano-island': habitatVolcano,
-  'secret-land': habitatSecret,
+  'sky-island': habitatCave,
+  'ancient-ruins': habitatSecret,
+  'deep-sea': habitatCave,
+  'ice-continent': habitatForest,
 } as const;
 
 export const dexBookAssets = {
@@ -60,15 +66,17 @@ export const dexBookAssets = {
 } as const;
 
 export const dexHabitatBadgeImages = {
-  'green-forest': habitatForestBadge,
-  'sparkle-cave': habitatCaveBadge,
   'volcano-island': habitatVolcanoBadge,
-  'secret-land': habitatSecretBadge,
+  'sky-island': habitatCaveBadge,
+  'ancient-ruins': habitatSecretBadge,
+  'deep-sea': habitatCaveBadge,
+  'ice-continent': habitatForestBadge,
 } as const;
 
 export const dexTitleOrnamentImages = {
-  'green-forest': ornamentForestTitle,
-  'sparkle-cave': ornamentCaveTitle,
   'volcano-island': ornamentVolcanoTitle,
-  'secret-land': ornamentSecretTitle,
+  'sky-island': ornamentCaveTitle,
+  'ancient-ruins': ornamentSecretTitle,
+  'deep-sea': ornamentCaveTitle,
+  'ice-continent': ornamentForestTitle,
 } as const;

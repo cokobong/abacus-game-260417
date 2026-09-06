@@ -60,6 +60,7 @@
 
 .pet-screen__background {
   object-fit: cover;
+  object-position: center center;
   pointer-events: none;
 }
 

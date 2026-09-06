@@ -38,7 +38,7 @@ export const adventureAreas: AdventureArea[] = [
     },
     entryLabel: '무료 탐험',
     entryNote: '테스트용 무료 지역이에요.',
-    habitat: 'green-forest',
+    habitat: 'ancient-ruins',
     rewardCandidates: [
       { type: 'coin', amount: 20, label: '코인 +20' },
       { type: 'food', itemId: 'soft-berry', amount: 1, label: '말랑 열매 x1' },
@@ -56,7 +56,7 @@ export const adventureAreas: AdventureArea[] = [
     },
     entryLabel: '모험 티켓 1개 필요',
     entryNote: '티켓 지급 전까지 무료 테스트로 열려 있어요.',
-    habitat: 'sparkle-cave',
+    habitat: 'sky-island',
     unlockLabel: '훈련 1세트 후 입장 예정',
     rewardCandidates: [
       { type: 'hatchItem', itemId: 'hatch-warm-stone', amount: 1, label: '따뜻한 돌멩이 x1' },

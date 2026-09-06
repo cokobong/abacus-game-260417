@@ -2,6 +2,7 @@ import { getEggRequiredFragments, type EggItemConfig } from '../config/itemConfi
 import { dexHabitats, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../data/dinosaurSpecies';
 import type { OwnedDinosaur, OwnedEgg } from '../types/game';
 import { canBuyEggItem } from './hatchCandidates';
+import { getOwnedEggCount } from './eggMigration';
 
 export const LEGENDARY_REQUIRED_DISCOVERIES = 5;
 export const LEGENDARY_FRAGMENT_COST = 10;
@@ -40,7 +41,7 @@ export function getEggPurchaseState(
   ownedEggs: OwnedEgg[],
   speciesPool: DinosaurSpecies[] = dinosaurSpecies,
 ): EggPurchaseState {
-  const ownedQuantity = ownedEggs.filter((egg) => egg.eggItemId === item.id).length;
+  const ownedQuantity = getOwnedEggCount(ownedEggs, item.id);
   const availability = canBuyEggItem(item, ownedDinosaurs, ownedEggs, speciesPool);
   const purchaseLimitReached = ownedQuantity >= (item.purchaseLimit ?? Number.POSITIVE_INFINITY);
   const linkedSpeciesOwned = Boolean(item.linkedSpeciesId && ownedDinosaurs.some((dinosaur) => dinosaur.speciesId === item.linkedSpeciesId));

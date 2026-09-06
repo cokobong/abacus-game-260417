@@ -26,14 +26,10 @@ import {
   myDinoListButtonPressed,
 } from '../../assets/pet/mydino';
 import {
-  shopItemEggForestRare,
   eggCommon,
   eggLegendary,
   eggRare,
   eggSpecial,
-  shopItemEggOcean,
-  shopItemEggLegacyLegendary,
-  shopItemEggVolcanoRare,
   shopItemHatchRareFragment,
   shopItemHatchSparkleEnergy,
   shopItemHatchWarmBlanket,
@@ -47,13 +43,7 @@ const eggImages: Readonly<Record<string, string>> = {
   'green-starter-egg': eggCommon,
   'rare-spark-egg': eggSpecial,
   'rare-egg': eggRare,
-  'green-forest-rare-egg': shopItemEggForestRare,
-  'volcano-island-rare-egg': shopItemEggVolcanoRare,
-  'ocean-blue-egg': shopItemEggOcean,
   'legend-egg': eggLegendary,
-  'sparkle-cave-rare-egg': shopItemEggOcean,
-  'secret-land-rare-egg': shopItemEggLegacyLegendary,
-  'legacy-legend-rare-egg': shopItemEggLegacyLegendary,
 };
 
 const hatchItemImages: Readonly<Record<string, string>> = {

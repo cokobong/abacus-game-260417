@@ -49,6 +49,7 @@ import {
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
 import { getEggCategoryForOwnedEgg, getHatchCandidates, selectHatchCandidate } from './utils/hatchCandidates';
 import { getEggPurchaseState } from './utils/eggPurchaseState';
+import { EGG_SYSTEM_MIGRATION_VERSION, canonicalizeEggItemId, migrateEggSystemV2 } from './utils/eggMigration';
 import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRewardResult } from './utils/trainingRewards';
 import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
@@ -87,6 +88,8 @@ type CompletedTrainingSummary = TrainingRewardResult & {
   elapsedMs: number;
 };
 type GameState = {
+  eggSystemMigrationVersion?: number;
+  dexWorldMigrationVersion?: number;
   userProfile: UserProfile | null;
   player: { coins: number };
   selectedDinosaurId: string;
@@ -274,9 +277,10 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   const rewardedTrainingSessionIds = getArrayValue<unknown>(state.rewardedTrainingSessionIds, []).filter((id): id is string => typeof id === 'string');
   const progressByLevel = normalizeProgressByLevel(state.progressByLevel);
   const progressByStage = normalizeProgressByStage(state.progressByStage);
-  const ownedEggs = normalizeOwnedEggs(state.ownedEggs, state.egg);
-  const activeEgg = getSelectedOwnedEgg(ownedEggs, state.activeEggId);
-  const activeEggId = activeEgg?.id ?? null;
+  const eggMigration = migrateEggSystemV2(normalizeOwnedEggs(state.ownedEggs, state.egg), state.activeEggId);
+  const ownedEggs = eggMigration.ownedEggs;
+  const activeEgg = getSelectedOwnedEgg(ownedEggs, eggMigration.activeEggId);
+  const activeEggId = eggMigration.activeEggId;
   const rareEggFragmentsFallback =
     (state as Partial<GameState> & { rareEggFragments?: unknown }).rareEggFragments ??
     (state as Partial<GameState> & { resources?: { rareEggFragments?: unknown } }).resources?.rareEggFragments;
@@ -302,6 +306,8 @@ function normalizeGameState(state: Partial<GameState>): GameState {
   return {
     ...defaultGameState,
     ...state,
+    eggSystemMigrationVersion: EGG_SYSTEM_MIGRATION_VERSION,
+    dexWorldMigrationVersion: 2,
     player: {
       ...defaultGameState.player,
       ...state.player,
@@ -468,9 +474,9 @@ function normalizeOwnedEggs(ownedEggs?: unknown, legacyEgg?: EggState): OwnedEgg
     .filter((egg): egg is OwnedEgg => isRecord(egg) && typeof egg.id === 'string')
     .map((egg) => {
       const rawEggItemId = typeof egg.eggItemId === 'string' ? egg.eggItemId : egg.eggType === 'rare-spark' || egg.eggType === 'special' ? 'rare-spark-egg' : 'green-starter-egg';
-      const storedEggItemId = rawEggItemId === 'legend-egg' && (egg.eggCategory === 'rare' || egg.eggType === 'rare') ? 'legacy-legend-rare-egg' : rawEggItemId;
-      const eggConfig = getEggItemConfig(storedEggItemId);
-      const eggItemId = eggConfig?.id ?? storedEggItemId;
+      const storedEggItemId = rawEggItemId;
+      const eggConfig = getEggItemConfig(canonicalizeEggItemId(storedEggItemId, egg));
+      const eggItemId = storedEggItemId;
 
       return {
         ...egg,

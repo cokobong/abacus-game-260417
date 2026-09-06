@@ -1,7 +1,7 @@
 import { CalendarDays, Heart, LockKeyhole, Search, Smile, Sparkles, Star, Utensils, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { dexHabitatBadgeImages, dexTitleOrnamentImages, getDexSilhouetteImage, habitatBackgroundAssets } from '../../assets/dex';
-import { dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
+import { dexHabitats, dexSpeciesSlotsPerHabitat, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../../data/dinosaurSpecies';
 import type { OwnedDinosaur } from '../../types/game';
 import { playSound } from '../../audio/audioManager';
 import { getDinosaurImageForGrowthStage, getGrowthStageForLevel, getGrowthStageLabel } from '../../utils/dinosaurGrowth';
@@ -13,33 +13,14 @@ export interface DexScreenProps {
   onGoToHatchery: () => void;
 }
 
-const habitatOrder: DinosaurHabitatId[] = ['green-forest', 'sparkle-cave', 'volcano-island', 'secret-land'];
+const habitatOrder: DinosaurHabitatId[] = dexHabitats;
 
 const habitatMeta: Record<DinosaurHabitatId, { label: string; shortLabel: string; lockedLabel: string; accent: string }> = {
-  'green-forest': {
-    label: '초록 숲 친구들',
-    shortLabel: '초록 숲',
-    lockedLabel: '숲속 친구들이 기다려요',
-    accent: 'from-lime-200 to-emerald-300 text-emerald-950',
-  },
-  'sparkle-cave': {
-    label: '반짝 동굴 친구들',
-    shortLabel: '반짝 동굴',
-    lockedLabel: '동굴 안에서 반짝여요',
-    accent: 'from-violet-100 to-sky-200 text-violet-950',
-  },
-  'volcano-island': {
-    label: '화산섬 친구들',
-    shortLabel: '화산섬',
-    lockedLabel: '따뜻한 돌길을 좋아해요',
-    accent: 'from-orange-100 to-amber-200 text-orange-950',
-  },
-  'secret-land': {
-    label: '비밀의 땅 친구들',
-    shortLabel: '비밀의 땅',
-    lockedLabel: '비밀 지도에 숨어 있어요',
-    accent: 'from-slate-100 to-emerald-100 text-slate-800',
-  },
+  'volcano-island': { label: '🔥 화산섬 친구들', shortLabel: '🔥 화산섬', lockedLabel: '뜨거운 땅길을 좋아해요', accent: 'from-orange-100 to-amber-200 text-orange-950' },
+  'sky-island': { label: '☁ 하늘섬 친구들', shortLabel: '☁ 하늘섬', lockedLabel: '구름 너머에서 기다려요', accent: 'from-sky-100 to-violet-200 text-sky-950' },
+  'ancient-ruins': { label: '🏛 오래된 유적지 친구들', shortLabel: '🏛 유적지', lockedLabel: '오래된 유적에 숨어 있어요', accent: 'from-stone-100 to-amber-200 text-stone-800' },
+  'deep-sea': { label: '🌊 바다 친구들', shortLabel: '🌊 바다', lockedLabel: '깊은 바다를 준비 중이에요', accent: 'from-cyan-100 to-blue-200 text-blue-950' },
+  'ice-continent': { label: '❄ 얼음 친구들', shortLabel: '❄ 얼음', lockedLabel: '얼음 대륙을 준비 중이에요', accent: 'from-slate-50 to-cyan-100 text-slate-800' },
 };
 
 const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
@@ -51,7 +32,7 @@ const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
 };
 
 export function DexScreen({ ownedDinosaurs, discoveredSpeciesIds, onViewOwnedDinosaur, onGoToHatchery }: DexScreenProps) {
-  const [activeHabitat, setActiveHabitat] = useState<DinosaurHabitatId>('green-forest');
+  const [activeHabitat, setActiveHabitat] = useState<DinosaurHabitatId>('volcano-island');
   const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | null>(null);
   const uniqueOwnedDinosaurs = useMemo(() => getUniqueOwnedDinosaurs(ownedDinosaurs), [ownedDinosaurs]);
   const ownedBySpecies = useMemo(() => getOwnedDinosaurBySpecies(uniqueOwnedDinosaurs), [uniqueOwnedDinosaurs]);
@@ -98,13 +79,13 @@ function DexCategoryTabs({
   onSelectHabitat: (habitat: DinosaurHabitatId) => void;
 }) {
   return (
-    <nav className="encyclopedia-category-tabs mx-auto grid w-[min(94%,760px)] flex-none grid-cols-4 gap-[clamp(6px,1.4vw,12px)]" aria-label="도감 카테고리">
+    <nav className="encyclopedia-category-tabs mx-auto grid w-[min(98%,860px)] flex-none grid-cols-5 gap-[clamp(4px,1vw,10px)]" aria-label="도감 카테고리">
       {habitatOrder.map((habitat) => {
         const meta = habitatMeta[habitat];
         const speciesInHabitat = getSpeciesByHabitat(habitat);
         const discoveredCount = speciesInHabitat.filter((species) => isSpeciesDiscovered(species, discoveredSpeciesSet)).length;
         const isActive = habitat === activeHabitat;
-        const isLocked = discoveredCount === 0 && habitat !== 'green-forest';
+        const isLocked = discoveredCount === 0 && habitat !== 'volcano-island';
 
         return (
           <button
@@ -126,7 +107,7 @@ function DexCategoryTabs({
             </span>
             <span className="min-w-0">
               <span className="block truncate text-[clamp(11px,1.6vw,15px)]">{meta.shortLabel}</span>
-              <span className="mt-0.5 block text-[clamp(10px,1.35vw,13px)] text-stone-500">{discoveredCount} / {speciesInHabitat.length}</span>
+              <span className="mt-0.5 block text-[clamp(10px,1.35vw,13px)] text-stone-500">{discoveredCount} / {dexSpeciesSlotsPerHabitat}</span>
             </span>
           </button>
         );
@@ -158,7 +139,7 @@ function DexMainCollection({
           <img src={dexTitleOrnamentImages[habitat]} alt="" className="h-8 w-16 flex-none object-contain" />
           <h3 className="truncate text-[clamp(1.05rem,2.3dvh,1.5rem)] font-black text-emerald-950">{meta.label}</h3>
         </span>
-        <span className="flex-none rounded-full bg-lime-100 px-3 py-1 text-xs font-black text-emerald-800">{discoveredCount} / {speciesList.length}</span>
+        <span className="flex-none rounded-full bg-lime-100 px-3 py-1 text-xs font-black text-emerald-800">{discoveredCount} / {dexSpeciesSlotsPerHabitat}</span>
       </header>
 
       <div className="encyclopedia-card-area mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
@@ -172,10 +153,17 @@ function DexMainCollection({
               onSelect={() => onSelectSpecies(species.speciesId)}
             />
           ))}
+          {Array.from({ length: Math.max(0, dexSpeciesSlotsPerHabitat - speciesList.length) }, (_, index) => (
+            <EmptyDexSlot key={`empty-${habitat}-${index}`} />
+          ))}
         </div>
       </div>
     </section>
   );
+}
+
+function EmptyDexSlot() {
+  return <div className="dex-dino-card dex-dino-card--locked grid min-h-[210px] place-items-center rounded-[22px] border-4 border-white/80 bg-[#e9dfca] p-2 text-center text-stone-500 shadow-sm"><div><LockKeyhole className="mx-auto h-10 w-10" /><strong className="mt-2 block">준비 중</strong><span className="text-xs">새 친구가 찾아올 자리예요</span></div></div>;
 }
 
 function DexDinosaurCard({ species, isDiscovered, ownedDinosaur, onSelect }: { key?: string; species: DinosaurSpecies; isDiscovered: boolean; ownedDinosaur?: OwnedDinosaur; onSelect: () => void }) {
