@@ -68,7 +68,7 @@ export function getEggPurchaseState(
   }
   if (coins < item.price) return { ...base, status: 'insufficientCoins', disabled: true, label: '코인 부족' };
   const hasEnoughFragments = requiredFragments.every((fragment) => (inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) >= fragment.amount);
-  if (requiredFragments.length > 0 && !hasEnoughFragments) return { ...base, status: 'insufficientFragments', disabled: true, label: '조각 부족' };
+  if (requiredFragments.length > 0 && !hasEnoughFragments) return { ...base, status: 'insufficientFragments', disabled: true, label: item.eggCategory === 'rare' ? '희귀조각이 부족해요' : '조각 부족' };
   return { ...base, status: 'available', disabled: false, label: item.eggCategory === 'legendary' ? '전설 선택' : '구매 가능' };
 }
 

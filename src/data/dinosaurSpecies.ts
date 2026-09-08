@@ -1,4 +1,5 @@
 import type { Id, OwnedDinosaur } from '../types/game';
+import { additionalDinosaurSpecies } from './dinosaurSpeciesExpansion';
 import { dinosaurCharacterAssets, type DinosaurCharacterImages } from '../assets/dex/dinosaurs';
 
 export type DinosaurSpeciesRarity = OwnedDinosaur['rarity'];
@@ -168,30 +169,32 @@ const eggCategoryUnlockHint: Record<DinosaurEggCategory, string> = {
   legend: '전설알의 조건을 충족하면 만날 수 있어요.',
 };
 
-const discoveryHintBySpeciesId: Record<Id, string> = {
-  'tiny-tyranno': '숲속에서 크고 힘찬 발자국이 발견됐어요.',
-  'baby-tricera': '숲길에 뾰족한 흔적이 여러 개 남아 있어요.',
-  'plate-stego': '나무 사이에서 넓적한 흔적이 반짝였어요.',
-  parasaurolophus: '숲 깊은 곳에서 부드러운 울음소리가 들려요.',
-  'armor-ankylo': '숲길에 단단한 갑옷 같은 흔적이 남아 있어요.',
-  leafcera: '초록 숲의 가장 조용한 나무 아래에 숨어 있다는 소문이 있어요.',
-  'long-brachio': '동굴 높은 곳의 잎사귀가 사라졌어요.',
-  allosaurus: '동굴 바닥에 빠르게 달린 발자국이 이어져 있어요.',
-  pachycephalosaurus: '동굴 벽에 둥글고 단단한 자국이 남아 있어요.',
-  dilophosaurus: '반짝이는 동굴 안에서 작은 움직임이 보여요.',
-  iguanodon: '동굴의 조용한 길에 가지런한 발자국이 있어요.',
-  crystalo: '동굴 안에서 반짝이는 소리가 들려요.',
-  carnotaurus: '화산섬에 힘차게 걸어간 흔적이 남아 있어요.',
-  kentrosaurus: '화산섬 길가에서 뾰족한 흔적이 발견됐어요.',
-  dimetrodon: '따뜻한 바위에 넓은 그림자가 비쳤어요.',
+// 이름 대신 외형·소리·흔적을 한 문장으로 암시하고, 현재 도감 지역에 맞춘다.
+const discoveryHintBySpeciesId: Partial<Record<Id, string>> = {
+  'tiny-tyranno': '화산 바위 너머에서 쿵쿵 발소리와 우렁찬 울음소리가 들려요.',
+  'baby-tricera': '유적 벽에 세 개의 뿔과 넓은 부채 같은 그림자가 비쳤어요.',
+  'plate-stego': '무너진 돌담 너머로 등에 줄지어 선 넓적한 판이 보여요.',
+  parasaurolophus: '구름 낀 절벽 너머에서 나팔 같은 부드러운 노랫소리가 들려요.',
+  'armor-ankylo': '유적 돌길을 단단한 갑옷과 둥근 꼬리 끝을 가진 그림자가 지나가요.',
+  leafcera: '유적의 새싹 곁에서 나뭇잎 모양 뿔이 살짝 움직였어요.',
+  'long-brachio': '유적의 높은 돌기둥 위로 긴 목이 올라가 나뭇잎을 따 먹어요.',
+  allosaurus: '화산 비탈에 달린 발자국이 이어지고 낮은 으르렁 소리가 들려요.',
+  pachycephalosaurus: '높은 절벽 옆 바위 뒤로 동그랗고 단단한 머리가 빼꼼 보여요.',
+  dilophosaurus: '하늘섬의 반짝이는 돌을 살피는 그림자에 나란한 두 볏이 보여요.',
+  iguanodon: '유적의 잎사귀를 잡은 튼튼한 앞발에 뾰족한 엄지 가시가 보여요.',
+  crystalo: '구름 속 동굴 입구에서 수정 같은 꼬리가 반짝이며 길을 비춰요.',
+  carnotaurus: '화산 길을 당당하게 걷는 그림자의 머리 위에 짧은 뿔 두 개가 보여요.',
+  kentrosaurus: '유적의 좁은 길을 지나는 꼬리 양옆으로 뾰족한 가시가 보여요.',
+  dimetrodon: '따뜻한 화산 바위 위에 돛 모양 등을 가진 낮은 그림자가 쉬고 있어요.',
   spinosaurus: '화산섬 물가에서 커다란 물결이 일었어요.',
-  therizinosaurus: '나뭇잎에 길고 가느다란 자국이 남아 있어요.',
-  volcanodon: '뜨거운 용암 근처보다 따뜻한 바위 위에서 쉬는 걸 좋아해요.',
-  pteranodon: '비밀의 땅 하늘에 커다란 그림자가 지나갔어요.',
-  'swift-raptor': '눈 깜짝할 사이에 지나간 발자국이 보여요.',
-  'distortus-rex': '비밀 연구소 근처에 커다란 발자국과 여러 갈래 자국이 남아 있어요.',
-  'indominus-rex': '비밀 연구소 울타리에 거대한 발톱 자국이 남아 있어요.',
-  starano: '별이 가장 많이 보이는 밤에 모습을 드러낸다는 이야기가 있어요.',
+  therizinosaurus: '하늘섬 나뭇가지 사이로 아주 긴 앞발톱이 뻗어 잎을 조심히 골라요.',
+  volcanodon: '해가 진 화산 바위 위에서 등불 같은 불꽃빛이 따뜻하게 일렁여요.',
+  pteranodon: '구름 사이로 넓은 날개와 길쭉한 부리를 가진 그림자가 날아가요.',
+  'swift-raptor': '하늘섬 풀밭에 작은 발톱 자국만 남기고 날씬한 그림자가 휙 사라졌어요.',
+  'distortus-rex': '화산재 위에 거대한 발자국과 여섯 팔다리로 짚은 자국이 남아 있어요.',
+  'indominus-rex': '화산 바위 틈에 거대한 발톱 자국만 남긴 채 몸을 숨긴 친구가 있어요.',
+  starano: '하늘섬의 고요한 밤에 별빛을 닮은 날개가 반짝인다는 소문이 있어요.',
+  'ancient-guardian': '유적의 닫힌 문 너머에서 누군가 오랫동안 지켜 온 기척이 느껴져요.',
 };
 
 const kidFriendlyDexDescriptions: Record<Id, string> = {
@@ -301,7 +304,9 @@ const ancientGuardianDraft = {
   description: '오래된 유적을 지키는 전설의 친구예요.', dexDescription: '아직 모습을 드러내지 않은 고대의 수호자예요.',
 } satisfies (typeof speciesDrafts)[number];
 
-function getDexWorldDiscoveryHint(species: { habitat: DinosaurHabitatId }) {
+function getDexWorldDiscoveryHint(species: { speciesId: Id; habitat: DinosaurHabitatId }) {
+  const speciesHint = discoveryHintBySpeciesId[species.speciesId];
+  if (speciesHint) return speciesHint;
   if (species.habitat === 'volcano-island') return '용암과 뜨거운 바위 사이에 정체를 알 수 없는 발자국이 남아 있어요.';
   if (species.habitat === 'sky-island') return '구름과 높은 절벽 사이에서 신비한 움직임이 보여요.';
   if (species.habitat === 'ancient-ruins') return '오래된 돌길과 유적 벽 가까이에 낯선 흔적이 남아 있어요.';
@@ -336,7 +341,7 @@ const dinosaurDietBySpeciesId: Record<string, DinosaurDiet> = {
   starano: 'omnivore',
 };
 
-export const dinosaurSpecies: DinosaurSpecies[] = [...speciesDrafts.filter((species) => species.speciesId !== 'diplodocus'), ancientGuardianDraft].map((sourceSpecies) => {
+export const dinosaurSpecies: DinosaurSpecies[] = [...speciesDrafts.filter((species) => species.speciesId !== 'diplodocus'), ancientGuardianDraft].map<DinosaurSpecies>((sourceSpecies) => {
   const placement = dexWorldPlacementBySpeciesId[sourceSpecies.speciesId];
   const species = (placement ? { ...sourceSpecies, ...placement } : sourceSpecies) as typeof sourceSpecies & DexWorldPlacement;
   const images = dinosaurImagesBySpeciesId[species.speciesId];
@@ -358,7 +363,7 @@ export const dinosaurSpecies: DinosaurSpecies[] = [...speciesDrafts.filter((spec
     unlockHint: species.starterSelectable ? '첫 공룡으로 고르거나 일반알에서 만날 수 있어요.' : eggCategoryUnlockHint[species.eggCategory],
     status: species.status ?? 'available',
   };
-}).sort((left, right) => left.collectionOrder - right.collectionOrder);
+}).concat(additionalDinosaurSpecies).sort((left, right) => left.collectionOrder - right.collectionOrder);
 
 export function getDinosaurSpecies(speciesId: Id) {
   return dinosaurSpecies.find((species) => species.speciesId === speciesId) ?? null;

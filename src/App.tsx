@@ -1812,6 +1812,10 @@ export default function App() {
         return;
       }
       if (purchaseState.status === 'insufficientFragments') {
+        if (item.eggCategory === 'rare') {
+          setShopFeedback('희귀조각이 부족해요');
+          return;
+        }
         const missingFragment = getEggRequiredFragments(item).find((fragment) => (gameState.inventory.find((entry) => entry.itemId === fragment.itemId)?.quantity ?? 0) < fragment.amount);
         const currentQuantity = missingFragment ? gameState.inventory.find((entry) => entry.itemId === missingFragment.itemId)?.quantity ?? 0 : 0;
         setShopFeedback(missingFragment ? `공통 희귀알 조각이 부족해요. 내 조각 ${currentQuantity}개 · 필요 ${missingFragment.amount}개 · 부족 ${missingFragment.amount - currentQuantity}개` : '필요한 재료가 부족해요.');
@@ -1830,16 +1834,12 @@ export default function App() {
 
       setGameState((current) => ({
         ...current,
-        player: {
-          ...current.player,
-          coins: current.player.coins - item.price,
-        },
         inventory: requiredFragments.reduce((inventory, fragment) => subtractInventoryQuantity(inventory, fragment.itemId, fragment.amount), current.inventory),
         ownedEggs: [...current.ownedEggs, newEgg],
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
-      setShopFeedback(`희귀알을 얻었어요! 코인 -${item.price.toLocaleString()} · 희귀알 조각 사용`);
+      setShopFeedback(`희귀알을 얻었어요! 희귀조각 ${requiredFragments.reduce((total, fragment) => total + fragment.amount, 0)}개 사용`);
       return;
     }
 

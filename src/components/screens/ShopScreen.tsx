@@ -1,4 +1,3 @@
-import { Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -232,22 +231,20 @@ function ShopProductCard({
       </button>
 
       <div className="shop-item-card__price absolute left-1/2 top-[49%] h-[17%] w-[88%] -translate-x-1/2 overflow-hidden">
-        <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-        <p className="relative z-10 flex h-full translate-x-[10px] items-center justify-center gap-1 truncate px-[9%] text-[clamp(11px,1.65vw,15px)] font-extrabold text-amber-950">
-          <span>{item.price.toLocaleString()}</span>
-          {isRareEgg && requiredFragment && (
+        {!isRareEgg && <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />}
+        <p className={`relative z-10 flex h-full items-center justify-center gap-1 px-[9%] text-[clamp(11px,1.65vw,15px)] font-extrabold text-amber-950 ${isRareEgg ? 'rounded-full border-2 border-violet-200 bg-violet-50' : 'translate-x-[10px]'}`}>
+          {isRareEgg && requiredFragment ? (
             <>
-              <span className="text-amber-700">+</span>
-              <Package className="h-[clamp(16px,2.2dvh,21px)] w-[clamp(16px,2.2dvh,21px)] shrink-0 text-violet-600" />
+              <img src={shopItemHatchRareFragment} alt="희귀조각" className="h-[clamp(18px,2.6dvh,26px)] w-[clamp(18px,2.6dvh,26px)] shrink-0 object-contain" />
               <span>{fragmentQuantity}/{requiredFragment.amount}</span>
             </>
-          )}
+          ) : <span>{item.price.toLocaleString()}</span>}
         </p>
       </div>
 
       <div className="shop-item-card__status absolute left-1/2 top-[67%] h-[8%] w-[66%] -translate-x-1/2 overflow-hidden">
         <img src={shopStatusChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-        <p className={`relative z-10 flex h-full items-center justify-center truncate px-2 text-[clamp(9px,1.3vw,12px)] font-black ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
+        <p className={`relative z-10 flex h-full items-center justify-center px-1 font-black ${isRareEgg ? 'whitespace-nowrap text-[clamp(8px,1.15vw,10px)]' : 'truncate text-[clamp(9px,1.3vw,12px)]'} ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
           {status.actionLabel}
         </p>
       </div>
@@ -299,6 +296,7 @@ function ShopItemDetailDialog({
   const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const itemAsset = shopItemAssets[item.id];
   const effectLabel = getShopItemEffectLabel(item);
+  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
   const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary' ? getLegendaryCategoryStates(ownedDinosaurs) : [];
@@ -344,10 +342,12 @@ function ShopItemDetailDialog({
 
           <div className="mt-[2.5%] grid w-[90%] flex-none grid-cols-2 gap-[3%]">
             <div className="relative aspect-[530/210] min-w-0">
-              <img src={shopPopupPricePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" draggable={false} />
+              {isRareEgg ? <div className="absolute inset-0 rounded-2xl border-2 border-violet-200 bg-violet-50" /> : <img src={shopPopupPricePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" draggable={false} />}
               <div className="absolute inset-[12%_8%_17%] flex flex-col items-center justify-center">
                 <span className="text-[clamp(0.62rem,1.3dvh,0.78rem)] font-black text-amber-700">가격</span>
-                <strong className="block max-w-full truncate text-[clamp(0.9rem,2dvh,1.2rem)] font-black">{item.price.toLocaleString()}코인</strong>
+                <strong className="flex max-w-full items-center justify-center gap-1 text-[clamp(0.9rem,2dvh,1.2rem)] font-black">
+                  {isRareEgg && requiredFragment ? <><img src={shopItemHatchRareFragment} alt="희귀조각" className="h-5 w-5 object-contain" />{fragmentQuantity}/{requiredFragment.amount}</> : <>{item.price.toLocaleString()}코인</>}
+                </strong>
               </div>
             </div>
             <div className="relative aspect-[530/209] min-w-0">
@@ -359,7 +359,7 @@ function ShopItemDetailDialog({
             </div>
           </div>
 
-          {requiredFragment && (
+          {requiredFragment && !isRareEgg && (
             <p className="mt-[1%] flex-none text-[clamp(0.65rem,1.3dvh,0.8rem)] font-black text-violet-800">
               희귀조각 {fragmentQuantity}/{requiredFragment.amount}개
             </p>

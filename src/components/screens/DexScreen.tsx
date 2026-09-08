@@ -16,11 +16,11 @@ export interface DexScreenProps {
 const habitatOrder: DinosaurHabitatId[] = dexHabitats;
 
 const habitatMeta: Record<DinosaurHabitatId, { label: string; shortLabel: string; lockedLabel: string; accent: string }> = {
-  'volcano-island': { label: '🔥 화산섬 친구들', shortLabel: '🔥 화산섬', lockedLabel: '뜨거운 땅길을 좋아해요', accent: 'from-orange-100 to-amber-200 text-orange-950' },
-  'sky-island': { label: '☁ 하늘섬 친구들', shortLabel: '☁ 하늘섬', lockedLabel: '구름 너머에서 기다려요', accent: 'from-sky-100 to-violet-200 text-sky-950' },
-  'ancient-ruins': { label: '🏛 오래된 유적지 친구들', shortLabel: '🏛 유적지', lockedLabel: '오래된 유적에 숨어 있어요', accent: 'from-stone-100 to-amber-200 text-stone-800' },
-  'deep-sea': { label: '🌊 바다 친구들', shortLabel: '🌊 바다', lockedLabel: '깊은 바다를 준비 중이에요', accent: 'from-cyan-100 to-blue-200 text-blue-950' },
-  'ice-continent': { label: '❄ 얼음 친구들', shortLabel: '❄ 얼음', lockedLabel: '얼음 대륙을 준비 중이에요', accent: 'from-slate-50 to-cyan-100 text-slate-800' },
+  'volcano-island': { label: '🔥 화산지대 친구들', shortLabel: '화산지대', lockedLabel: '뜨거운 땅길을 좋아해요', accent: 'from-orange-100 to-amber-200 text-orange-950' },
+  'sky-island': { label: '☁ 고공정원 친구들', shortLabel: '고공정원', lockedLabel: '구름 너머에서 기다려요', accent: 'from-sky-100 to-violet-200 text-sky-950' },
+  'ancient-ruins': { label: '🏛 고대밀림 친구들', shortLabel: '고대밀림', lockedLabel: '우거진 밀림에 숨어 있어요', accent: 'from-stone-100 to-amber-200 text-stone-800' },
+  'deep-sea': { label: '🌊 심해세계 친구들', shortLabel: '심해세계', lockedLabel: '깊은 물결 아래에서 기다려요', accent: 'from-cyan-100 to-blue-200 text-blue-950' },
+  'ice-continent': { label: '❄ 빙하기 친구들', shortLabel: '빙하기', lockedLabel: '하얀 눈길에 흔적을 남겨요', accent: 'from-slate-50 to-cyan-100 text-slate-800' },
 };
 
 const rarityLabels: Record<OwnedDinosaur['rarity'], string> = {
@@ -97,7 +97,7 @@ function DexCategoryTabs({
               }
             }}
             aria-pressed={isActive}
-            className={`dex-category-item ${isActive ? 'dex-category-item--active' : ''} ${isLocked ? 'dex-category-item--locked' : ''} grid min-h-[78px] min-w-0 grid-cols-[clamp(36px,5vw,48px)_minmax(0,1fr)] items-center gap-1.5 rounded-[18px] border-3 px-2 text-left font-black transition active:translate-y-1 ${
+            className={`dex-category-item ${isActive ? 'dex-category-item--active' : ''} ${isLocked ? 'dex-category-item--locked' : ''} grid min-h-[78px] min-w-0 grid-cols-1 justify-items-center gap-0.5 rounded-[18px] border-3 px-1 py-1 text-center font-black transition active:translate-y-1 ${
               isActive ? 'border-lime-400 bg-gradient-to-b from-lime-100 to-lime-200 text-emerald-950 shadow-[0_4px_0_rgba(101,163,13,.22)]' : 'border-white/75 bg-white/72 text-stone-600 hover:bg-white'
             } ${isLocked ? 'opacity-65' : ''}`}
           >
@@ -106,8 +106,8 @@ function DexCategoryTabs({
               {isLocked && <LockKeyhole className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white/90 p-0.5 text-stone-500" />}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[clamp(11px,1.6vw,15px)]">{meta.shortLabel}</span>
-              <span className="mt-0.5 block text-[clamp(10px,1.35vw,13px)] text-stone-500">{discoveredCount} / {dexSpeciesSlotsPerHabitat}</span>
+              <span className="block whitespace-nowrap text-[clamp(9px,2.4vw,11px)]">{meta.shortLabel}</span>
+              <span className="mt-0.5 block whitespace-nowrap text-[10px] text-stone-500">{discoveredCount} / {dexSpeciesSlotsPerHabitat}</span>
             </span>
           </button>
         );

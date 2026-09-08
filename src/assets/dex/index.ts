@@ -12,10 +12,11 @@ import habitatSecret from './habitats/habitat_secret.png';
 import habitatVolcano from './habitats/habitat_volcano.png';
 import dexBookIcon from './header/dex_book_icon.png';
 import dexMascotGreen from './mascots/dex_mascot_green.png';
-import habitatCaveBadge from './habitats/habitat_cave_badge.png';
-import habitatForestBadge from './habitats/habitat_forest_badge.png';
-import habitatSecretBadge from './habitats/habitat_secret_badge.png';
-import habitatVolcanoBadge from './habitats/abitat_volcano_badge.png';
+import habitatVolcanicZone from './habitats/01_volcanic_zone.png';
+import habitatSkyGarden from './habitats/02_sky_garden.png';
+import habitatAncientJungle from './habitats/03_ancient_jungle.png';
+import habitatDeepSeaWorld from './habitats/04_deep_sea_world.png';
+import habitatIceAge from './habitats/05_ice_age.png';
 import ornamentCaveTitle from './ornaments/ornament_cave_title.png';
 import ornamentForestTitle from './ornaments/ornament_forest_title.png';
 import ornamentSecretTitle from './ornaments/habitat_secret_badge.png';
@@ -66,11 +67,11 @@ export const dexBookAssets = {
 } as const;
 
 export const dexHabitatBadgeImages = {
-  'volcano-island': habitatVolcanoBadge,
-  'sky-island': habitatCaveBadge,
-  'ancient-ruins': habitatSecretBadge,
-  'deep-sea': habitatCaveBadge,
-  'ice-continent': habitatForestBadge,
+  'volcano-island': habitatVolcanicZone,
+  'sky-island': habitatSkyGarden,
+  'ancient-ruins': habitatAncientJungle,
+  'deep-sea': habitatDeepSeaWorld,
+  'ice-continent': habitatIceAge,
 } as const;
 
 export const dexTitleOrnamentImages = {
