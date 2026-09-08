@@ -44,7 +44,7 @@ export interface EggItemConfig extends BaseItemConfig {
   rarity: 'normal' | 'common' | 'rare' | 'special' | 'legendary';
   eggType: string;
   eggCategory: EggCategory;
-  eggHabitatId?: DinosaurHabitatId;
+  eggHabitatId?: DinosaurHabitatId | string;
   linkedSpeciesId?: string;
   purchaseLimit?: number;
   requiredFragmentId?: string;

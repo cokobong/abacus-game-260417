@@ -2,8 +2,8 @@ import type { Id, OwnedDinosaur } from '../types/game';
 import { dinosaurCharacterAssets, type DinosaurCharacterImages } from '../assets/dex/dinosaurs';
 
 export type DinosaurSpeciesRarity = OwnedDinosaur['rarity'];
-export type DinosaurUnlockSource = 'normal-egg' | 'special-egg' | 'rare-egg' | 'adventure-fragment' | 'planned';
-export type DinosaurEggCategory = 'normal' | 'special' | 'rare';
+export type DinosaurUnlockSource = 'normal-egg' | 'special-egg' | 'rare-egg' | 'legend-egg' | 'adventure-fragment' | 'planned';
+export type DinosaurEggCategory = 'normal' | 'special' | 'rare' | 'legend';
 export type DinosaurSpeciesStatus = 'available' | 'planned' | 'locked';
 export type DinosaurDiet = 'herbivore' | 'carnivore' | 'omnivore';
 
@@ -44,17 +44,26 @@ export interface DinosaurSpecies {
   cardOffsetY: number;
 }
 
-export type DinosaurHabitatId = 'green-forest' | 'sparkle-cave' | 'volcano-island' | 'secret-land';
+export type DinosaurHabitatId = 'volcano-island' | 'sky-island' | 'ancient-ruins' | 'deep-sea' | 'ice-continent';
 
-export const dexHabitats: DinosaurHabitatId[] = ['green-forest', 'sparkle-cave', 'volcano-island', 'secret-land'];
-export const dexSpeciesSlotsPerHabitat = 6;
+export const dexHabitats: DinosaurHabitatId[] = ['volcano-island', 'sky-island', 'ancient-ruins', 'deep-sea', 'ice-continent'];
+export const dexSpeciesSlotsPerHabitat = 8;
 export const dexTargetSpeciesCount = dexHabitats.length * dexSpeciesSlotsPerHabitat;
 
+export const dexAdventureRegionByHabitat: Record<DinosaurHabitatId, string> = {
+  'volcano-island': 'lava-valley',
+  'sky-island': 'sky-island',
+  'ancient-ruins': 'ancient-ruins',
+  'deep-sea': 'deep-sea-canyon',
+  'ice-continent': 'ice-continent',
+};
+
 const habitatOrderById: Record<DinosaurHabitatId, number> = {
-  'green-forest': 1,
-  'sparkle-cave': 2,
-  'volcano-island': 3,
-  'secret-land': 4,
+  'volcano-island': 1,
+  'sky-island': 2,
+  'ancient-ruins': 3,
+  'deep-sea': 4,
+  'ice-continent': 5,
 };
 
 type DinosaurPresentation = Pick<
@@ -139,7 +148,6 @@ const dinosaurImagesBySpeciesId: Partial<Record<Id, DinosaurCharacterImages>> = 
   therizinosaurus: dinosaurCharacterAssets.therizino,
   volcanodon: dinosaurCharacterAssets.volcanodon,
   pteranodon: dinosaurCharacterAssets.pteranodon,
-  diplodocus: dinosaurCharacterAssets.diplodocus,
   'swift-raptor': dinosaurCharacterAssets.velociraptor,
   'distortus-rex': dinosaurCharacterAssets.distortusRex,
   'indominus-rex': dinosaurCharacterAssets.indominusRex,
@@ -150,12 +158,14 @@ const eggCategoryFoundMethod: Record<DinosaurEggCategory, string> = {
   normal: '일반 알에서 태어남',
   special: '특수 알에서 태어남',
   rare: '희귀 알에서 태어남',
+  legend: '전설 알에서 태어남',
 };
 
 const eggCategoryUnlockHint: Record<DinosaurEggCategory, string> = {
   normal: '일반알을 부화시키면 만날 수 있어요.',
   special: '특수알을 부화시키면 만날 수 있어요.',
   rare: '희귀알을 부화시키면 만날 수 있어요.',
+  legend: '전설알의 조건을 충족하면 만날 수 있어요.',
 };
 
 const discoveryHintBySpeciesId: Record<Id, string> = {
@@ -178,7 +188,6 @@ const discoveryHintBySpeciesId: Record<Id, string> = {
   therizinosaurus: '나뭇잎에 길고 가느다란 자국이 남아 있어요.',
   volcanodon: '뜨거운 용암 근처보다 따뜻한 바위 위에서 쉬는 걸 좋아해요.',
   pteranodon: '비밀의 땅 하늘에 커다란 그림자가 지나갔어요.',
-  diplodocus: '비밀의 땅에 길게 이어진 흔적이 남아 있어요.',
   'swift-raptor': '눈 깜짝할 사이에 지나간 발자국이 보여요.',
   'distortus-rex': '비밀 연구소 근처에 커다란 발자국과 여러 갈래 자국이 남아 있어요.',
   'indominus-rex': '비밀 연구소 울타리에 거대한 발톱 자국이 남아 있어요.',
@@ -205,7 +214,6 @@ const kidFriendlyDexDescriptions: Record<Id, string> = {
   therizinosaurus: '테리지노사우루스는 긴 손을 가진 섬세한 친구예요. 나뭇잎을 조심조심 골라 친구들과 나누어 먹어요.',
   volcanodon: '불카노돈은 따뜻한 불꽃빛을 품은 열정적인 공룡이에요. 마음이 뜨거워서 친구를 응원하는 걸 좋아해요.',
   pteranodon: '프테라노돈은 하늘을 나는 걸 좋아하는 날쌘 친구예요. 멀리까지 날아가 새로운 길을 찾아와요.',
-  diplodocus: '디플로도쿠스는 길고 부드러운 꼬리를 가진 온화한 공룡이에요. 느릿느릿 걸어도 언제나 친구 곁에 있어요.',
   'swift-raptor': '벨로시랩터는 번개처럼 빠르게 달리는 재빠른 친구예요. 장난을 좋아하지만 약속은 꼭 지켜요.',
   'distortus-rex': '디스토르투스 렉스는 티라노사우루스를 더 크게 만들려던 실험에서 태어난 돌연변이 크리처예요. 커다란 머리와 여섯 개의 팔다리로 무겁게 움직여요.',
   'indominus-rex': '인도미누스 렉스는 여러 동물의 특징을 모아 만든 거대하고 영리한 하이브리드 공룡이에요. 주변을 빠르게 살피고 숨어 움직이는 데 아주 능숙해요.',
@@ -217,7 +225,7 @@ const speciesDrafts: Array<{
   displayName: string;
   defaultName: string;
   rarity: DinosaurSpeciesRarity;
-  habitat: DinosaurHabitatId;
+  habitat: DinosaurHabitatId | 'green-forest' | 'sparkle-cave' | 'secret-land';
   eggCategory: DinosaurEggCategory;
   unlockSource: DinosaurUnlockSource;
   starterSelectable?: boolean;
@@ -228,6 +236,8 @@ const speciesDrafts: Array<{
   themeLabel?: string;
   description?: string;
   dexDescription?: string;
+  isPlaceholder?: boolean;
+  status?: DinosaurSpeciesStatus;
 }> = [
   { speciesId: 'tiny-tyranno', displayName: '티라노사우르스', defaultName: '용감한 티라노', rarity: 'common', habitat: 'green-forest', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 1, personality: '용감함', favoriteFoodName: '톡톡 고기볼', silhouette: '◆' },
   { speciesId: 'baby-tricera', displayName: '트리케라', defaultName: '튼튼한 트리케라', rarity: 'common', habitat: 'green-forest', eggCategory: 'normal', unlockSource: 'normal-egg', starterSelectable: true, collectionOrder: 2, personality: '든든함', favoriteFoodName: '바삭 잎사귀', silhouette: '▲' },
@@ -255,7 +265,52 @@ const speciesDrafts: Array<{
   { speciesId: 'starano', displayName: '스타라노', defaultName: '스타라노', rarity: 'rare', habitat: 'secret-land', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 24, personality: '신중함', favoriteFoodName: '비밀 열매', silhouette: '?', themeLabel: '별빛 날개 공룡', description: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.', dexDescription: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.' },
 ];
 
+type DexWorldPlacement = Pick<DinosaurSpecies, 'habitat' | 'eggCategory' | 'unlockSource' | 'collectionOrder' | 'rarity'>;
+
+const dexWorldPlacementBySpeciesId: Record<string, DexWorldPlacement> = {
+  'tiny-tyranno': { habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 1, rarity: 'common' },
+  allosaurus: { habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 2, rarity: 'common' },
+  carnotaurus: { habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 3, rarity: 'common' },
+  dimetrodon: { habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 4, rarity: 'common' },
+  spinosaurus: { habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 5, rarity: 'special' },
+  'distortus-rex': { habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 6, rarity: 'special' },
+  'indominus-rex': { habitat: 'volcano-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 7, rarity: 'rare' },
+  volcanodon: { habitat: 'volcano-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 8, rarity: 'legendary' },
+  pteranodon: { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 9, rarity: 'common' },
+  'swift-raptor': { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 10, rarity: 'common' },
+  pachycephalosaurus: { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 11, rarity: 'common' },
+  parasaurolophus: { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 12, rarity: 'common' },
+  dilophosaurus: { habitat: 'sky-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 13, rarity: 'special' },
+  therizinosaurus: { habitat: 'sky-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 14, rarity: 'special' },
+  crystalo: { habitat: 'sky-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 15, rarity: 'rare' },
+  starano: { habitat: 'sky-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 16, rarity: 'legendary' },
+  'baby-tricera': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 17, rarity: 'common' },
+  'plate-stego': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 18, rarity: 'common' },
+  'long-brachio': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 19, rarity: 'common' },
+  kentrosaurus: { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 20, rarity: 'common' },
+  'armor-ankylo': { habitat: 'ancient-ruins', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 21, rarity: 'special' },
+  iguanodon: { habitat: 'ancient-ruins', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 22, rarity: 'special' },
+  leafcera: { habitat: 'ancient-ruins', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 23, rarity: 'rare' },
+};
+
+const ancientGuardianDraft = {
+  speciesId: 'ancient-guardian', displayName: '고대 수호룡', defaultName: '고대 수호룡', rarity: 'legendary' as const,
+  habitat: 'ancient-ruins' as const, eggCategory: 'legend' as const, unlockSource: 'planned' as const,
+  collectionOrder: 24, personality: '수호자', favoriteFoodName: '미정', silhouette: '◆',
+  isPlaceholder: true, status: 'planned' as const, starterSelectable: false,
+  description: '오래된 유적을 지키는 전설의 친구예요.', dexDescription: '아직 모습을 드러내지 않은 고대의 수호자예요.',
+} satisfies (typeof speciesDrafts)[number];
+
+function getDexWorldDiscoveryHint(species: { habitat: DinosaurHabitatId }) {
+  if (species.habitat === 'volcano-island') return '용암과 뜨거운 바위 사이에 정체를 알 수 없는 발자국이 남아 있어요.';
+  if (species.habitat === 'sky-island') return '구름과 높은 절벽 사이에서 신비한 움직임이 보여요.';
+  if (species.habitat === 'ancient-ruins') return '오래된 돌길과 유적 벽 가까이에 낯선 흔적이 남아 있어요.';
+  if (species.habitat === 'deep-sea') return '깊은 물결 아래에서 새로운 친구를 찾는 탐사가 준비 중이에요.';
+  return '차가운 눈과 얼음 너머를 탐사할 준비를 하고 있어요.';
+}
+
 const dinosaurDietBySpeciesId: Record<string, DinosaurDiet> = {
+  'ancient-guardian': 'omnivore',
   'tiny-tyranno': 'carnivore',
   'baby-tricera': 'herbivore',
   'plate-stego': 'herbivore',
@@ -275,14 +330,15 @@ const dinosaurDietBySpeciesId: Record<string, DinosaurDiet> = {
   therizinosaurus: 'omnivore',
   volcanodon: 'herbivore',
   pteranodon: 'carnivore',
-  diplodocus: 'herbivore',
   'swift-raptor': 'carnivore',
   'distortus-rex': 'carnivore',
   'indominus-rex': 'carnivore',
   starano: 'omnivore',
 };
 
-export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) => {
+export const dinosaurSpecies: DinosaurSpecies[] = [...speciesDrafts.filter((species) => species.speciesId !== 'diplodocus'), ancientGuardianDraft].map((sourceSpecies) => {
+  const placement = dexWorldPlacementBySpeciesId[sourceSpecies.speciesId];
+  const species = (placement ? { ...sourceSpecies, ...placement } : sourceSpecies) as typeof sourceSpecies & DexWorldPlacement;
   const images = dinosaurImagesBySpeciesId[species.speciesId];
 
   return {
@@ -297,12 +353,12 @@ export const dinosaurSpecies: DinosaurSpecies[] = speciesDrafts.map((species) =>
     starterSelectable: species.starterSelectable ?? false,
     description: kidFriendlyDexDescriptions[species.speciesId] ?? species.description ?? `${species.displayName}은 주산훈련 모험에서 만날 수 있는 공룡이에요.`,
     dexDescription: kidFriendlyDexDescriptions[species.speciesId] ?? species.dexDescription ?? `${species.displayName}은 도감 ${species.collectionOrder}번째 슬롯의 공룡이에요.`,
-    discoveryHint: discoveryHintBySpeciesId[species.speciesId],
+    discoveryHint: getDexWorldDiscoveryHint(species),
     foundMethodLabel: species.starterSelectable ? '첫 공룡으로 선택 가능' : eggCategoryFoundMethod[species.eggCategory],
     unlockHint: species.starterSelectable ? '첫 공룡으로 고르거나 일반알에서 만날 수 있어요.' : eggCategoryUnlockHint[species.eggCategory],
-    status: 'available',
+    status: species.status ?? 'available',
   };
-});
+}).sort((left, right) => left.collectionOrder - right.collectionOrder);
 
 export function getDinosaurSpecies(speciesId: Id) {
   return dinosaurSpecies.find((species) => species.speciesId === speciesId) ?? null;

@@ -76,7 +76,7 @@ function canBuyEggByScope(eggCategory: EggCategory, eggHabitatId: DinosaurHabita
 }
 
 export function canBuyEggItem(item: EggItemConfig, ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], speciesPool: DinosaurSpecies[] = dinosaurSpecies) {
-  if (!item.linkedSpeciesId) return canBuyEggByScope(item.eggCategory, item.eggHabitatId, ownedDinosaurs, ownedEggs, speciesPool);
+  if (!item.linkedSpeciesId) return canBuyEggByScope(item.eggCategory, isDinosaurHabitatId(item.eggHabitatId) ? item.eggHabitatId : undefined, ownedDinosaurs, ownedEggs, speciesPool);
   const linkedSpecies = getImplementedSpecies(speciesPool).find((species) => species.speciesId === item.linkedSpeciesId);
   const alreadyOwned = ownedDinosaurs.some((dinosaur) => dinosaur.speciesId === item.linkedSpeciesId);
   const ownedEggCountByCategory = getOwnedEggCountByCategory(item.eggCategory, ownedEggs);
@@ -95,7 +95,8 @@ export function getEggCategoryForOwnedEgg(egg: OwnedEgg): EggCategory {
 
 function getEggHabitatForOwnedEgg(egg: OwnedEgg): DinosaurHabitatId | undefined {
   if (isDinosaurHabitatId(egg.eggHabitatId)) return egg.eggHabitatId;
-  return getEggItemConfig(egg.eggItemId)?.eggHabitatId;
+  const configuredHabitat = getEggItemConfig(egg.eggItemId)?.eggHabitatId;
+  return isDinosaurHabitatId(configuredHabitat) ? configuredHabitat : undefined;
 }
 
 function isDinosaurHabitatId(value: unknown): value is DinosaurHabitatId {

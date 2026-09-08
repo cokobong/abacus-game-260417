@@ -36,6 +36,7 @@ import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getEggPurchaseState, getLegendaryCategoryStates } from '../../utils/eggPurchaseState';
 import { getFoodDietLabel } from '../../utils/dinosaurDiet';
 import { playSound } from '../../audio/audioManager';
+import { getOwnedEggCount } from '../../utils/eggMigration';
 import { trainingUiAssets } from '../../assets/ui/training';
 import { lavaValleyAssets } from '../../assets/adventure/lava-valley';
 import { LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID } from '../../config/minigameConfig';
@@ -438,7 +439,7 @@ function getEggCategoryLabel(item: ItemConfig) {
 }
 
 function getOwnedQuantity(item: ItemConfig, inventory: InventoryItemState[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
-  if (item.category === 'egg') return ownedEggs.filter((egg) => egg.eggItemId === item.id).length;
+  if (item.category === 'egg') return getOwnedEggCount(ownedEggs, item.id);
   if (item.category === 'costume') return ownedCostumeIds.includes(item.id) ? 1 : 0;
   return getOwnedInventoryQuantity(inventory, item.id);
 }

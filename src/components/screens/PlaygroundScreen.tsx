@@ -223,7 +223,7 @@ function RewardIcon({ reward }: { reward: AdventureRewardCandidate }) {
 
 function getAreaTone(area: AdventureArea) {
   if (area.status === 'coming-soon') return 'bg-gradient-to-b from-slate-100 to-slate-300 text-slate-500';
-  if (area.habitat === 'sparkle-cave') return 'bg-gradient-to-b from-sky-100 to-violet-100 text-violet-700';
+  if (area.habitat === 'sky-island') return 'bg-gradient-to-b from-sky-100 to-violet-100 text-violet-700';
   if (area.habitat === 'cloud-hill') return 'bg-gradient-to-b from-sky-100 to-white text-sky-700';
   return 'bg-gradient-to-b from-lime-100 to-emerald-200 text-emerald-700';
 }
