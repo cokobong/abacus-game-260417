@@ -52,3 +52,25 @@ test('직렬화 후에도 legacy eggItemId와 연결 공룡이 유지된다', ()
   const restored = JSON.parse(JSON.stringify(ownedEgg('ocean-blue-egg'))) as OwnedEgg;
   assert.equal(getHatchCandidates(restored, []).candidates[0]?.speciesId, 'crystalo');
 });
+
+test('전설알은 재화와 도감 조건을 충족해도 준비중으로 구매를 차단한다', () => {
+  const item = egg('legend-egg');
+  const discovered = dinosaurSpecies.filter((species) => species.rarity !== 'legendary').map((species) => ownedDinosaur(species.speciesId));
+  for (const coins of [0, 999999]) {
+    for (const ownedEggs of [[], [ownedEgg(item.id)]]) {
+      const state = getEggPurchaseState(item, coins, [{ itemId: 'rare-egg-fragment', quantity: 999999 }], discovered, ownedEggs);
+      assert.equal(state.status, 'comingSoon');
+      assert.equal(state.disabled, true);
+      assert.equal(state.label, '준비중');
+    }
+  }
+});
+
+test('일반알과 특수알은 기존 재화 및 보유 조건으로 구매한다', () => {
+  for (const id of ['green-starter-egg', 'rare-spark-egg']) {
+    const item = egg(id);
+    assert.equal(getEggPurchaseState(item, item.price, [], [], []).status, 'available');
+    assert.equal(getEggPurchaseState(item, item.price - 1, [], [], []).status, 'insufficientCoins');
+    assert.equal(getEggPurchaseState(item, item.price, [], [], [ownedEgg(id)]).disabled, true);
+  }
+});

@@ -263,7 +263,7 @@ function ShopProductCard({
         onPointerUp={() => setIsPressed(false)}
         onPointerCancel={() => setIsPressed(false)}
         onPointerLeave={() => setIsPressed(false)}
-        aria-label="구매하기"
+        aria-label={status.canBuy ? '구매하기' : status.actionLabel}
         className="shop-item-card__buy shop-buy-button absolute bottom-[3%] left-1/2 aspect-[3/1] h-auto w-[88%] -translate-x-1/2 overflow-hidden bg-transparent p-0 disabled:cursor-not-allowed"
       >
         <img

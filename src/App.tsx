@@ -1789,6 +1789,10 @@ export default function App() {
 
     if (item.category === 'egg') {
       const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool);
+      if (purchaseState.status === 'comingSoon') {
+        setShopFeedback(purchaseState.label);
+        return;
+      }
       if (purchaseState.status === 'soldOut') {
         setShopFeedback('이 알에서 만날 수 있는 공룡을 이미 만났어요. 품절된 알이에요.');
         return;

@@ -5,7 +5,9 @@ import { canBuyEggItem } from './hatchCandidates';
 
 export const LEGENDARY_REQUIRED_DISCOVERIES = 5;
 export const LEGENDARY_FRAGMENT_COST = 10;
-export type EggPurchaseStatus = 'available' | 'soldOut' | 'locked' | 'insufficientCoins' | 'insufficientFragments' | 'completed';
+// 상점/도감/알 해금 구조 정리 전까지 전설알 판매만 임시 중단한다.
+const LEGENDARY_PURCHASE_ENABLED = false;
+export type EggPurchaseStatus = 'available' | 'soldOut' | 'locked' | 'insufficientCoins' | 'insufficientFragments' | 'completed' | 'comingSoon';
 
 export type EggPurchaseState = {
   status: EggPurchaseStatus;
@@ -49,6 +51,7 @@ export function getEggPurchaseState(
   const base = { ownedQuantity, coinCost: item.price, fragmentCost, availablePoolCount: availability.remainingCandidateCount };
 
   if (item.eggCategory === 'legendary') {
+    if (!LEGENDARY_PURCHASE_ENABLED) return { ...base, status: 'comingSoon', disabled: true, label: '준비중' };
     const categories = getLegendaryCategoryStates(ownedDinosaurs, speciesPool);
     const implemented = categories.filter((category) => category.status !== 'unavailable');
     if (implemented.length === 0) return { ...base, status: 'locked', disabled: true, label: '전설 준비 중' };
