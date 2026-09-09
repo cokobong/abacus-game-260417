@@ -2,10 +2,12 @@ import type { OwnedDinosaur } from '../../types/game';
 import { LavaPathPrototype } from './LavaPathPrototype';
 import { SkyIslandPrototype } from './SkyIslandPrototype';
 import type { MinigameRunRewards } from '../../config/minigameConfig';
+import type { AdventureStageNumber } from '../../config/adventureStageCatalog';
 
 export interface AdventureGameShellProps {
   key?: string;
   gameId: string;
+  stageNumber: AdventureStageNumber;
   dinosaur: OwnedDinosaur;
   onExit: () => void;
   runId: string;
@@ -14,9 +16,9 @@ export interface AdventureGameShellProps {
   externalMainModalOpen?: boolean;
 }
 
-export function AdventureGameShell({ gameId, dinosaur, onExit, runId, onFinishRun, onRetry, externalMainModalOpen }: AdventureGameShellProps) {
+export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, externalMainModalOpen }: AdventureGameShellProps) {
   if (gameId === 'lava-stepping-stones') {
-    return <LavaPathPrototype dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} externalMainModalOpen={externalMainModalOpen} />;
+    return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} externalMainModalOpen={externalMainModalOpen} />;
   }
 
   if (gameId === 'sky-number-clouds') {

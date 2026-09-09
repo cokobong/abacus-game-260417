@@ -14,7 +14,7 @@ function ownedEgg(itemId: string): OwnedEgg { const item = egg(itemId); return {
 test('상점 알은 common/special/rare/legendary 4종만 유지한다', () => {
   assert.deepEqual(SHOP_CATALOG.egg, ['green-starter-egg', 'rare-spark-egg', 'rare-egg', 'legend-egg']);
   assert.deepEqual(SHOP_CATALOG.egg.map((id) => egg(id).rarity), ['common', 'special', 'rare', 'legendary']);
-  assert.deepEqual(SHOP_CATALOG.egg.map((id) => [egg(id).price, egg(id).requiredFragmentAmount ?? 0]), [[500, 0], [900, 0], [0, RARE_EGG_FRAGMENT_COST], [0, 10]]);
+  assert.deepEqual(SHOP_CATALOG.egg.map((id) => [egg(id).price, egg(id).requiredFragmentAmount ?? 0]), [[500, 0], [900, 0], [0, RARE_EGG_FRAGMENT_COST], [0, 20]]);
 });
 
 test('일반/특수/희귀 알 pool은 해당 rarity의 미획득 공룡만 반환한다', () => {
@@ -62,12 +62,12 @@ test('legacy 지역 희귀알은 판매 카탈로그에 노출되지 않는다',
   assert.ok(legacyEggItemConfigs.every((item) => !SHOP_CATALOG.egg.includes(item.id as never)));
 });
 
-test('전설 도감 조건은 non-legendary 수에 맞춰 5 이하로 clamp하고 중복을 막는다', () => {
+test('전설은 도감 보유량 대신 Stage 3와 유물조각 2개를 요구한다', () => {
   const base = dinosaurSpecies.filter((species) => species.habitat === 'volcano-island').slice(0, 3);
   const legendary: DinosaurSpecies = { ...base[0], speciesId: 'forest-legend-test', displayName: '숲 전설', name: '숲 전설', defaultName: '숲 전설', rarity: 'legendary', starterSelectable: false };
   const pool = [...base, legendary];
-  assert.equal(getLegendaryCategoryStates([], pool)[0].required, 3);
-  assert.equal(getLegendaryCategoryStates(base.map((species) => ownedDinosaur(species.speciesId)), pool)[0].status, 'available');
+  assert.equal(getLegendaryCategoryStates([], pool)[0].requiredRelicFragments, 2);
+  assert.equal(getLegendaryCategoryStates(base.map((species) => ownedDinosaur(species.speciesId)), pool)[0].status, 'locked');
   assert.equal(getLegendaryCategoryStates([...base.map((species) => ownedDinosaur(species.speciesId)), ownedDinosaur(legendary.speciesId)], pool)[0].status, 'completed');
 });
 

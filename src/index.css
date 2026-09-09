@@ -1,5 +1,62 @@
 @import "tailwindcss";
 
+/* Stage selection reuses the region poster, cream panel and entry button. */
+.adventure-stage-options { display: grid; width: 100%; gap: .45rem; margin-top: .5rem; }
+.adventure-stage-option { display: grid; gap: .15rem; min-height: 64px; padding: .55rem .75rem; text-align: left; border: 2px solid #d6b77a; border-radius: 14px; background: #fffdf4; color: #78350f; }
+.adventure-stage-option strong { font-size: .95rem; }
+.adventure-stage-option span, .adventure-stage-option small { font-size: .75rem; }
+.adventure-stage-option[aria-pressed="true"]:not(:disabled) { border-color: #047857; background: #d1fae5; }
+.adventure-stage-option:disabled { background: #eee7d6; color: #665d50; cursor: not-allowed; }
+.adventure-stage-option:focus-visible { outline: 3px solid #047857; outline-offset: 2px; }
+.adventure-region-modal__panel--stage-cards .adventure-region-modal__poster { display: none; }
+.adventure-region-modal__panel--stage-cards .adventure-region-modal__body > p { margin-bottom: .25rem; }
+.adventure-region-modal__panel--stage-cards .adventure-stage-options { grid-template-columns: repeat(3,minmax(0,1fr)); gap: .4rem; }
+.adventure-stage-option--card { display: grid; min-width: 0; min-height: 0; gap: .2rem; border: 0; padding: 0; background: transparent; text-align: center; }
+.adventure-stage-option--card[aria-pressed="true"]:not(:disabled), .adventure-stage-option--card:disabled { border: 0; background: transparent; }
+.adventure-stage-card__visual { position: relative; display: block; width: 100%; aspect-ratio: 3 / 4; }
+.adventure-stage-card__visual > img { pointer-events: none; user-select: none; }
+.adventure-stage-card__image, .adventure-stage-card__frame, .adventure-stage-card__locked { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.adventure-stage-card__frame { z-index: 2; }
+.adventure-stage-card__locked { z-index: 3; }
+.adventure-stage-card__badge { position: absolute; z-index: 4; object-fit: contain; }
+.adventure-stage-card__badge--completed { right: -2%; bottom: 5%; width: 38%; height: auto; aspect-ratio: 1; }
+.adventure-stage-card__badge--new { top: 3%; right: -3%; width: 48%; height: auto; aspect-ratio: 4 / 3; }
+.adventure-stage-card__selected { position: absolute; right: 12%; bottom: 4%; z-index: 5; width: 76%; height: auto; aspect-ratio: 3 / 1; object-fit: contain; }
+.adventure-stage-card__time { font-size: .7rem; font-weight: 900; color: #78350f; }
+.adventure-region-modal .adventure-region-modal__panel { overflow-y: auto; }
+.adventure-region-modal .adventure-region-modal__poster { flex-shrink: 0; max-height: min(12dvh, 100px); }
+.adventure-region-modal .adventure-region-modal__body { flex-shrink: 0; }
+.adventure-region-modal .adventure-region-modal__body > * { flex-shrink: 0; }
+.adventure-region-modal .adventure-entry-summary { width: 60%; max-width: 240px; }
+.adventure-stage-notice { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: .6rem; width: min(92vw, 30rem); padding: .8rem; border: 3px solid #d6b77a; border-radius: 16px; background: #fff3ce; color: #78350f; font-weight: 900; }
+.adventure-stage-notice button { min-height: 44px; padding: .5rem .8rem; border-radius: 12px; background: #047857; color: white; flex-shrink: 0; }
+.lava-player-motion { position: absolute; inset: 0; z-index: 11; pointer-events: none; }
+.lava-upper-platform { position: absolute; left: 0; z-index: 8; height: 0; pointer-events: none; }
+.lava-upper-platform__track { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 64px; overflow: hidden; background-repeat: repeat-x; background-position: left top; background-size: 64px 64px; filter: drop-shadow(0 5px 3px rgb(48 16 8 / 38%)); }
+.lava-cliff-ramp-visual { position: absolute; top: -4px; right: 0; display: block; width: 100%; height: auto; max-width: none; object-fit: contain; object-position: right top; pointer-events: none; }
+.lava-cliff-mission { position: absolute; z-index: 25; top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 2px solid #f5bc64; border-radius: 18px; background: #4b281e; color: #fff4d2; font-size: 13px; white-space: nowrap; pointer-events: none; }
+.lava-cliff-mission.is-complete { border-color: #a7f3d0; background: #214e3a; }
+.lava-cliff-mission small { border-left: 1px solid #a7f3d0; padding-left: 8px; }
+.lava-cliff-mission__icon { position: relative; display: block; width: 24px; height: 24px; object-fit: contain; }
+.lava-runner-item.lava-runner-item--symbol, .lava-runner-item.lava-runner-item--secretGate, .lava-runner-item.lava-runner-item--eruption, .lava-runner-item.lava-runner-item--bonusChest { filter: none; }
+.lava-runner-item .lava-cliff-fossil { position: relative; display: block; width: 60px; height: 60px; max-width: none; object-fit: contain; filter: drop-shadow(0 0 7px rgb(254 240 138 / 82%)); }
+.lava-runner-item.lava-runner-item--secretGate { width: 110px; height: 130px; aspect-ratio: auto; }
+.lava-cliff-gate { position: relative; display: block; width: 110px; height: 130px; object-fit: contain; }
+.lava-runner-item.lava-runner-item--bonusChest { width: 76px; height: 76px; aspect-ratio: 1; }
+.lava-cliff-bonus-chest { display: block; width: 100%; height: 100%; object-fit: contain; }
+.lava-runner-item.lava-runner-item--eruption { z-index: 12; width: clamp(3.8rem,14vw,6rem); height: 90px; aspect-ratio: auto; overflow: visible; }
+.lava-cliff-eruption { position: relative; width: 100%; height: 100%; overflow: visible; }
+.lava-cliff-eruption > img { position: absolute; left: 50%; bottom: 0; max-width: none; object-fit: contain; object-position: center bottom; transform: translateX(-50%); transform-origin: center bottom; pointer-events: none; }
+.lava-runner-item .lava-cliff-eruption__warning { z-index: 1; width: 112px; height: 60px; opacity: 1; animation: lava-cliff-warning 400ms ease-in-out infinite alternate; }
+.lava-runner-item .lava-cliff-eruption__active { z-index: 2; width: 112px; height: 180px; opacity: 0; }
+.lava-runner-item--eruption[data-phase="active"] .lava-cliff-eruption__warning, .lava-runner-item--eruption[data-phase="ending"] .lava-cliff-eruption__warning { opacity: 0; animation: none; }
+.lava-runner-item--eruption[data-phase="active"] .lava-cliff-eruption__active { opacity: 1; animation: lava-cliff-eruption-rise 180ms ease-out both; }
+.lava-runner-item--eruption[data-phase="ending"] .lava-cliff-eruption__active { opacity: .25; transform: translateX(-50%) scaleY(.3); }
+.lava-runner-burst--fossil { width: 88px; animation-duration: 500ms; }
+@keyframes lava-cliff-warning { to { opacity: .5; transform: translateX(-50%) scale(.92); } }
+@keyframes lava-cliff-eruption-rise { from { opacity: .4; transform: translateX(-50%) scaleY(.45); } }
+@media (max-height: 600px) { .lava-cliff-mission { top: 6px; padding: 3px 10px; font-size: 11px; } }
+
 /* Our Dinosaur screen: asset canvases include sizeable transparent borders, so each
    panel owns an explicit canvas and a content inset matched to the visible artwork. */
 .pet-screen {
@@ -2147,19 +2204,23 @@ summary:focus-visible {
   .lava-runner-settings-panel fieldset > button[aria-pressed='true'] > i { border-color: white; background: #f97316; box-shadow: inset 0 0 0 3px #f97316,0 0 0 2px #f97316; }
   .lava-runner-settings-resume { width: 100%; margin-top: 1rem; box-shadow: 0 5px 0 #c2410c; }
   .lava-runner-item { bottom: calc(20% + var(--runner-y,0%)); width: clamp(2.2rem,9vw,3.4rem); height: auto; aspect-ratio: 1; }
+  /* World movement owns the wrapper transform; decorative motion stays on the image. */
+  .lava-runner-item--coin img { animation: lava-collectible-float 700ms ease-in-out infinite alternate; }
+  .lava-runner-item--meat img, .lava-runner-item--shopItem img, .lava-runner-item--health_restore img { animation: lava-collectible-float 760ms ease-in-out infinite alternate; }
+  .lava-runner-item--shard img { animation: lava-rare-shard-glow 620ms ease-in-out infinite alternate; }
   .lava-runner-item img { width: 100%; height: 100%; object-fit: contain; }
   .lava-runner-item--rock { width: clamp(3.8rem,15vw,6rem); transform: translateX(-50%) scale(var(--lava-obstacle-scale,1)); transform-origin: center bottom; }
   .lava-runner-item--geyser { width: clamp(4rem,16vw,6.4rem); aspect-ratio: .78; transform: translateX(-50%) scale(var(--lava-obstacle-scale,1)); transform-origin: center bottom; }
-  .lava-runner-item--coin { width: clamp(2rem,7.5vw,3rem); animation: lava-collectible-float 700ms ease-in-out infinite alternate; }
-  .lava-runner-item--meat { width: clamp(2.7rem,10vw,3.8rem); animation: lava-collectible-float 760ms ease-in-out infinite alternate; }
-  .lava-runner-item--shopItem { width: clamp(3rem,11vw,4.4rem); animation: lava-collectible-float 760ms ease-in-out infinite alternate; filter: drop-shadow(0 0 8px rgb(253 224 71 / 75%)); }
-  .lava-runner-item--shard { width: clamp(3rem,11vw,4.2rem); animation: lava-rare-shard-glow 620ms ease-in-out infinite alternate; }
+  .lava-runner-item--coin { width: clamp(2rem,7.5vw,3rem);  }
+  .lava-runner-item--meat { width: clamp(2.7rem,10vw,3.8rem);  }
+  .lava-runner-item--shopItem { width: clamp(3rem,11vw,4.4rem);  filter: drop-shadow(0 0 8px rgb(253 224 71 / 75%)); }
+  .lava-runner-item--shard { width: clamp(3rem,11vw,4.2rem);  }
   .lava-runner-item--checkpoint { z-index: 7; bottom: 19%; width: clamp(6.5rem,23vw,9.5rem); opacity: .94; filter: drop-shadow(0 6px 4px rgb(69 10 10 / 45%)); }
   @keyframes lava-jump-guide { 0%,100% { transform: scale(1); filter: brightness(1); } 45% { transform: scale(1.07); filter: brightness(1.12); box-shadow: 0 7px 0 #c2410c,0 0 0 7px rgb(254 240 138 / 22%); } }
   .lava-runner-pickup { position: absolute; left: var(--lava-player-x); bottom: 52%; z-index: 30; transform: translateX(-50%); border: 3px solid white; border-radius: 999px; padding: .35rem .7rem; color: #78350f; background: #fef3c7; box-shadow: 0 5px 14px rgb(69 10 10 / 35%); font-size: clamp(.8rem,3vw,1.05rem); font-weight: 1000; white-space: nowrap; animation: lava-pickup-pop 850ms ease-out both; }
   .lava-runner-pickup--shard { color: #86198f; background: #fae8ff; }.lava-runner-pickup--meat { color: #b91c1c; }.lava-runner-pickup--checkpoint { color: #9a3412; background: #ffedd5; }
-  @keyframes lava-collectible-float { to { transform: translateX(-50%) translateY(-7%) scale(1.05); filter: drop-shadow(0 0 8px rgb(253 224 71 / 75%)); } }
-  @keyframes lava-rare-shard-glow { to { transform: translateX(-50%) scale(1.1); filter: drop-shadow(0 0 13px #f0abfc); } }
+  @keyframes lava-collectible-float { to { transform: translateY(-7%) scale(1.05); filter: drop-shadow(0 0 8px rgb(253 224 71 / 75%)); } }
+  @keyframes lava-rare-shard-glow { to { transform: scale(1.1); filter: drop-shadow(0 0 13px #f0abfc); } }
   @keyframes lava-pickup-pop { 0% { opacity: 0; transform: translateX(-50%) scale(.65); } 25% { opacity: 1; transform: translateX(-50%) scale(1.12); } 100% { opacity: 0; transform: translateX(-50%) translateY(-2rem) scale(1); } }
   @keyframes lava-track-scroll { to { transform: translateX(-50%); } }
   @media (max-width:480px) { .lava-runner__header { gap: .25rem; padding-inline: .35rem; }.lava-runner__exit { min-height: 2.35rem; padding-inline: .3rem; font-size: .68rem; }.lava-runner__settings { width: 2.35rem; min-height: 2.35rem; }.lava-runner__hud { font-size: .62rem; }.lava-runner__title p { max-width: 9rem; }.lava-runner__controls { gap: .5rem; } }
@@ -3765,4 +3826,4 @@ summary:focus-visible {
 /* Canonical adventure collectible sizing keeps transparent PNG bounds unclipped. */
 .sky-runner-object--rock,.sky-runner-object--cloud,.sky-runner-object--thorn { width: clamp(4.8rem,17vw,7rem); overflow: visible; }
 .sky-runner-object--coin,.sky-runner-object--fragment,.sky-runner-object--health_restore { width: clamp(3.8rem,14vw,5.4rem); overflow: visible; }
-.lava-runner-item--health_restore { width: clamp(3.1rem,11.5vw,4.4rem); overflow: visible; animation: lava-collectible-float 760ms ease-in-out infinite alternate; }
+.lava-runner-item--health_restore { width: clamp(3.1rem,11.5vw,4.4rem); overflow: visible;  }

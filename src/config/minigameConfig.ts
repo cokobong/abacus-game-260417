@@ -97,8 +97,8 @@ export function getAdjustedMinigameCoins(coins: number, multiplier: CoinRewardMu
   return Math.max(0, Math.round(Math.max(0, coins) * multiplier));
 }
 
-export function normalizeLavaValleyRewards(rewards: MinigameRunRewards): MinigameRunRewards {
-  const allowedIds = new Set([...LAVA_VALLEY_SHOP_DROP_POOLS.food, ...LAVA_VALLEY_SHOP_DROP_POOLS.hatchItem]);
+export function normalizeLavaValleyRewards(rewards: MinigameRunRewards, pool = LAVA_VALLEY_SHOP_DROP_POOLS): MinigameRunRewards {
+  const allowedIds = new Set([...pool.food, ...pool.hatchItem]);
   const quantities = rewards.shopItems.reduce<Record<string, number>>((result, item) => {
     if (allowedIds.has(item.itemId) && Number.isFinite(item.quantity) && item.quantity > 0) {
       result[item.itemId] = (result[item.itemId] ?? 0) + Math.floor(item.quantity);
@@ -112,13 +112,13 @@ export function normalizeLavaValleyRewards(rewards: MinigameRunRewards): Minigam
   };
 }
 
-export function createLavaValleyShopDropPlan(random: () => number = Math.random): LavaValleyShopDropPlanItem[] {
-  const count = random() < 0.5 ? LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.minPerRun : LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.maxPerRun;
-  const durationScale = LAVA_VALLEY_DURATION_SECONDS / LAVA_VALLEY_TIMING_REFERENCE_SECONDS;
-  const timingRanges = (count === 1 ? [[25, 65]] : [[20, 35], [55, 75]]).map(([min, max]) => [min * durationScale, max * durationScale]);
+export function createLavaValleyShopDropPlan(random: () => number = Math.random, options?: { playTime: number; itemPool: Record<LavaValleyShopDropCategory, readonly string[]>; shopDropCount: readonly [number, number] }): LavaValleyShopDropPlanItem[] {
+  const count = random() < 0.5 ? (options?.shopDropCount[0] ?? LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.minPerRun) : (options?.shopDropCount[1] ?? LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.maxPerRun);
+  const durationScale = (options?.playTime ?? LAVA_VALLEY_DURATION_SECONDS) / LAVA_VALLEY_TIMING_REFERENCE_SECONDS;
+  const timingRanges = (count === 1 ? [[25, 65]] : count === 2 ? [[20, 35], [55, 75]] : [[15, 25], [38, 50], [62, 76]]).map(([min, max]) => [min * durationScale, max * durationScale]);
   return timingRanges.map(([min, max], index) => {
     const category: LavaValleyShopDropCategory = random() < LAVA_VALLEY_REWARDS_CONFIG.shopItemDrops.categoryWeights.food ? 'food' : 'hatchItem';
-    const pool = LAVA_VALLEY_SHOP_DROP_POOLS[category];
+    const pool = (options?.itemPool ?? LAVA_VALLEY_SHOP_DROP_POOLS)[category];
     const itemId = pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
     return { id: index + 1, category, itemId, spawnAtSeconds: min + random() * (max - min) };
   });
@@ -132,8 +132,8 @@ function addQuantity(inventory: MinigameEconomyState['inventory'], itemId: strin
     : [...inventory, { itemId, quantity }];
 }
 
-export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier) {
-  const normalized = normalizeLavaValleyRewards(rawRewards);
+export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS) {
+  const normalized = normalizeLavaValleyRewards(rawRewards, pool);
   const rewards = { ...normalized, coins: getAdjustedMinigameCoins(normalized.coins, multiplier) };
   const inventoryWithShopItems = rewards.shopItems.reduce((inventory, item) => addQuantity(inventory, item.itemId, item.quantity), state.inventory);
   return {

@@ -147,12 +147,12 @@ const dinosaurImagesBySpeciesId: Partial<Record<Id, DinosaurCharacterImages>> = 
   dimetrodon: dinosaurCharacterAssets.dimetrodon,
   spinosaurus: dinosaurCharacterAssets.spino,
   therizinosaurus: dinosaurCharacterAssets.therizino,
-  volcanodon: dinosaurCharacterAssets.volcanodon,
+  magmarex: dinosaurCharacterAssets.magmarex,
   pteranodon: dinosaurCharacterAssets.pteranodon,
   'swift-raptor': dinosaurCharacterAssets.velociraptor,
   'distortus-rex': dinosaurCharacterAssets.distortusRex,
   'indominus-rex': dinosaurCharacterAssets.indominusRex,
-  starano: dinosaurCharacterAssets.starano,
+  luminadon: dinosaurCharacterAssets.luminadon,
 };
 
 const eggCategoryFoundMethod: Record<DinosaurEggCategory, string> = {
@@ -188,12 +188,12 @@ const discoveryHintBySpeciesId: Partial<Record<Id, string>> = {
   dimetrodon: '따뜻한 화산 바위 위에 돛 모양 등을 가진 낮은 그림자가 쉬고 있어요.',
   spinosaurus: '화산섬 물가에서 커다란 물결이 일었어요.',
   therizinosaurus: '하늘섬 나뭇가지 사이로 아주 긴 앞발톱이 뻗어 잎을 조심히 골라요.',
-  volcanodon: '해가 진 화산 바위 위에서 등불 같은 불꽃빛이 따뜻하게 일렁여요.',
+  magmarex: '검은 바위 틈에서 뜨거운 빛이 새어 나오고 있어요.',
   pteranodon: '구름 사이로 넓은 날개와 길쭉한 부리를 가진 그림자가 날아가요.',
   'swift-raptor': '하늘섬 풀밭에 작은 발톱 자국만 남기고 날씬한 그림자가 휙 사라졌어요.',
   'distortus-rex': '화산재 위에 거대한 발자국과 여섯 팔다리로 짚은 자국이 남아 있어요.',
   'indominus-rex': '화산 바위 틈에 거대한 발톱 자국만 남긴 채 몸을 숨긴 친구가 있어요.',
-  starano: '하늘섬의 고요한 밤에 별빛을 닮은 날개가 반짝인다는 소문이 있어요.',
+  luminadon: '구름 너머에서 눈부신 날개가 반짝이고 있어요.',
   'ancient-guardian': '유적의 닫힌 문 너머에서 누군가 오랫동안 지켜 온 기척이 느껴져요.',
 };
 
@@ -215,12 +215,12 @@ const kidFriendlyDexDescriptions: Record<Id, string> = {
   dimetrodon: '디메트로돈은 등에 멋진 돛을 펼친 느긋한 친구예요. 따뜻한 햇살을 받으며 쉬는 시간을 좋아해요.',
   spinosaurus: '스피노사우루스는 물가를 좋아하는 집중력 좋은 공룡이에요. 조용히 물결을 바라보며 생각을 모아요.',
   therizinosaurus: '테리지노사우루스는 긴 손을 가진 섬세한 친구예요. 나뭇잎을 조심조심 골라 친구들과 나누어 먹어요.',
-  volcanodon: '불카노돈은 따뜻한 불꽃빛을 품은 열정적인 공룡이에요. 마음이 뜨거워서 친구를 응원하는 걸 좋아해요.',
+  magmarex: '마그마렉스은 따뜻한 불꽃빛을 품은 열정적인 공룡이에요. 마음이 뜨거워서 친구를 응원하는 걸 좋아해요.',
   pteranodon: '프테라노돈은 하늘을 나는 걸 좋아하는 날쌘 친구예요. 멀리까지 날아가 새로운 길을 찾아와요.',
   'swift-raptor': '벨로시랩터는 번개처럼 빠르게 달리는 재빠른 친구예요. 장난을 좋아하지만 약속은 꼭 지켜요.',
   'distortus-rex': '디스토르투스 렉스는 티라노사우루스를 더 크게 만들려던 실험에서 태어난 돌연변이 크리처예요. 커다란 머리와 여섯 개의 팔다리로 무겁게 움직여요.',
   'indominus-rex': '인도미누스 렉스는 여러 동물의 특징을 모아 만든 거대하고 영리한 하이브리드 공룡이에요. 주변을 빠르게 살피고 숨어 움직이는 데 아주 능숙해요.',
-  starano: '스타라노는 별빛 날개를 가진 조용하고 신중한 공룡이에요. 밤하늘을 보며 친구들의 소원을 들어줘요.',
+  luminadon: '루미나돈는 별빛 날개를 가진 조용하고 신중한 공룡이에요. 밤하늘을 보며 친구들의 소원을 들어줘요.',
 };
 
 const speciesDrafts: Array<{
@@ -259,13 +259,13 @@ const speciesDrafts: Array<{
   { speciesId: 'dimetrodon', displayName: '디메트로돈', defaultName: '돛단 디메트로', rarity: 'common', habitat: 'volcano-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 15, personality: '느긋함', favoriteFoodName: '따뜻한 열매', silhouette: 'M' },
   { speciesId: 'spinosaurus', displayName: '스피노사우루스', defaultName: '물결 스피노', rarity: 'special', habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 16, personality: '집중함', favoriteFoodName: '물결 젤리', silhouette: 'S' },
   { speciesId: 'therizinosaurus', displayName: '테리지노사우루스', defaultName: '긴손 테리지노', rarity: 'special', habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 17, personality: '섬세함', favoriteFoodName: '긴 잎사귀', silhouette: 'T' },
-  { speciesId: 'volcanodon', displayName: '불카노돈', defaultName: '불카노돈', rarity: 'rare', habitat: 'volcano-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 18, personality: '열정적', favoriteFoodName: '불꽃 사탕', silhouette: '△', themeLabel: '불꽃 등 공룡', description: '화산섬의 따뜻한 불꽃을 등에 품은 희귀 공룡이에요.', dexDescription: '화산섬의 따뜻한 불꽃을 등에 품은 희귀 공룡이에요.' },
+  { speciesId: 'magmarex', displayName: '마그마렉스', defaultName: '마그마렉스', rarity: 'legendary', habitat: 'volcano-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 8, personality: '열정적', favoriteFoodName: '불꽃 사탕', silhouette: '△', themeLabel: '용암 결정 공룡' },
   { speciesId: 'pteranodon', displayName: '프테라노돈', defaultName: '하늘 프테라', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 19, personality: '자유로움', favoriteFoodName: '구름 젤리', silhouette: '⌁' },
   { speciesId: 'diplodocus', displayName: '디플로도쿠스', defaultName: '길쭉 디플로', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 20, personality: '온화함', favoriteFoodName: '부드러운 잎', silhouette: 'L' },
   { speciesId: 'swift-raptor', displayName: '벨로시랩터', defaultName: '번개 벨로시랩터', rarity: 'common', habitat: 'secret-land', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 21, personality: '재빠름', favoriteFoodName: '번개 사탕', silhouette: '!' },
   { speciesId: 'distortus-rex', displayName: '디스토르투스 렉스', defaultName: 'D-렉스', rarity: 'special', habitat: 'secret-land', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 22, personality: '끈질김', favoriteFoodName: '특대 고기볼', silhouette: 'X', themeLabel: '돌연변이 티라노 크리처' },
   { speciesId: 'indominus-rex', displayName: '인도미누스 렉스', defaultName: 'I-렉스', rarity: 'special', habitat: 'secret-land', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 23, personality: '영리함', favoriteFoodName: '거대 고기볼', silhouette: 'I' },
-  { speciesId: 'starano', displayName: '스타라노', defaultName: '스타라노', rarity: 'rare', habitat: 'secret-land', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 24, personality: '신중함', favoriteFoodName: '비밀 열매', silhouette: '?', themeLabel: '별빛 날개 공룡', description: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.', dexDescription: '비밀의 땅 밤하늘에서 내려온 듯한 별빛 날개를 가진 희귀 공룡이에요.' },
+  { speciesId: 'luminadon', displayName: '루미나돈', defaultName: '루미나돈', rarity: 'legendary', habitat: 'sky-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 16, personality: '신중함', favoriteFoodName: '비밀 열매', silhouette: '?', themeLabel: '빛나는 날개 공룡' },
 ];
 
 type DexWorldPlacement = Pick<DinosaurSpecies, 'habitat' | 'eggCategory' | 'unlockSource' | 'collectionOrder' | 'rarity'>;
@@ -278,7 +278,7 @@ const dexWorldPlacementBySpeciesId: Record<string, DexWorldPlacement> = {
   spinosaurus: { habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 5, rarity: 'special' },
   'distortus-rex': { habitat: 'volcano-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 6, rarity: 'special' },
   'indominus-rex': { habitat: 'volcano-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 7, rarity: 'rare' },
-  volcanodon: { habitat: 'volcano-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 8, rarity: 'legendary' },
+  magmarex: { habitat: 'volcano-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 8, rarity: 'legendary' },
   pteranodon: { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 9, rarity: 'common' },
   'swift-raptor': { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 10, rarity: 'common' },
   pachycephalosaurus: { habitat: 'sky-island', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 11, rarity: 'common' },
@@ -286,7 +286,7 @@ const dexWorldPlacementBySpeciesId: Record<string, DexWorldPlacement> = {
   dilophosaurus: { habitat: 'sky-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 13, rarity: 'special' },
   therizinosaurus: { habitat: 'sky-island', eggCategory: 'special', unlockSource: 'special-egg', collectionOrder: 14, rarity: 'special' },
   crystalo: { habitat: 'sky-island', eggCategory: 'rare', unlockSource: 'rare-egg', collectionOrder: 15, rarity: 'rare' },
-  starano: { habitat: 'sky-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 16, rarity: 'legendary' },
+  luminadon: { habitat: 'sky-island', eggCategory: 'legend', unlockSource: 'legend-egg', collectionOrder: 16, rarity: 'legendary' },
   'baby-tricera': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 17, rarity: 'common' },
   'plate-stego': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 18, rarity: 'common' },
   'long-brachio': { habitat: 'ancient-ruins', eggCategory: 'normal', unlockSource: 'normal-egg', collectionOrder: 19, rarity: 'common' },
@@ -333,12 +333,12 @@ const dinosaurDietBySpeciesId: Record<string, DinosaurDiet> = {
   dimetrodon: 'carnivore',
   spinosaurus: 'carnivore',
   therizinosaurus: 'omnivore',
-  volcanodon: 'herbivore',
+  magmarex: 'herbivore',
   pteranodon: 'carnivore',
   'swift-raptor': 'carnivore',
   'distortus-rex': 'carnivore',
   'indominus-rex': 'carnivore',
-  starano: 'omnivore',
+  luminadon: 'omnivore',
 };
 
 export const dinosaurSpecies: DinosaurSpecies[] = [...speciesDrafts.filter((species) => species.speciesId !== 'diplodocus'), ancientGuardianDraft].map<DinosaurSpecies>((sourceSpecies) => {

@@ -1,3 +1,4 @@
+import type { AdventureStageProgress } from '../../utils/adventureStageProgress';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -46,6 +47,7 @@ type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'food' | 'egg' | 'hatchItem';
 
 export interface ShopScreenProps {
+  stageProgress?: AdventureStageProgress;
   coins: number;
   feedback: string;
   inventory: InventoryItemState[];
@@ -73,7 +75,7 @@ const shopItemAssets: Record<string, string> = {
   'rare-egg-fragment': shopItemHatchRareFragment,
 };
 
-export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
+export function ShopScreen({ stageProgress, coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
   const [activeCategory, setActiveCategory] = useState<ShopCategoryId>('food');
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
   const visibleItems = useMemo(
@@ -163,6 +165,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, ownedEg
 
       {detailItem && createPortal(
         <ShopItemDetailDialog
+          stageProgress={stageProgress}
           item={detailItem}
           coins={coins}
           inventory={inventory}
@@ -189,6 +192,7 @@ function ShopProductCard({
   onPurchase,
 }: {
   key?: string;
+  stageProgress?: AdventureStageProgress;
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
@@ -201,7 +205,7 @@ function ShopProductCard({
   const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const itemAsset = shopItemAssets[item.id];
   const [isPressed, setIsPressed] = useState(false);
-  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
+  const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
 
@@ -231,9 +235,9 @@ function ShopProductCard({
       </button>
 
       <div className="shop-item-card__price absolute left-1/2 top-[49%] h-[17%] w-[88%] -translate-x-1/2 overflow-hidden">
-        {!isRareEgg && <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />}
-        <p className={`relative z-10 flex h-full items-center justify-center gap-1 px-[9%] text-[clamp(11px,1.65vw,15px)] font-extrabold text-amber-950 ${isRareEgg ? 'rounded-full border-2 border-violet-200 bg-violet-50' : 'translate-x-[10px]'}`}>
-          {isRareEgg && requiredFragment ? (
+        {!isFragmentEgg && <img src={shopPriceChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />}
+        <p className={`relative z-10 flex h-full items-center justify-center gap-1 px-[9%] text-[clamp(11px,1.65vw,15px)] font-extrabold text-amber-950 ${isFragmentEgg ? 'rounded-full border-2 border-violet-200 bg-violet-50' : 'translate-x-[10px]'}`}>
+          {isFragmentEgg && requiredFragment ? (
             <>
               <img src={shopItemHatchRareFragment} alt="희귀조각" className="h-[clamp(18px,2.6dvh,26px)] w-[clamp(18px,2.6dvh,26px)] shrink-0 object-contain" />
               <span>{fragmentQuantity}/{requiredFragment.amount}</span>
@@ -244,7 +248,7 @@ function ShopProductCard({
 
       <div className="shop-item-card__status absolute left-1/2 top-[67%] h-[8%] w-[66%] -translate-x-1/2 overflow-hidden">
         <img src={shopStatusChip} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
-        <p className={`relative z-10 flex h-full items-center justify-center px-1 font-black ${isRareEgg ? 'whitespace-nowrap text-[clamp(8px,1.15vw,10px)]' : 'truncate text-[clamp(9px,1.3vw,12px)]'} ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
+        <p className={`relative z-10 flex h-full items-center justify-center px-1 font-black ${isFragmentEgg ? 'whitespace-nowrap text-[clamp(8px,1.15vw,10px)]' : 'truncate text-[clamp(9px,1.3vw,12px)]'} ${status.canBuy ? 'text-emerald-900' : 'text-rose-800'}`}>
           {status.actionLabel}
         </p>
       </div>
@@ -275,6 +279,7 @@ function ShopProductCard({
 }
 
 function ShopItemDetailDialog({
+  stageProgress,
   item,
   coins,
   inventory,
@@ -284,6 +289,7 @@ function ShopItemDetailDialog({
   onPurchase,
   onClose,
 }: {
+  stageProgress?: AdventureStageProgress;
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
@@ -296,10 +302,10 @@ function ShopItemDetailDialog({
   const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
   const itemAsset = shopItemAssets[item.id];
   const effectLabel = getShopItemEffectLabel(item);
-  const isRareEgg = item.category === 'egg' && isRareEggItem(item);
+  const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
-  const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary' ? getLegendaryCategoryStates(ownedDinosaurs) : [];
+  const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary' ? getLegendaryCategoryStates(ownedDinosaurs, undefined, stageProgress) : [];
 
   return (
     <div
@@ -342,11 +348,11 @@ function ShopItemDetailDialog({
 
           <div className="mt-[2.5%] grid w-[90%] flex-none grid-cols-2 gap-[3%]">
             <div className="relative aspect-[530/210] min-w-0">
-              {isRareEgg ? <div className="absolute inset-0 rounded-2xl border-2 border-violet-200 bg-violet-50" /> : <img src={shopPopupPricePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" draggable={false} />}
+              {isFragmentEgg ? <div className="absolute inset-0 rounded-2xl border-2 border-violet-200 bg-violet-50" /> : <img src={shopPopupPricePanel} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" draggable={false} />}
               <div className="absolute inset-[12%_8%_17%] flex flex-col items-center justify-center">
                 <span className="text-[clamp(0.62rem,1.3dvh,0.78rem)] font-black text-amber-700">가격</span>
                 <strong className="flex max-w-full items-center justify-center gap-1 text-[clamp(0.9rem,2dvh,1.2rem)] font-black">
-                  {isRareEgg && requiredFragment ? <><img src={shopItemHatchRareFragment} alt="희귀조각" className="h-5 w-5 object-contain" />{fragmentQuantity}/{requiredFragment.amount}</> : <>{item.price.toLocaleString()}코인</>}
+                  {isFragmentEgg && requiredFragment ? <><img src={shopItemHatchRareFragment} alt="희귀조각" className="h-5 w-5 object-contain" />{fragmentQuantity}/{requiredFragment.amount}</> : <>{item.price.toLocaleString()}코인</>}
                 </strong>
               </div>
             </div>
@@ -359,7 +365,7 @@ function ShopItemDetailDialog({
             </div>
           </div>
 
-          {requiredFragment && !isRareEgg && (
+          {requiredFragment && !isFragmentEgg && (
             <p className="mt-[1%] flex-none text-[clamp(0.65rem,1.3dvh,0.8rem)] font-black text-violet-800">
               희귀조각 {fragmentQuantity}/{requiredFragment.amount}개
             </p>
@@ -367,7 +373,7 @@ function ShopItemDetailDialog({
 
           {legendaryCategories.length > 0 && (
             <div className="mt-[1%] grid w-[90%] grid-cols-2 gap-1 text-[clamp(0.58rem,1.15dvh,0.72rem)] font-black">
-              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} {category.discovered}/{category.required} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
+              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} Stage 3 {category.stage3Unlocked ? '✓' : '🔒'} · 유물 {category.relicFragmentCount}/{category.requiredRelicFragments} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
             </div>
           )}
 
@@ -448,10 +454,10 @@ function getOwnedInventoryQuantity(inventory: InventoryItemState[], itemId: stri
   return inventory.find((item) => item.itemId === itemId)?.quantity ?? 0;
 }
 
-function isRareEggItem(item: Extract<ItemConfig, { category: 'egg' }>) {
-  return item.eggCategory === 'rare' && getEggRequiredFragments(item).length > 0;
+function isFragmentPricedEgg(item: Extract<ItemConfig, { category: 'egg' }>) {
+  return (item.eggCategory === 'rare' || item.eggCategory === 'legendary') && getEggRequiredFragments(item).length > 0;
 }
 
 function getHabitatLabel(habitatId: string) {
-  return ({ 'green-forest': '초록 숲', 'sparkle-cave': '반짝 동굴', 'volcano-island': '화산섬', 'secret-land': '비밀의 땅' } as Record<string, string>)[habitatId] ?? habitatId;
+  return ({ 'green-forest': '초록 숲', 'sparkle-cave': '반짝 동굴', 'volcano-island': '화산지대', 'sky-island': '고공정원', 'ancient-ruins': '고대밀림', 'deep-sea': '심해세계', 'ice-continent': '빙하기', 'secret-land': '비밀의 땅' } as Record<string, string>)[habitatId] ?? habitatId;
 }

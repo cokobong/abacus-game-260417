@@ -1,13 +1,12 @@
+import { LEGENDARY_EGG_REQUIRED_RELIC_FRAGMENTS, LEGENDARY_PURCHASE_ENABLED, LEGENDARY_REGION_BY_HABITAT } from '../config/legendaryEggConfig';
+import { getAdventureStageState, type AdventureStageProgress } from './adventureStageProgress';
 import { getEggRequiredFragments, type EggItemConfig } from '../config/itemConfig';
 import { dexHabitats, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../data/dinosaurSpecies';
 import type { OwnedDinosaur, OwnedEgg } from '../types/game';
 import { canBuyEggItem } from './hatchCandidates';
 import { getOwnedEggCount } from './eggMigration';
 
-export const LEGENDARY_REQUIRED_DISCOVERIES = 5;
-export const LEGENDARY_FRAGMENT_COST = 10;
-// 상점/도감/알 해금 구조 정리 전까지 전설알 판매만 임시 중단한다.
-const LEGENDARY_PURCHASE_ENABLED = false;
+
 export type EggPurchaseStatus = 'available' | 'soldOut' | 'locked' | 'insufficientCoins' | 'insufficientFragments' | 'completed' | 'comingSoon';
 
 export type EggPurchaseState = {
@@ -20,18 +19,19 @@ export type EggPurchaseState = {
   availablePoolCount: number;
 };
 
-export type LegendaryCategoryState = { habitatId: DinosaurHabitatId; discovered: number; required: number; status: 'available' | 'locked' | 'completed' | 'unavailable'; legendarySpeciesId?: string };
+export type LegendaryCategoryState = { habitatId: DinosaurHabitatId; stage3Unlocked: boolean; relicFragmentCount: number; requiredRelicFragments: number; status: 'available' | 'locked' | 'completed' | 'unavailable'; legendarySpeciesId?: string };
 
-export function getLegendaryCategoryStates(ownedDinosaurs: OwnedDinosaur[], speciesPool: DinosaurSpecies[] = dinosaurSpecies): LegendaryCategoryState[] {
+export function getLegendaryCategoryStates(ownedDinosaurs: OwnedDinosaur[], speciesPool: DinosaurSpecies[] = dinosaurSpecies, stageProgress: AdventureStageProgress = {}, relicFragments: Partial<Record<DinosaurHabitatId, number>> = {}): LegendaryCategoryState[] {
   const ownedIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));
   return dexHabitats.map((habitatId) => {
     const categorySpecies = speciesPool.filter((species) => species.habitat === habitatId && !species.isPlaceholder && species.status !== 'planned');
-    const nonLegendary = categorySpecies.filter((species) => species.rarity !== 'legendary');
     const legendary = categorySpecies.find((species) => species.rarity === 'legendary');
-    const discovered = nonLegendary.filter((species) => ownedIds.has(species.speciesId)).length;
-    const required = Math.min(LEGENDARY_REQUIRED_DISCOVERIES, nonLegendary.length);
-    const status = !legendary ? 'unavailable' : ownedIds.has(legendary.speciesId) ? 'completed' : discovered >= required ? 'available' : 'locked';
-    return { habitatId, discovered, required, status, legendarySpeciesId: legendary?.speciesId };
+    const stage3Unlocked = getAdventureStageState(stageProgress, LEGENDARY_REGION_BY_HABITAT[habitatId], 3) !== 'locked';
+    const rawCount = relicFragments[habitatId];
+    const relicFragmentCount = typeof rawCount === 'number' && Number.isFinite(rawCount) ? Math.max(0, Math.floor(rawCount)) : 0;
+    const requiredRelicFragments = LEGENDARY_EGG_REQUIRED_RELIC_FRAGMENTS;
+    const status = !legendary ? 'unavailable' : ownedIds.has(legendary.speciesId) ? 'completed' : stage3Unlocked && relicFragmentCount >= requiredRelicFragments ? 'available' : 'locked';
+    return { habitatId, stage3Unlocked, relicFragmentCount, requiredRelicFragments, status, legendarySpeciesId: legendary?.speciesId };
   });
 }
 
@@ -57,7 +57,7 @@ export function getEggPurchaseState(
     const implemented = categories.filter((category) => category.status !== 'unavailable');
     if (implemented.length === 0) return { ...base, status: 'locked', disabled: true, label: '전설 준비 중' };
     if (implemented.every((category) => category.status === 'completed')) return { ...base, status: 'completed', disabled: true, label: '모든 전설 완료' };
-    if (!implemented.some((category) => category.status === 'available')) return { ...base, status: 'locked', disabled: true, label: '도감 조건 필요' };
+    if (!implemented.some((category) => category.status === 'available')) return { ...base, status: 'locked', disabled: true, label: 'Stage 3 · 유물조각 조건 필요' };
   }
 
   if (purchaseLimitReached || linkedSpeciesOwned || (!availability.hasEggInCategory && availability.remainingCandidateCount === 0)) {

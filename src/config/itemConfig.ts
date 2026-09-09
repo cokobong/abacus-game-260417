@@ -1,3 +1,4 @@
+import { LEGENDARY_EGG_RARE_FRAGMENT_COST, REPLACEMENT_LEGENDARY_EGGS } from './legendaryEggConfig';
 import type { CostumeSlot, DinosaurState } from '../types/game';
 import type { DinosaurDiet, DinosaurHabitatId } from '../data/dinosaurSpecies';
 
@@ -314,14 +315,14 @@ export const itemConfigs: ItemConfig[] = [
     name: '전설 알',
     category: 'egg',
     price: 0,
-    description: '도감 카테고리를 완성해 전설 공룡을 깨우는 알이에요.',
+    description: '지역 Stage 3 해금과 유물조각 2개가 필요해요. 희귀조각 20개로 만날 수 있어요.',
     sortOrder: 32,
     rarity: 'legendary',
     eggType: 'legendary',
     eggCategory: 'legendary',
     requiredFragmentId: 'rare-egg-fragment',
-    requiredFragmentAmount: 10,
-    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: 10 }],
+    requiredFragmentAmount: LEGENDARY_EGG_RARE_FRAGMENT_COST,
+    requiredFragments: [{ itemId: 'rare-egg-fragment', amount: LEGENDARY_EGG_RARE_FRAGMENT_COST }],
   },
   {
     id: 'hatch-warm-stone',
@@ -362,14 +363,23 @@ export const itemConfigs: ItemConfig[] = [
 export const legacyEggItemConfigs: EggItemConfig[] = [
   { id: 'green-forest-rare-egg', name: '초록 숲 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 101, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'green-forest', linkedSpeciesId: 'leafcera', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
   { id: 'sparkle-cave-rare-egg', name: '반짝 동굴 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 102, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'sparkle-cave', linkedSpeciesId: 'crystalo', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
-  { id: 'volcano-island-rare-egg', name: '화산섬 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 103, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'volcano-island', linkedSpeciesId: 'volcanodon', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
+  { id: 'volcano-island-rare-egg', name: '화산섬 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 103, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'volcano-island', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
   { id: 'ocean-blue-egg', name: '바다빛 알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 104, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'sparkle-cave', linkedSpeciesId: 'crystalo', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
-  { id: 'secret-land-rare-egg', name: '비밀의 땅 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 105, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', linkedSpeciesId: 'starano', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
-  { id: 'legacy-legend-rare-egg', name: '전설 알 (구형)', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 106, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', linkedSpeciesId: 'starano', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
+  { id: 'secret-land-rare-egg', name: '비밀의 땅 희귀알', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 105, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
+  { id: 'legacy-legend-rare-egg', name: '전설 알 (구형)', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 106, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
 ];
 
+// Reserved regional products; excluded from SHOP_CATALOG while relics are unavailable.
+export const regionalLegendaryEggConfigs: EggItemConfig[] = REPLACEMENT_LEGENDARY_EGGS.map((entry, index) => ({
+  id: entry.id, name: entry.name, category: 'egg', price: 0, sortOrder: 200 + index,
+  description: entry.speciesName + '를 만나는 알이에요. Stage 3 해금 · 유물조각 2개 필요 (준비중)',
+  rarity: 'legendary', eggType: 'legendary', eggCategory: 'legendary', eggHabitatId: entry.habitat,
+  linkedSpeciesId: entry.speciesId, purchaseLimit: 1,
+  requiredFragments: [{ itemId: 'rare-egg-fragment', amount: LEGENDARY_EGG_RARE_FRAGMENT_COST }],
+}));
+
 export function getItemConfig(itemId: string) {
-  return itemConfigs.find((item) => item.id === itemId) ?? null;
+  return itemConfigs.find((item) => item.id === itemId) ?? regionalLegendaryEggConfigs.find((item) => item.id === itemId) ?? null;
 }
 
 export function getFoodItemConfig(itemId: string) {

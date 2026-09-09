@@ -1,3 +1,4 @@
+import { dinosaurSpecies } from '../data/dinosaurSpecies';
 import { useEffect, useMemo, useState } from 'react';
 import './DinosaurAssetReview.css';
 
@@ -24,8 +25,6 @@ const speciesLabels: Record<string, string> = {
   indominus_rex: '인도미누스 렉스',
   leafcera: '리프케라',
   pteranodon: '프테라노돈',
-  starano: '스타라노',
-  volcanodon: '볼케이노돈',
 };
 
 const stageOrder = ['baby', 'youth', 'adult'] as const;
@@ -38,7 +37,7 @@ function baseName(path: string) {
 function parseAsset(path: string) {
   const name = baseName(path);
   const match = name.match(/^dino_(.+?)(?:_(youth|adult))?_character\.png$/);
-  if (!match) return null;
+  if (!match || !dinosaurSpecies.some(species => species.speciesId.replaceAll('-', '_') === match[1])) return null;
   return { species: match[1]!, stage: (match[2] ?? 'baby') as (typeof stageOrder)[number], name };
 }
 

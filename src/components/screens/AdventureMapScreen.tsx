@@ -4,13 +4,17 @@ import { LockKeyhole, X } from 'lucide-react';
 import { adventureMapAssets } from '../../assets/adventure';
 import { ADVENTURE_REGIONS, adventureRegions, type AdventureRegion, type AdventureRegionId } from '../../data/adventureRegions';
 import { playSound } from '../../audio/audioManager';
+import { ADVENTURE_STAGE_CATALOG, type AdventureStageNumber } from '../../config/adventureStageCatalog';
+import { lavaValleyStageSelectAssets } from '../../assets/adventure/lava-valley';
+import { canPlayAdventureStage, getAdventureStageState, type AdventureStageProgress } from '../../utils/adventureStageProgress';
 
 export interface AdventureMapScreenProps {
   coins: number;
-  onStartGame: (gameId: string) => void;
+  onStartGame: (gameId: string, stageNumber: AdventureStageNumber) => void;
+  stageProgress: AdventureStageProgress;
 }
 
-export function AdventureMapScreen({ coins, onStartGame }: AdventureMapScreenProps) {
+export function AdventureMapScreen({ coins, onStartGame, stageProgress }: AdventureMapScreenProps) {
   const [selectedRegionId, setSelectedRegionId] = useState<AdventureRegionId | null>(null);
   const selectedRegion = selectedRegionId ? ADVENTURE_REGIONS[selectedRegionId] : null;
   const openRegionModal = (regionId: AdventureRegionId) => setSelectedRegionId(regionId);
@@ -37,13 +41,15 @@ export function AdventureMapScreen({ coins, onStartGame }: AdventureMapScreenPro
 
       {selectedRegion && (
         <RegionDetailModal
+          key={selectedRegion.id}
           region={selectedRegion}
+          stageProgress={stageProgress}
           coins={coins}
           onClose={() => setSelectedRegionId(null)}
-          onStart={() => {
+          onStart={(stageNumber) => {
             if (!selectedRegion.gameId) return;
             playSound('ui_button_tap');
-            onStartGame(selectedRegion.gameId);
+            onStartGame(selectedRegion.gameId, stageNumber);
           }}
         />
       )}
@@ -85,7 +91,9 @@ function AdventureRegionHotspot({ region, onSelect }: { key?: string; region: Ad
   );
 }
 
-function RegionDetailModal({ region, coins, onClose, onStart }: { region: AdventureRegion; coins: number; onClose: () => void; onStart: () => void }) {
+function RegionDetailModal({ region, coins, onClose, onStart, stageProgress }: { key?: string; region: AdventureRegion; coins: number; onClose: () => void; onStart: (stageNumber: AdventureStageNumber) => void; stageProgress: AdventureStageProgress }) {
+  const [selectedStage, setSelectedStage] = useState<AdventureStageNumber>(1);
+  const canPlay = canPlayAdventureStage(stageProgress, region.id, selectedStage);
   const entryCost = region.entryCost ?? 0;
   const isOpen = region.status === 'open' && Boolean(region.gameId);
   const canAfford = coins >= entryCost;
@@ -93,12 +101,35 @@ function RegionDetailModal({ region, coins, onClose, onStart }: { region: Advent
 
   return createPortal(
     <div className="adventure-region-modal fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-3" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="adventure-region-title" className="adventure-region-modal__panel relative overflow-hidden rounded-[1.75rem] border-4 border-amber-200 bg-[#fff3ce] shadow-2xl">
+      <section role="dialog" aria-modal="true" aria-labelledby="adventure-region-title" className={`adventure-region-modal__panel relative overflow-hidden rounded-[1.75rem] border-4 border-amber-200 bg-[#fff3ce] shadow-2xl ${region.id === 'lavaValley' ? 'adventure-region-modal__panel--stage-cards' : ''}`}>
         <button type="button" onClick={onClose} className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-md" aria-label="상세 창 닫기"><X /></button>
         <img src={region.poster} alt={`${region.name} 포스터`} className="adventure-region-modal__poster object-contain" draggable={false} />
         <div className="adventure-region-modal__body text-center">
           <h2 id="adventure-region-title" className="text-2xl font-black text-amber-950">{region.name}</h2>
           <p className="mt-1 text-sm font-bold text-amber-800">{region.description}</p>
+          <div className="adventure-stage-options" role="group" aria-label={`${region.name} Stage 선택`}>
+            {ADVENTURE_STAGE_CATALOG[region.id].map((stage) => {
+              const state = getAdventureStageState(stageProgress, region.id, stage.stageNumber);
+              const enabled = isOpen && canPlayAdventureStage(stageProgress, region.id, stage.stageNumber);
+              const label = state === 'locked' ? 'LOCKED · 잠김' : state === 'completed' ? '완료 · 다시 선택' : state === 'new' ? 'NEW' : '선택 가능';
+              const isSelected = selectedStage === stage.stageNumber;
+              const card = region.id === 'lavaValley' ? lavaValleyStageSelectAssets.cards[stage.stageNumber] : null;
+              const showLocked = state === 'locked' || !stage.implemented;
+              return <button key={stage.id} type="button" disabled={!enabled} aria-pressed={isSelected} aria-label={`Stage ${stage.stageNumber} · ${stage.name} · ${label}${!stage.implemented ? ' · 준비 중' : ` · ${stage.playTime}초`}`} onClick={() => setSelectedStage(stage.stageNumber)} className={`adventure-stage-option ${card ? 'adventure-stage-option--card' : ''}`}>
+                {card && <span className="adventure-stage-card__visual">
+                  <img className="adventure-stage-card__image" src={card} alt="" width="1086" height="1448" aria-hidden="true" draggable={false} />
+                  {isSelected && <img className="adventure-stage-card__frame" src={lavaValleyStageSelectAssets.selectedFrame} alt="" width="1086" height="1448" aria-hidden="true" draggable={false} />}
+                  {showLocked && <img className="adventure-stage-card__locked" src={lavaValleyStageSelectAssets.lockedOverlay} alt="" width="1086" height="1448" aria-hidden="true" draggable={false} />}
+                  {state === 'completed' && <img className="adventure-stage-card__badge adventure-stage-card__badge--completed" src={lavaValleyStageSelectAssets.completedBadge} alt="완료" width="1254" height="1254" draggable={false} />}
+                  {state === 'new' && <img className="adventure-stage-card__badge adventure-stage-card__badge--new" src={lavaValleyStageSelectAssets.newBadge} alt="새로 해금" width="1448" height="1086" draggable={false} />}
+                  {isSelected && <img className="adventure-stage-card__selected" src={lavaValleyStageSelectAssets.selectedButton} alt="선택됨" width="2172" height="724" draggable={false} />}
+                </span>}
+                <strong className={card ? 'sr-only' : undefined}>Stage {stage.stageNumber} · {stage.name}</strong>
+                <span className={card ? 'sr-only' : undefined}>{stage.description}</span>
+                <small className={card ? 'adventure-stage-card__time' : undefined}>{card ? (!stage.implemented ? `${stage.playTime}초 예정` : `${stage.playTime}초`) : `${label}${!stage.implemented ? ' · 준비 중' : ` · ${stage.playTime}초`}`}</small>
+              </button>;
+            })}
+          </div>
 
           {isOpen ? (
             <>
@@ -114,7 +145,7 @@ function RegionDetailModal({ region, coins, onClose, onStart }: { region: Advent
               {!canAfford && <p className="mt-2 font-black text-red-600">코인이 {(entryCost - coins).toLocaleString()}개 부족해요.</p>}
               <div className="adventure-region-modal__footer mt-3 grid grid-cols-[1fr_1.4fr] items-center gap-3">
                 <button type="button" onClick={onClose} className="min-h-12 rounded-2xl bg-white font-black text-amber-900 shadow-[0_4px_0_#d6b77a]">취소</button>
-                <button type="button" disabled={!canAfford} onClick={onStart} className="adventure-start-button disabled:cursor-not-allowed disabled:grayscale">
+                <button type="button" disabled={!canAfford || !canPlay} onClick={() => onStart(selectedStage)} aria-label={`Stage ${selectedStage} 모험 시작`} className="adventure-start-button disabled:cursor-not-allowed disabled:grayscale">
                   <img src={adventureMapAssets.startButton} alt="모험 시작" className="block w-full object-contain" draggable={false} />
                 </button>
               </div>

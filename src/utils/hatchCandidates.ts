@@ -1,3 +1,4 @@
+import { REPLACEMENT_LEGENDARY_EGGS } from '../config/legendaryEggConfig';
 import { getEggItemConfig, type EggCategory, type EggItemConfig } from '../config/itemConfig';
 import { dexHabitats, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../data/dinosaurSpecies';
 import type { OwnedDinosaur, OwnedEgg } from '../types/game';
@@ -22,7 +23,10 @@ export function getHatchCandidates(egg: OwnedEgg | null, ownedDinosaurs: OwnedDi
 
   const eggCategory = getEggCategoryForOwnedEgg(egg);
   const eggHabitatId = getEggHabitatForOwnedEgg(egg);
-  const implementedSpecies = getImplementedSpecies(speciesPool);
+  const implementedSpecies = getImplementedSpecies(speciesPool).filter(species => {
+    const replacement = REPLACEMENT_LEGENDARY_EGGS.find(entry => entry.speciesId === species.speciesId);
+    return !replacement || egg.eggItemId === replacement.id;
+  });
   const linkedSpeciesId = getEggItemConfig(egg.eggItemId)?.linkedSpeciesId;
   const matchingSpecies = sortSpeciesByCollectionOrder(implementedSpecies.filter((species) => linkedSpeciesId ? species.speciesId === linkedSpeciesId : isSpeciesMatchForEgg(species, eggCategory, eggHabitatId)));
   const ownedSpeciesIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));

@@ -1,5 +1,24 @@
 import background from './background/lava_valley_background.png';
 import runnerBackground from './background/lava_valley_background2.png';
+export { default as lavaCliffBackground } from './background/stage2/bg_lava_valley_stage2_lava_cliff.png';
+import stage2RampPlatform from './stage2/platform/lava_stage2_ramp_platform.png';
+import stage2FossilFragment from './stage2/collectibles/lava_stage2_fossil_fragment.png';
+import stage2FossilHudIcon from './stage2/collectibles/lava_stage2_fossil_hud_icon.png';
+import stage2LavaWarningMarker from './stage2/hazards/lava_stage2_lava_warning_marker.png';
+import stage2LavaEruption from './stage2/hazards/lava_stage2_lava_eruption.png';
+import stage2SecretDoorClosed from './stage2/secret/lava_stage2_secret_door_closed.png';
+import stage2SecretDoorOpen from './stage2/secret/lava_stage2_secret_door_open.png';
+import stage2BonusChestClosed from './stage2/secret/lava_stage2_bonus_chest_closed.png';
+import stage2BonusChestOpen from './stage2/secret/lava_stage2_bonus_chest_open.png';
+import stage2FossilPickupEffect from './stage2/effects/lava_stage2_fossil_pickup_effect.png';
+import stage1VolcanoFoothillsCard from './ui/stage-select/stage1_volcano_foothills_card.png';
+import stage2LavaCliffCard from './ui/stage-select/stage2_lava_cliff_card.png';
+import stage3VolcanoCoreCard from './ui/stage-select/stage3_volcano_core_card.png';
+import stageSelectedFrame from './ui/stage-select/stage_selected_frame.png';
+import stageLockedOverlay from './ui/stage-select/stage_locked_overlay.png';
+import stageCompletedBadge from './ui/stage-select/stage_completed_badge.png';
+import stageNewBadge from './ui/stage-select/stage_new_badge.png';
+import stageSelectedButton from './ui/stage-select/stage_selected_button.png';
 import carnotaurusIdle from './player/carnotaurus_idle_optimized.png';
 import carnotaurusRunSheet from './player/carnotaurus_run_sheet.png';
 import carnotaurusJumpUp from './player/carnotaurus_jump_up_optimized.png';
@@ -83,6 +102,30 @@ export const lavaValleyButtonAssets = {
 export const lavaValleyEffectAssets = { dinosaurContactShadow, jumpDust, landingDust, coinPickupSparkle, itemPickupSparkle, hurtImpact, checkpointBurst, clearBurst } as const;
 export const lavaValleyEnvironmentAssets = { checkpoint: upgradedCheckpointFlag, warningSign, lavaTorchTotem, magmaCrystalAltar, raceGateArch, goalPortal, treasureChestClosed, treasureChestOpen } as const;
 export const lavaValleyEventUiAssets = { pauseMenu: pauseMenuPanel, resultClear: resultClearPanel, speechBubble: dinoSpeechBubble, comboPopup } as const;
+export const lavaValleyStage2Assets = {
+  rampPlatform: stage2RampPlatform,
+  fossilFragment: stage2FossilFragment,
+  fossilHudIcon: stage2FossilHudIcon,
+  lavaWarningMarker: stage2LavaWarningMarker,
+  lavaEruption: stage2LavaEruption,
+  secretDoorClosed: stage2SecretDoorClosed,
+  secretDoorOpen: stage2SecretDoorOpen,
+  bonusChestClosed: stage2BonusChestClosed,
+  bonusChestOpen: stage2BonusChestOpen,
+  fossilPickupEffect: stage2FossilPickupEffect,
+} as const;
+export const lavaValleyStageSelectAssets = {
+  cards: {
+    1: stage1VolcanoFoothillsCard,
+    2: stage2LavaCliffCard,
+    3: stage3VolcanoCoreCard,
+  },
+  selectedFrame: stageSelectedFrame,
+  lockedOverlay: stageLockedOverlay,
+  completedBadge: stageCompletedBadge,
+  newBadge: stageNewBadge,
+  selectedButton: stageSelectedButton,
+} as const;
 
 export const lavaValleyAssets = {
   background,

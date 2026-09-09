@@ -40,15 +40,15 @@ export const dinosaurCharacterAssets = {
     youth: new URL('../dino_upgrade/dino_pteranodon_youth_character.png', import.meta.url).href,
     adult: new URL('../dino_upgrade/dino_pteranodon_adult_character.png', import.meta.url).href,
   },
-  starano: {
-    baby: new URL('../dino_upgrade/dino_starano_character.png', import.meta.url).href,
-    youth: new URL('../dino_upgrade/dino_starano_youth_character.png', import.meta.url).href,
-    adult: new URL('../dino_upgrade/dino_starano_adult_character.png', import.meta.url).href,
+  luminadon: {
+    baby: new URL('../dinosaurs_2/04_baby_luminadon.png', import.meta.url).href,
+    youth: new URL('../dinosaurs_2/05_youth_luminadon.png', import.meta.url).href,
+    adult: new URL('../dinosaurs_2/06_adult_luminadon.png', import.meta.url).href,
   },
-  volcanodon: {
-    baby: new URL('../dino_upgrade/dino_volcanodon_character.png', import.meta.url).href,
-    youth: new URL('../dino_upgrade/dino_volcanodon_youth_character.png', import.meta.url).href,
-    adult: new URL('../dino_upgrade/dino_volcanodon_adult_character.png', import.meta.url).href,
+  magmarex: {
+    baby: new URL('../dinosaurs_2/01_baby_magmarex.png', import.meta.url).href,
+    youth: new URL('../dinosaurs_2/02_youth_magmarex.png', import.meta.url).href,
+    adult: new URL('../dinosaurs_2/03_adult_magmarex.png', import.meta.url).href,
   },
   allosaurus: {
     baby: new URL('./dino_allosaurus_character.png', import.meta.url).href,

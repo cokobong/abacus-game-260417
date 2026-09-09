@@ -42,6 +42,9 @@ export const shopFoodItemImages: Readonly<Record<string, string>> = {
   'berry-basket': shopItemFoodFruitBasket,
   'strong-meat': shopItemFoodToughMeat,
   'sweet-berry': shopItemFoodSweetBerry,
+  // 기존 음식의 효과를 재사용하는 Stage 2 보상: 아이콘도 기존 형태 사용.
+  'energy-leaf': shopItemFoodLeaf,
+  'special-snack': shopItemFoodDinoCookie,
 };
 export { default as eggCommon } from './items/eggs/egg_common.png';
 export { default as eggSpecial } from './items/eggs/egg_special.png';

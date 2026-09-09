@@ -15,8 +15,8 @@ test('도감은 5개 지역과 지역별 8슬롯, 총 40슬롯 구조다', () =>
 
 test('화산섬과 하늘섬은 각각 지정된 8종이다', () => {
   const ids = (habitat: string) => dinosaurSpecies.filter((species) => species.habitat === habitat).map((species) => species.speciesId);
-  assert.deepEqual(ids('volcano-island'), ['tiny-tyranno', 'allosaurus', 'carnotaurus', 'dimetrodon', 'spinosaurus', 'distortus-rex', 'indominus-rex', 'volcanodon']);
-  assert.deepEqual(ids('sky-island'), ['pteranodon', 'swift-raptor', 'pachycephalosaurus', 'parasaurolophus', 'dilophosaurus', 'therizinosaurus', 'crystalo', 'starano']);
+  assert.deepEqual(ids('volcano-island'), ['tiny-tyranno', 'allosaurus', 'carnotaurus', 'dimetrodon', 'spinosaurus', 'distortus-rex', 'indominus-rex', 'magmarex']);
+  assert.deepEqual(ids('sky-island'), ['pteranodon', 'swift-raptor', 'pachycephalosaurus', 'parasaurolophus', 'dilophosaurus', 'therizinosaurus', 'crystalo', 'luminadon']);
 });
 
 test('유적지는 7종과 전설 placeholder로 8칸이며 바다와 얼음도 각각 8종이다', () => {
@@ -64,8 +64,8 @@ test('등급 재배치와 diplodocus 제거가 적용된다', () => {
   assert.equal(getDinosaurSpecies('diplodocus'), null);
   assert.deepEqual([getDinosaurSpecies('parasaurolophus')?.rarity, getDinosaurSpecies('parasaurolophus')?.eggCategory], ['common', 'normal']);
   assert.deepEqual([getDinosaurSpecies('indominus-rex')?.rarity, getDinosaurSpecies('indominus-rex')?.eggCategory], ['rare', 'rare']);
-  assert.equal(getDinosaurSpecies('starano')?.eggCategory, 'legend');
-  assert.equal(getDinosaurSpecies('volcanodon')?.eggCategory, 'legend');
+  assert.equal(getDinosaurSpecies('luminadon')?.eggCategory, 'legend');
+  assert.equal(getDinosaurSpecies('magmarex')?.eggCategory, 'legend');
 });
 
 test('각 도감 지역은 모험 지역 ID와 연결된다', () => {
