@@ -7,17 +7,34 @@ import { playSound } from '../../audio/audioManager';
 import { ADVENTURE_STAGE_CATALOG, type AdventureStageNumber } from '../../config/adventureStageCatalog';
 import { lavaValleyStageSelectAssets } from '../../assets/adventure/lava-valley';
 import { canPlayAdventureStage, getAdventureStageState, type AdventureStageProgress } from '../../utils/adventureStageProgress';
+import { dinosaurSpecies } from '../../data/dinosaurSpecies';
+import { normalizeRegionRelicProgress, REGION_DEX_HABITAT, REGION_RELIC_FRAGMENT_GOAL, WORLD_GATE_REQUIRED_RELICS, type RegionRelicProgress } from '../../config/worldMapRelicConfig';
 
 export interface AdventureMapScreenProps {
   coins: number;
   onStartGame: (gameId: string, stageNumber: AdventureStageNumber) => void;
   stageProgress: AdventureStageProgress;
+  discoveredSpeciesIds: string[];
+  relicProgress?: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>;
 }
 
-export function AdventureMapScreen({ coins, onStartGame, stageProgress }: AdventureMapScreenProps) {
+export function AdventureMapScreen({ coins, onStartGame, stageProgress, discoveredSpeciesIds, relicProgress }: AdventureMapScreenProps) {
   const [selectedRegionId, setSelectedRegionId] = useState<AdventureRegionId | null>(null);
+  const [worldGateOpen, setWorldGateOpen] = useState(false);
   const selectedRegion = selectedRegionId ? ADVENTURE_REGIONS[selectedRegionId] : null;
   const openRegionModal = (regionId: AdventureRegionId) => setSelectedRegionId(regionId);
+  const regionRelics = normalizeRegionRelicProgress(relicProgress);
+  const discoveredSet = new Set(discoveredSpeciesIds);
+  const regionProgress = Object.fromEntries(adventureRegions.map((region) => {
+    const habitat = REGION_DEX_HABITAT[region.id];
+    const species = dinosaurSpecies.filter((entry) => entry.habitat === habitat);
+    return [region.id, {
+      dexFound: species.filter((entry) => discoveredSet.has(entry.speciesId)).length,
+      dexTotal: species.length,
+      relic: regionRelics[region.id],
+    }];
+  })) as Record<AdventureRegionId, { dexFound: number; dexTotal: number; relic: RegionRelicProgress }>;
+  const completedRelics = adventureRegions.filter((region) => regionProgress[region.id].relic.completed).length;
 
   useEffect(() => {
     if (!selectedRegionId) return undefined;
@@ -33,11 +50,16 @@ export function AdventureMapScreen({ coins, onStartGame, stageProgress }: Advent
       <div className="adventure-world-map absolute">
         <img src={adventureMapAssets.worldMap} alt="다섯 모험 지역이 이어진 세계 지도" className="h-full w-full object-contain" draggable={false} />
         {adventureRegions.map((region) => (
-          <AdventureRegionHotspot key={region.id} region={region} onSelect={openRegionModal} />
+          <AdventureRegionHotspot key={region.id} region={region} progress={regionProgress[region.id]} onSelect={openRegionModal} />
         ))}
       </div>
 
       <img className="adventure-map-title pointer-events-none absolute left-1/2 top-[1.5%] z-20 w-[min(72%,31rem)] -translate-x-1/2 object-contain" src={adventureMapAssets.titleBanner} alt="모험 지도" draggable={false} />
+      <button type="button" className="world-gate-summary" onClick={() => { playSound('ui_button_tap'); setWorldGateOpen(true); }} aria-label={`세계의 문 진행도 ${completedRelics} / ${WORLD_GATE_REQUIRED_RELICS}`}>
+        <strong>세계의 문</strong>
+        <span aria-hidden="true">{adventureRegions.map((region) => <i key={region.id} className={regionProgress[region.id].relic.completed ? 'is-active' : ''}>◆</i>)}</span>
+        <small>{completedRelics} / {WORLD_GATE_REQUIRED_RELICS}</small>
+      </button>
 
       {selectedRegion && (
         <RegionDetailModal
@@ -53,11 +75,12 @@ export function AdventureMapScreen({ coins, onStartGame, stageProgress }: Advent
           }}
         />
       )}
+      {worldGateOpen && <WorldGateModal progress={regionProgress} completedCount={completedRelics} onClose={() => setWorldGateOpen(false)} />}
     </section>
   );
 }
 
-function AdventureRegionHotspot({ region, onSelect }: { key?: string; region: AdventureRegion; onSelect: (regionId: AdventureRegionId) => void }) {
+function AdventureRegionHotspot({ region, progress, onSelect }: { key?: string; region: AdventureRegion; progress: { dexFound: number; dexTotal: number; relic: RegionRelicProgress }; onSelect: (regionId: AdventureRegionId) => void }) {
   const statusLabel = region.status === 'open' ? '입장하기' : region.unavailableLabel;
   return (
     <div
@@ -84,10 +107,29 @@ function AdventureRegionHotspot({ region, onSelect }: { key?: string; region: Ad
         <span className="adventure-region-hotspot__dot" aria-hidden="true" />
         <span className="adventure-region-hotspot__label">
           <strong>{region.name}</strong>
-          <small>{region.status === 'locked' && <LockKeyhole aria-hidden="true" />} {statusLabel}</small>
+          <small>도감 {progress.dexFound}/{progress.dexTotal} · 유물 {progress.relic.fragments}/{REGION_RELIC_FRAGMENT_GOAL}</small>
+          <small>{progress.relic.completed ? '완료' : <>{region.status === 'locked' && <LockKeyhole aria-hidden="true" />} {statusLabel}</>}</small>
         </span>
       </button>
     </div>
+  );
+}
+
+function WorldGateModal({ progress, completedCount, onClose }: { progress: Record<AdventureRegionId, { relic: RegionRelicProgress }>; completedCount: number; onClose: () => void }) {
+  return createPortal(
+    <div className="world-gate-modal fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="world-gate-title" className="world-gate-modal__panel">
+        <button type="button" onClick={onClose} className="world-gate-modal__close" aria-label="세계의 문 닫기"><X /></button>
+        <h2 id="world-gate-title">세계의 문</h2>
+        <p>지역 유물을 모두 모으면<br />새로운 세계로 가는 문이 열려요!</p>
+        <ul>
+          {adventureRegions.map((region) => <li key={region.id}><span>{region.name}</span><strong>{progress[region.id].relic.completed ? '완료' : '미완료'}</strong></li>)}
+        </ul>
+        <div className="world-gate-modal__count">현재: {completedCount} / {WORLD_GATE_REQUIRED_RELICS}</div>
+        <button type="button" className="world-gate-modal__confirm" onClick={onClose}>확인</button>
+      </section>
+    </div>,
+    document.body,
   );
 }
 

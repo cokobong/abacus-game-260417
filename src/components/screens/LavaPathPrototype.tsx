@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, RotateCcw } from 'lucide-react';
-import { lavaCliffBackground, lavaValleyAssets, lavaValleyStage2Assets } from '../../assets/adventure/lava-valley';
+import { lavaCliffBackground, lavaValleyAssets, lavaValleyStage2Assets, lavaValleyStage3Assets } from '../../assets/adventure/lava-valley';
 import { adventureCommonAssets } from '../../assets/adventure';
 import { applyHealthRestore, shouldSpawnHealthRestore } from '../../config/adventureCollectibles';
 import type { OwnedDinosaur } from '../../types/game';
@@ -11,15 +11,15 @@ import { preloadImages } from '../../utils/preloadImages';
 import { LAVA_VALLEY_STAGE_CONFIG } from '../../config/adventureStages';
 import { AdventureStageIntro } from '../AdventureStageIntro';
 import { getAdventureStage, type AdventureStageNumber } from '../../config/adventureStageCatalog';
-import { getLavaLandingHeight, isInLavaReservedZone, isOnLavaPlatform, LAVA_STAGE_TWO_SEGMENTS, LAVA_STAGE_TWO_MAX_PLATFORMS, type LavaPlatform, type LavaRoute } from '../../config/lavaStageSegments';
-import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaStageShopPlan, getLavaCoinIntervalScale, isLavaBonusRouteActive, createLavaStageRarePlan, getLavaEruptionPhase, getLavaJumpPhysics, getLavaStageGameplay, LAVA_CLIFF_MISSION, LAVA_VALLEY_DIFFICULTY, type LavaEruptionPhase } from '../../config/lavaStageGameplay';
+import { getLavaLandingHeight, getLavaPlatformAt, isInLavaReservedZone, isOnLavaPlatform, LAVA_STAGE_THREE_MAX_PLATFORMS, LAVA_STAGE_THREE_SEGMENTS, LAVA_STAGE_TWO_SEGMENTS, LAVA_STAGE_TWO_MAX_PLATFORMS, type LavaPlatform, type LavaRoute } from '../../config/lavaStageSegments';
+import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaGroundSpawnY, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, createLavaStageRarePlan, getLavaEruptionPhase, getLavaJumpPhysics, getLavaStageGameplay, LAVA_CLIFF_MISSION, LAVA_GROUND_TRACK_SURFACE_PERCENT, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE, type LavaEruptionPhase } from '../../config/lavaStageGameplay';
 export { LAVA_VALLEY_DIFFICULTY } from '../../config/lavaStageGameplay';
 
 export const LAVA_RUNNER_CONFIG = { gameDuration: LAVA_VALLEY_REWARDS_CONFIG.gameDurationSeconds, collectibleIntervalMin: 2600, collectibleIntervalMax: 3900, invincibleMs: 1400, playerX: 27, trackBottom: 12, footEffectBottom: 20, maxObstacles: 2, checkpointProgress: .5, dashDurationMs: 1000, dashRecoveryMs: 200, dashCooldownMs: getLavaStageGameplay(1).dashCooldownMs, dashSpeedMultiplier: 1.9 } as const;
 
 type ObstacleKind = 'rock' | 'geyser';
 type CollectibleKind = 'coin' | 'shard' | 'shopItem' | 'health_restore';
-type RunnerItemKind = ObstacleKind | CollectibleKind | 'checkpoint' | 'symbol' | 'secretGate' | 'eruption' | 'bonusChest';
+type RunnerItemKind = ObstacleKind | CollectibleKind | 'checkpoint' | 'symbol' | 'secretGate' | 'eruption' | 'bonusChest' | 'finalTreasure';
 type RunnerItem = { id: number; kind: RunnerItemKind; x: number; height: number; route: LavaRoute; itemId?: string; label?: string; eruptionStartedAt?: number; phase?: LavaEruptionPhase };
 type Result = 'playing' | 'success' | 'failure';
 type Difficulty = keyof typeof LAVA_VALLEY_DIFFICULTY;
@@ -46,7 +46,7 @@ const LavaValleyPlayer = memo(function LavaValleyPlayer({ intro, invincible, jum
 });
 
 const RampVisual = memo(function RampVisual() { return <img className="lava-cliff-ramp-visual" src={lavaValleyStage2Assets.rampPlatform} alt="상단 길 진입로" draggable={false} />; });
-const UpperTrackVisual = memo(function UpperTrackVisual() { return <span className="lava-upper-platform__track" style={{ backgroundImage: `url(${lavaValleyAssets.track.tiles[0]})` }} aria-hidden="true" />; });
+const UpperTrackVisual = memo(function UpperTrackVisual() { return <img className="lava-core-platform__surface lava-stage2-upper-platform__surface" src={lavaValleyStage3Assets.floatingPlatform} alt="" aria-hidden="true" />; });
 const FossilFragmentVisual = memo(function FossilFragmentVisual() { return <img className="lava-cliff-fossil" src={lavaValleyStage2Assets.fossilFragment} alt="화석조각" draggable={false} />; });
 const FossilCounterVisual = memo(function FossilCounterVisual({ count, bonusLabel }: { count: number; bonusLabel?: string }) { return <div className={`lava-cliff-mission ${count === LAVA_CLIFF_MISSION.symbolCount ? 'is-complete' : ''}`} role="status"><img className="lava-cliff-mission__icon" src={lavaValleyStage2Assets.fossilHudIcon} alt="" aria-hidden="true" draggable={false} /> 화석조각 <b>{count}/{LAVA_CLIFF_MISSION.symbolCount}</b>{bonusLabel && <small>{bonusLabel}</small>}</div>; });
 const SecretDoorVisual = memo(function SecretDoorVisual({ open }: { open: boolean }) { return <img className="lava-cliff-gate" src={open ? lavaValleyStage2Assets.secretDoorOpen : lavaValleyStage2Assets.secretDoorClosed} alt={open ? '열린 비밀문, 가까이 가면 입장' : '잠긴 비밀문, 화석조각 3개 필요'} draggable={false} />; });
@@ -55,8 +55,8 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const stageConfig = getAdventureStage('lavaValley', stageNumber);
   const gameDuration = stageConfig.playTime;
   const gameplay = getLavaStageGameplay(stageNumber);
-  const background = stageNumber === 2 ? lavaCliffBackground : lavaValleyAssets.runnerBackground;
-  const introConfig = useMemo(() => ({ ...LAVA_VALLEY_STAGE_CONFIG, stage: stageNumber, title: stageNumber === 1 ? LAVA_VALLEY_STAGE_CONFIG.title : stageConfig.name, instruction: stageNumber === 2 ? '화석조각을 모아 비밀문을 열어보세요!' : LAVA_VALLEY_STAGE_CONFIG.instruction }), [stageNumber, stageConfig]);
+  const background = stageNumber === 3 ? lavaValleyStage3Assets.background : stageNumber === 2 ? lavaCliffBackground : lavaValleyAssets.runnerBackground;
+  const introConfig = useMemo(() => ({ ...LAVA_VALLEY_STAGE_CONFIG, stage: stageNumber, title: stageNumber === 1 ? LAVA_VALLEY_STAGE_CONFIG.title : stageConfig.name, instruction: stageNumber === 2 ? '화석조각을 모아 비밀문을 열어보세요!' : stageNumber === 3 ? '3단 발판에서 화석조각 3개를 모아 비밀문을 열어보세요!' : LAVA_VALLEY_STAGE_CONFIG.instruction }), [stageNumber, stageConfig]);
   const [symbols, setSymbols] = useState(0), [bonusRoute, setBonusRoute] = useState(false), [bonusChestOpen, setBonusChestOpen] = useState(false);
   const missionRef = useRef(createLavaCliffMission());
   const hudRef = useRef({ second: -1, invincible: false, dashing: false, cooldownBucket: -1 });
@@ -68,6 +68,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const playfieldRef = useRef<HTMLElement>(null), playerMotionRef = useRef<HTMLDivElement>(null);
   const fieldSizeRef = useRef({ width: 1, height: 1, footOffset: 0 });
   const travelRef = useRef(0), nextSegmentRef = useRef({ index: 0, start: 0 });
+  const ridingPlatformIdRef = useRef<number | null>(null), finalTreasureSpawnedRef = useRef(false);
   const [rising, setRising] = useState(false);
   const [items, setItems] = useState<RunnerItem[]>([]);
   const [coins, setCoins] = useState(0), [shopItemCount, setShopItemCount] = useState(0), [rareShards, setRareShards] = useState(0), [health, setHealth] = useState(3), [timeLeft, setTimeLeft] = useState(gameDuration);
@@ -99,7 +100,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     missionRef.current = createLavaCliffMission(); setSymbols(0); setBonusRoute(false); setBonusChestOpen(false);
     hudRef.current = { second: -1, invincible: false, dashing: false, cooldownBucket: -1 }; renderedItemIdsRef.current = '';
     if (jumpGuideTimerRef.current) window.clearTimeout(jumpGuideTimerRef.current);
-    platformsRef.current = []; setPlatforms([]); platformElementsRef.current.clear(); itemElementsRef.current.clear(); invalidObstacleIdsRef.current.clear(); travelRef.current = 0; nextSegmentRef.current = { index: 0, start: 0 };
+    platformsRef.current = []; setPlatforms([]); platformElementsRef.current.clear(); itemElementsRef.current.clear(); invalidObstacleIdsRef.current.clear(); travelRef.current = 0; nextSegmentRef.current = { index: 0, start: 0 }; ridingPlatformIdRef.current = null; finalTreasureSpawnedRef.current = false;
     if (playerMotionRef.current) playerMotionRef.current.style.transform = 'translateY(0px)';
     itemsRef.current = []; healthRef.current = 3; resultRef.current = 'playing'; jumpingRef.current = false; invincibleUntilRef.current = 0; pausedRef.current = false; introRef.current = true;
     startTimeRef.current = 0; lastFrameRef.current = 0; nextObstacleRef.current = 0; nextCollectibleRef.current = 0; pauseStartedRef.current = 0; checkpointSpawnedRef.current = false; checkpointPassedRef.current = false; healthRestoreSpawnedRef.current = false; dashUntilRef.current = 0; dashReadyAtRef.current = 0;
@@ -108,7 +109,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     setItems([]); setCoins(0); setRareShards(0); setShopItemCount(0); setHealth(3); setTimeLeft(gameDuration); setJumping(false); setRising(false); setInvincible(false); setPaused(false); setResult('playing'); setShowResult(false); setFinishStep(0); setCommittedRewards(null); setCheckpointStage(1); setPickupFeedback(null); setJumpGuideActive(false); setJumpPressed(false); setBurst(null); setSpeech(null); setCombo(false); setDashing(false); setDashCooldownMs(0); setIntro(true); setAttempt((value) => value + 1);
   }, [stageNumber, gameDuration]);
 
-  const startJump = useCallback(() => { const preset = getLavaJumpPhysics(stageNumber, difficultyRef.current); jumpingRef.current = true; hasJumpedSinceGroundRef.current = true; jumpBufferedUntilRef.current = 0; apexHoldUntilRef.current = 0; jumpVelocityRef.current = preset.jumpVelocity; setJumping(true); setRising(true); showBurst('jump', LAVA_RUNNER_CONFIG.playerX - 1, LAVA_RUNNER_CONFIG.footEffectBottom); }, [showBurst, stageNumber]);
+  const startJump = useCallback(() => { const preset = getLavaJumpPhysics(stageNumber, difficultyRef.current); ridingPlatformIdRef.current = null; jumpingRef.current = true; hasJumpedSinceGroundRef.current = true; jumpBufferedUntilRef.current = 0; apexHoldUntilRef.current = 0; jumpVelocityRef.current = preset.jumpVelocity; setJumping(true); setRising(true); showBurst('jump', LAVA_RUNNER_CONFIG.playerX - 1, LAVA_RUNNER_CONFIG.footEffectBottom); }, [showBurst, stageNumber]);
   const jump = useCallback(() => { if (resultRef.current !== 'playing' || pausedRef.current || introRef.current) return; const now = performance.now(), preset = LAVA_VALLEY_DIFFICULTY[difficultyRef.current]; const canUseCoyoteTime = !hasJumpedSinceGroundRef.current && now - lastGroundedAtRef.current <= preset.coyoteTimeMs; if (!jumpingRef.current || canUseCoyoteTime) { startJump(); return; } jumpBufferedUntilRef.current = now + preset.jumpBufferMs; }, [startJump]);
   const dash = useCallback(() => { const now = performance.now(); if (resultRef.current !== 'playing' || pausedRef.current || introRef.current || now < dashReadyAtRef.current) return; dashUntilRef.current = now + LAVA_RUNNER_CONFIG.dashDurationMs; dashReadyAtRef.current = now + gameplay.dashCooldownMs; hudRef.current.dashing = true; setDashing(true); setDashCooldownMs(gameplay.dashCooldownMs); showBurst('jump', LAVA_RUNNER_CONFIG.playerX - 5, LAVA_RUNNER_CONFIG.footEffectBottom); }, [showBurst, gameplay]);
   const openSettings = () => { if (resultRef.current !== 'playing' || introRef.current) return; pauseStartedRef.current = performance.now(); pausedRef.current = true; setPaused(true); };
@@ -119,7 +120,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   useEffect(() => {
     let cancelled = false;
     setAssetsReady(false);
-    preloadImages([...PLAYER_PRELOAD_ASSETS, background, ...(stageNumber === 2 ? Object.values(lavaValleyStage2Assets) : [])]).then(() => { if (!cancelled) setAssetsReady(true); }).catch((error) => console.error(error));
+    preloadImages([...PLAYER_PRELOAD_ASSETS, background, ...(stageNumber >= 2 ? Object.values(lavaValleyStage2Assets) : []), ...(stageNumber === 3 ? Object.values(lavaValleyStage3Assets) : [])]).then(() => { if (!cancelled) setAssetsReady(true); }).catch((error) => console.error(error));
     return () => { cancelled = true; };
   }, [background, stageNumber]);
   useEffect(() => { const keyDown = (event: KeyboardEvent) => { if ((event.code === 'Space' || event.code === 'ArrowUp') && !event.repeat) { event.preventDefault(); jump(); } }; window.addEventListener('keydown', keyDown); return () => window.removeEventListener('keydown', keyDown); }, [jump]);
@@ -133,6 +134,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
       // RUN cell foot is at y=432/512, inside the 90%-height sprite box.
       const footOffset = (dino?.offsetHeight ?? 0) * (1 - .9 * 432 / 512) * LAVA_VALLEY_DIFFICULTY[difficulty].playerVisualScale;
       fieldSizeRef.current = { width: element.clientWidth, height: element.clientHeight, footOffset };
+      element.style.setProperty('--lava-ground-surface-y', getLavaGroundSpawnY(footOffset));
     };
     update(); const observer = new ResizeObserver(update); observer.observe(element); return () => observer.disconnect();
   }, [difficulty]);
@@ -151,16 +153,26 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     };
     const updateCliffMission = (elapsed: number) => {
       const mission = missionRef.current;
-      const symbol = LAVA_CLIFF_MISSION.symbols[mission.spawned];
+      const isNearSecretDoor = (x: number) => itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - x) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+      const symbolPlan = stageNumber === 3 ? LAVA_VOLCANO_CORE.symbols : LAVA_CLIFF_MISSION.symbols;
+      const symbol = gameplay.symbolMission ? symbolPlan[mission.spawned] : undefined;
       if (symbol && elapsed >= symbol.at) {
-        addMissionPlatform(symbol.height);
-        itemsRef.current.push({ id: nextIdRef.current++, kind: 'symbol', x: 132, height: symbol.height + 4, route: 'upper' });
+        const route = 'route' in symbol ? symbol.route : 'upper';
+        if (stageNumber === 2) addMissionPlatform(symbol.height);
+        if (stageNumber === 3 && route !== 'lower') {
+          platformsRef.current.push({ id: nextIdRef.current++, x: 116, width: 34, height: symbol.height - 4, baseHeight: symbol.height - 4, route, behavior: 'static' });
+          setPlatforms([...platformsRef.current]);
+        }
+        itemsRef.current.push({ id: nextIdRef.current++, kind: 'symbol', x: 132, height: symbol.height, route });
         mission.spawned += 1;
         showSpeech('화석조각을 모아 비밀문을 열어보세요!');
       }
-      if (gameplay.secretRoute && !mission.gateSpawned && elapsed >= LAVA_CLIFF_MISSION.gateAt) {
+      const gateAt = stageNumber === 3 ? LAVA_VOLCANO_CORE.gateAt : LAVA_CLIFF_MISSION.gateAt;
+      if (gameplay.secretRoute && !mission.gateSpawned && elapsed >= gateAt) {
         mission.gateSpawned = true;
-        itemsRef.current = itemsRef.current.filter(item => item.x < 75);
+        itemsRef.current = itemsRef.current.filter(item => Math.abs(item.x - 112) > LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+        platformsRef.current = platformsRef.current.filter(platform => platform.x + platform.width < 112 - LAVA_CLIFF_MISSION.secretDoorExclusionRadius || platform.x > 112 + LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+        setPlatforms([...platformsRef.current]);
         itemsRef.current.push({ id: nextIdRef.current++, kind: 'secretGate', x: 112, height: 0, route: 'lower' });
         showSpeech(mission.symbols === LAVA_CLIFF_MISSION.symbolCount ? '비밀문이 열렸어요!' : '화석조각 3개가 있으면 열리는 비밀문이에요');
       }
@@ -177,11 +189,11 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
         nextObstacleRef.current = performance.now() + 2500;
         showSpeech('다시 큰 길로! 끝까지 달려요!');
       }
-      const eruptionAt = LAVA_CLIFF_MISSION.eruptionTimes[mission.eruptions];
+      const eruptionTimes = stageNumber === 3 ? LAVA_VOLCANO_CORE.eruptionTimes : LAVA_CLIFF_MISSION.eruptionTimes;
+      const eruptionAt = eruptionTimes[mission.eruptions];
       if (gameplay.eruptions && eruptionAt !== undefined && elapsed >= eruptionAt) {
-        if (!isLavaBonusRouteActive(mission, elapsed) && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems) {
-          const upper = mission.eruptions % 2 === 1 ? platformsRef.current.find(platform => platform.x <= 100 && platform.x + platform.width >= 120) : undefined;
-          if (!isInLavaReservedZone(platformsRef.current, 110)) itemsRef.current.push({ id: nextIdRef.current++, kind: 'eruption', x: 110, height: upper?.height ?? 0, route: upper ? 'upper' : 'lower', phase: 'warning' });
+        if (!isLavaBonusRouteActive(mission, elapsed) && !mission.gateSpawned && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems) {
+          if (!isInLavaReservedZone(platformsRef.current, 110) && !isNearSecretDoor(110)) itemsRef.current.push({ id: nextIdRef.current++, kind: 'eruption', x: 110, height: 0, route: 'lower', phase: 'warning' });
         }
         mission.eruptions += 1;
       }
@@ -194,17 +206,23 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     };
     const spawnObstacle = (now: number, preset: typeof LAVA_VALLEY_DIFFICULTY[Difficulty]) => {
       const count = itemsRef.current.filter(item => isObstacle(item.kind) || item.kind === 'eruption').length;
-      const spawnAreaBusy = itemsRef.current.some(item => !isObstacle(item.kind) && item.x > 78);
-      if (count < LAVA_RUNNER_CONFIG.maxObstacles && !spawnAreaBusy && !isInLavaReservedZone(platformsRef.current, 110) && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems) {
+      // Stage 3 continuously seeds platform reward coins; those must not suppress its obstacle cadence.
+      const spawnAreaBusy = itemsRef.current.some(item => item.x > 78 && (stageNumber === 3
+        ? isObstacle(item.kind) || item.kind === 'eruption' || item.kind === 'secretGate' || item.kind === 'symbol' || item.kind === 'finalTreasure'
+        : !isObstacle(item.kind)));
+      const nearSecretDoor = itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - 110) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+      if (count < LAVA_RUNNER_CONFIG.maxObstacles && !spawnAreaBusy && !nearSecretDoor && !isInLavaReservedZone(platformsRef.current, 110) && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems) {
         const kind: ObstacleKind = Math.random() < preset.geyserChance ? 'geyser' : 'rock';
         const upper = gameplay.symbolMission && kind === 'rock' && Math.random() < .3 ? platformsRef.current.find(platform => platform.x <= 110 && platform.x + platform.width >= 120) : undefined;
         itemsRef.current.push({ id: nextIdRef.current++, kind, x: 110, height: upper?.height ?? 0, route: upper ? 'upper' : 'lower' });
       }
-      nextObstacleRef.current = now + randomBetween(preset.obstacleSpawnIntervalMin, preset.obstacleSpawnIntervalMax);
+      const interval = getLavaObstacleSpawnInterval(stageNumber, difficultyRef.current, (now - startTimeRef.current) / 1000);
+      nextObstacleRef.current = now + randomBetween(interval.min, interval.max);
     };
     const spawnCollectible = (now: number) => {
       const spawnAreaBusy = itemsRef.current.some(item => (isObstacle(item.kind) || item.kind === 'eruption') && item.x > 82);
-      if (!spawnAreaBusy && !isInLavaReservedZone(platformsRef.current, 110) && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems - 4) {
+      const nearSecretDoor = itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - 110) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+      if (!spawnAreaBusy && !nearSecretDoor && !isInLavaReservedZone(platformsRef.current, 110) && itemsRef.current.length < LAVA_CLIFF_MISSION.maxItems - 4) {
         if (shouldSpawnHealthRestore(healthRef.current, 3, healthRestoreSpawnedRef.current)) {
           healthRestoreSpawnedRef.current = true;
           itemsRef.current.push({ id: nextIdRef.current++, kind: 'health_restore', x: 110, height: LAVA_VALLEY_COLLECTIBLE_LANES.low, route: 'lower' });
@@ -218,7 +236,8 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     };
     const spawnScheduledRareFragment = (elapsedSeconds: number) => {
       const scheduled = rareDropPlanRef.current.find(drop => !spawnedRareDropIdsRef.current.has(drop.id) && elapsedSeconds >= drop.spawnAtSeconds);
-      if (!scheduled || isInLavaReservedZone(platformsRef.current, 110) || itemsRef.current.length >= LAVA_CLIFF_MISSION.maxItems || itemsRef.current.some(item => item.x > 78 && (isObstacle(item.kind) || item.kind === 'eruption' || item.kind === 'shopItem' || item.kind === 'shard'))) return;
+      const nearSecretDoor = itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - 110) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+      if (!scheduled || nearSecretDoor || isInLavaReservedZone(platformsRef.current, 110) || itemsRef.current.length >= LAVA_CLIFF_MISSION.maxItems || itemsRef.current.some(item => item.x > 78 && (isObstacle(item.kind) || item.kind === 'eruption' || item.kind === 'shopItem' || item.kind === 'shard'))) return;
       spawnedRareDropIdsRef.current.add(scheduled.id); rareStatsRef.current.spawned += 1;
       const onBonus = isLavaBonusRouteActive(missionRef.current, elapsedSeconds);
       itemsRef.current.push({ id: nextIdRef.current++, kind: 'shard', x: 110, height: onBonus ? LAVA_CLIFF_MISSION.routeHeight + 4 : Math.random() < .55 ? LAVA_VALLEY_COLLECTIBLE_LANES.low : LAVA_VALLEY_COLLECTIBLE_LANES.high, route: onBonus ? 'secret' : 'lower' });
@@ -226,7 +245,8 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     const spawnScheduledShopItem = (elapsedSeconds: number) => {
       const onBonus = isLavaBonusRouteActive(missionRef.current, elapsedSeconds);
       const scheduled = shopDropPlanRef.current.find(drop => !spawnedShopDropIdsRef.current.has(drop.id) && elapsedSeconds >= drop.spawnAtSeconds);
-      if (!scheduled || isInLavaReservedZone(platformsRef.current, 110) || itemsRef.current.length >= LAVA_CLIFF_MISSION.maxItems || itemsRef.current.some(item => item.x > 78 && (!onBonus || item.kind !== 'coin'))) return;
+      const nearSecretDoor = itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - 110) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
+      if (!scheduled || nearSecretDoor || isInLavaReservedZone(platformsRef.current, 110) || itemsRef.current.length >= LAVA_CLIFF_MISSION.maxItems || itemsRef.current.some(item => item.x > 78 && (!onBonus || item.kind !== 'coin'))) return;
       const item = getItemConfig(scheduled.itemId); if (!item) return;
       spawnedShopDropIdsRef.current.add(scheduled.id);
       const upper = gameplay.symbolMission ? platformsRef.current.find(platform => platform.x <= 110 && platform.x + platform.width >= 110) : undefined;
@@ -272,6 +292,50 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
           jumpingRef.current = true; jumpVelocityRef.current = 0; apexHoldUntilRef.current = 0; setJumping(true); setRising(false);
         }
       }
+      if (stageNumber === 3) {
+        travelRef.current += movement;
+        const before = platformsRef.current.length;
+        let changed = false;
+        for (const platform of platformsRef.current) {
+          platform.x -= movement;
+          if (platform.behavior === 'moving') {
+            const previousHeight = platform.height;
+            platform.height = (platform.baseHeight ?? platform.height) + Math.sin(elapsed * LAVA_VOLCANO_CORE.movingPlatformSpeed + (platform.motionPhase ?? 0)) * LAVA_VOLCANO_CORE.movingPlatformRange;
+            if (ridingPlatformIdRef.current === platform.id && !jumpingRef.current) jumpYRef.current += platform.height - previousHeight;
+          }
+          if (platform.behavior === 'crumbling' && platform.crumbleStartedAt !== undefined && !platform.collapsed && now - platform.crumbleStartedAt >= LAVA_VOLCANO_CORE.crumbleDelayMs) {
+            platform.collapsed = true; changed = true;
+            if (ridingPlatformIdRef.current === platform.id) ridingPlatformIdRef.current = null;
+          }
+        }
+        platformsRef.current = platformsRef.current.filter(platform => platform.x + platform.width > -5);
+        if (before !== platformsRef.current.length) changed = true;
+        const next = nextSegmentRef.current;
+        if (next.start <= travelRef.current + 118) {
+          const phase = elapsed < 60 ? 'opening' : elapsed < 125 ? 'middle' : 'final';
+          const choices = LAVA_STAGE_THREE_SEGMENTS.filter(segment => segment.phase === phase);
+          const segment = choices[next.index % choices.length];
+          for (const template of segment.platforms) {
+            if (platformsRef.current.length >= LAVA_STAGE_THREE_MAX_PLATFORMS) break;
+            const platform: LavaPlatform = { id: nextIdRef.current++, x: next.start + template.offset - travelRef.current, width: template.width, height: template.height, baseHeight: template.height, route: template.route, behavior: template.behavior, motionPhase: next.index * 1.7 };
+            if (missionRef.current.gateSpawned && platform.x < 112 + LAVA_CLIFF_MISSION.secretDoorExclusionRadius && platform.x + platform.width > 112 - LAVA_CLIFF_MISSION.secretDoorExclusionRadius) continue;
+            if (platformsRef.current.some(existing => platform.x < existing.x + existing.width + 5 && platform.x + platform.width > existing.x - 5)) continue;
+            platformsRef.current.push(platform); changed = true;
+            const rewardCount = template.route === 'top' ? 4 : template.route === 'high' ? 3 : template.route === 'middle' ? 1 : 0;
+            for (let index = 0; index < rewardCount; index += 1) itemsRef.current.push({ id: nextIdRef.current++, kind: 'coin', x: platform.x + platform.width * (index + 1) / (rewardCount + 1), height: platform.height + 4, route: template.route });
+          }
+          next.start += segment.length; next.index += 1;
+        }
+        if (changed) setPlatforms([...platformsRef.current]);
+        if (!jumpingRef.current && !isOnLavaPlatform(platformsRef.current, LAVA_RUNNER_CONFIG.playerX, jumpYRef.current)) {
+          ridingPlatformIdRef.current = null; jumpingRef.current = true; jumpVelocityRef.current = 0; apexHoldUntilRef.current = 0; setJumping(true); setRising(false);
+        }
+        if (!finalTreasureSpawnedRef.current && elapsed >= LAVA_VOLCANO_CORE.finalTreasureAt) {
+          finalTreasureSpawnedRef.current = true;
+          itemsRef.current.push({ id: nextIdRef.current++, kind: 'finalTreasure', x: 112, height: 0, route: 'lower' });
+          showSpeech('화산 심장부의 최종 보물상자예요!');
+        }
+      }
       if (jumpingRef.current) {
         const previousY = jumpYRef.current;
         if (now >= apexHoldUntilRef.current) {
@@ -280,19 +344,22 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
           if (previousVelocity > 0 && jumpVelocityRef.current <= 0) { jumpVelocityRef.current = -.01; apexHoldUntilRef.current = now + physics.apexHoldMs; setRising(false); }
           else jumpYRef.current += jumpVelocityRef.current * delta;
         }
-        const landing = getLavaLandingHeight(stageNumber === 2 ? platformsRef.current : [], LAVA_RUNNER_CONFIG.playerX, previousY, jumpYRef.current, jumpVelocityRef.current);
+        const landing = getLavaLandingHeight(stageNumber >= 2 ? platformsRef.current : [], LAVA_RUNNER_CONFIG.playerX, previousY, jumpYRef.current, jumpVelocityRef.current);
         if (landing !== null) {
           jumpYRef.current = landing; jumpVelocityRef.current = 0; apexHoldUntilRef.current = 0; jumpingRef.current = false; hasJumpedSinceGroundRef.current = false; lastGroundedAtRef.current = now; setJumping(false);
           showBurst('landing', LAVA_RUNNER_CONFIG.playerX - 1, LAVA_RUNNER_CONFIG.footEffectBottom + landing);
+          const landedPlatform = getLavaPlatformAt(platformsRef.current, LAVA_RUNNER_CONFIG.playerX, landing);
+          ridingPlatformIdRef.current = landedPlatform?.id ?? null;
+          if (stageNumber === 3 && landedPlatform?.behavior === 'crumbling' && landedPlatform.crumbleStartedAt === undefined) { landedPlatform.crumbleStartedAt = now; setPlatforms([...platformsRef.current]); }
           if (now <= jumpBufferedUntilRef.current) startJump();
         }
       } else { lastGroundedAtRef.current = now; hasJumpedSinceGroundRef.current = false; }
       if (playerMotionRef.current) playerMotionRef.current.style.transform = 'translateY(' + (-jumpYRef.current * fieldSizeRef.current.height / 100) + 'px)';
       for (const platform of platformsRef.current) {
         const element = platformElementsRef.current.get(platform.id);
-        if (element) element.style.transform = 'translateX(' + (platform.x * fieldSizeRef.current.width / 100) + 'px)';
+        if (element) { element.style.transform = 'translateX(' + (platform.x * fieldSizeRef.current.width / 100) + 'px)'; element.style.bottom = 'calc(' + (20 + platform.height) + '% + ' + fieldSizeRef.current.footOffset + 'px)'; element.dataset.crumble = platform.collapsed ? 'collapsed' : platform.crumbleStartedAt !== undefined ? 'warning' : 'stable'; }
       }
-      if (gameplay.symbolMission) updateCliffMission(elapsed);
+      if (gameplay.symbolMission || gameplay.eruptions) updateCliffMission(elapsed);
       const onBonusRoute = isLavaBonusRouteActive(missionRef.current, elapsed);
       if (!onBonusRoute && now >= nextObstacleRef.current) spawnObstacle(now, preset);
       if (!onBonusRoute && now >= nextCollectibleRef.current) spawnCollectible(now);
@@ -367,21 +434,22 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const dashButtonImage = dashDisabled ? lavaValleyAssets.buttons.dashDisabled : dashing ? lavaValleyAssets.buttons.dashPressed : dashCooldownMs > 0 ? lavaValleyAssets.buttons.dashCooldown : lavaValleyAssets.buttons.dashReady;
   const formatTime = (seconds: number) => String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
 
-  return <section className={`lava-runner ${paused ? 'lava-runner--paused' : ''} ${dashing ? 'lava-runner--dashing' : ''}`} style={{ '--lava-player-x': `${LAVA_RUNNER_CONFIG.playerX}%`, '--lava-track-bottom': `${LAVA_RUNNER_CONFIG.trackBottom}%`, '--lava-track-duration': `${2.8 * 32 / LAVA_VALLEY_DIFFICULTY[difficulty].runSpeed / (dashing ? LAVA_RUNNER_CONFIG.dashSpeedMultiplier : 1)}s`, '--lava-player-scale': LAVA_VALLEY_DIFFICULTY[difficulty].playerVisualScale, '--lava-obstacle-scale': LAVA_VALLEY_DIFFICULTY[difficulty].obstacleVisualScale } as CSSProperties}>
-    <img src={background} alt={stageNumber === 2 ? "용암 절벽" : "용암이 흐르는 화산 계곡"} className="lava-runner__background" draggable={false} /><div className="lava-runner__shade" />
+  return <section className={`lava-runner ${stageNumber >= 2 ? `lava-runner--stage-${stageNumber}` : ''} ${bonusRoute ? 'lava-runner--secret-route' : ''} ${paused ? 'lava-runner--paused' : ''} ${dashing ? 'lava-runner--dashing' : ''}`} data-layout={stageNumber === 3 ? 'tall' : 'default'} style={{ '--lava-player-x': `${LAVA_RUNNER_CONFIG.playerX}%`, '--lava-track-bottom': `${LAVA_RUNNER_CONFIG.trackBottom}%`, '--lava-ground-surface-y': `${LAVA_GROUND_TRACK_SURFACE_PERCENT}%`, '--lava-track-duration': `${2.8 * 32 / LAVA_VALLEY_DIFFICULTY[difficulty].runSpeed / (dashing ? LAVA_RUNNER_CONFIG.dashSpeedMultiplier : 1)}s`, '--lava-player-scale': LAVA_VALLEY_DIFFICULTY[difficulty].playerVisualScale, '--lava-obstacle-scale': LAVA_VALLEY_DIFFICULTY[difficulty].obstacleVisualScale } as CSSProperties}>
+    <img src={background} alt={stageNumber === 3 ? '화산 심장부' : stageNumber === 2 ? '용암 절벽' : '용암이 흐르는 화산 계곡'} className="lava-runner__background" draggable={false} /><div className="lava-runner__shade" />
     <header className="lava-runner__header"><button type="button" className="lava-runner__exit" onClick={onExit}><ChevronLeft /> 지도</button><div className="lava-runner-hud lava-panel-root"><img className="lava-panel-bg" src={lavaValleyAssets.hud.top} alt="" aria-hidden="true" /><div className="lava-panel-overlay"><span className="lava-runner-hud__health" aria-label={`하트 ${health}개`}>{[0, 1, 2].map((slot) => <i key={slot} className={slot < health ? 'is-filled' : ''}>♥</i>)}</span><b className="lava-runner-hud__coin">{coins}</b><b className="lava-runner-hud__rare">{rareShards}</b><b className="lava-runner-hud__time"><span>{formatTime(timeLeft)}</span><small>{Math.round(progress)}%</small></b></div></div><button type="button" className="lava-runner__settings" onClick={openSettings} aria-label="일시정지 및 설정"><img src={lavaValleyAssets.buttons.pauseSettings} alt="" /></button><div className="lava-runner__progress"><i style={{ width: `${progress}%` }} /><span>Stage {stageNumber} · 구간 {checkpointStage}/2</span></div></header>
-    <main ref={playfieldRef} className="lava-runner__playfield">{gameplay.symbolMission && <FossilCounterVisual count={symbols} bonusLabel={bonusRoute ? `비밀 샛길 · ${Math.min(LAVA_CLIFF_MISSION.routeSeconds, Math.max(0, Math.ceil(missionRef.current.bonusEnd - (gameDuration - timeLeft))))}초` : undefined} />}<div className="lava-runner__track"><div className="lava-runner__track-strip">{[...trackCycle, ...trackCycle].map((src, index) => <img key={index} src={src} alt="" aria-hidden="true" />)}</div><img className="lava-runner__track-cracks" src={lavaValleyAssets.track.crackOverlay} alt="" aria-hidden="true" /><img className="lava-runner__track-edge" src={lavaValleyAssets.track.edgeStrip} alt="" aria-hidden="true" /></div>
+    <main ref={playfieldRef} className="lava-runner__playfield"><div className="lava-secret-route-matte" aria-hidden="true" />{gameplay.symbolMission && <FossilCounterVisual count={symbols} bonusLabel={bonusRoute ? `비밀 샛길 · ${Math.min(LAVA_CLIFF_MISSION.routeSeconds, Math.max(0, Math.ceil(missionRef.current.bonusEnd - (gameDuration - timeLeft))))}초` : undefined} />}<div className="lava-runner__track"><div className="lava-runner__track-strip">{[...trackCycle, ...trackCycle].map((src, index) => <img key={index} src={src} alt="" aria-hidden="true" />)}</div><img className="lava-runner__track-cracks" src={lavaValleyAssets.track.crackOverlay} alt="" aria-hidden="true" /><img className="lava-runner__track-edge" src={lavaValleyAssets.track.edgeStrip} alt="" aria-hidden="true" /></div>
       {progress < 12 && <img className="lava-runner-environment lava-runner-environment--warning" src={lavaValleyAssets.environment.warningSign} alt="장애물 주의" />}
-      {platforms.map(platform => <div key={platform.id} ref={element => { if (element) platformElementsRef.current.set(platform.id, element); else platformElementsRef.current.delete(platform.id); }} className={`lava-upper-platform lava-upper-platform--${platform.route ?? 'upper'}`} aria-label={platform.route === 'secret' ? '비밀 보너스 길' : platform.route === 'transition' ? '상단 길 진입로' : '상단 발판'} style={{ width: platform.width + '%', bottom: 'calc(' + (20 + platform.height) + '% + ' + fieldSizeRef.current.footOffset + 'px)', transform: 'translateX(' + (platform.x * fieldSizeRef.current.width / 100) + 'px)' }}>{platform.route === 'transition' ? <RampVisual /> : <UpperTrackVisual />}</div>)}
+      {platforms.map(platform => <div key={platform.id} ref={element => { if (element) platformElementsRef.current.set(platform.id, element); else platformElementsRef.current.delete(platform.id); }} className={`lava-upper-platform lava-upper-platform--${platform.route ?? 'upper'} lava-upper-platform--${platform.behavior ?? 'static'}`} data-crumble={platform.collapsed ? 'collapsed' : platform.crumbleStartedAt !== undefined ? 'warning' : 'stable'} aria-label={platform.behavior === 'moving' ? '움직이는 발판' : platform.behavior === 'crumbling' ? '금이 가는 발판' : platform.route === 'secret' ? '비밀 보너스 길' : platform.route === 'transition' ? '상단 길 진입로' : '상단 발판'} style={{ width: platform.width + '%', bottom: 'calc(' + (20 + platform.height) + '% + ' + fieldSizeRef.current.footOffset + 'px)', transform: 'translateX(' + (platform.x * fieldSizeRef.current.width / 100) + 'px)' }}>{stageNumber === 3 ? <><img className="lava-core-platform__surface" src={platform.behavior === 'crumbling' ? lavaValleyStage3Assets.crackingPlatform : lavaValleyStage3Assets.floatingPlatform} alt="" aria-hidden="true" /><img className="lava-core-platform__effect" src={lavaValleyStage3Assets.breakingPlatformEffect} alt="" aria-hidden="true" /></> : platform.route === 'transition' ? <RampVisual /> : <UpperTrackVisual />}</div>)}
       {items.map((item) => <div key={item.id} ref={element => { if (element) itemElementsRef.current.set(item.id, element); else itemElementsRef.current.delete(item.id); }}
-        className={`lava-runner-item lava-runner-item--${item.kind} ${isCollectible(item.kind) && item.height === LAVA_VALLEY_COLLECTIBLE_LANES.high ? 'lava-runner-item--high' : ''}`}
+        className={`lava-runner-item lava-runner-item--${item.kind} ${(item.kind === 'geyser' || item.kind === 'eruption') ? 'lava-runner-item--ground-lava' : ''} ${isCollectible(item.kind) && item.height === LAVA_VALLEY_COLLECTIBLE_LANES.high ? 'lava-runner-item--high' : ''}`}
         data-phase={item.phase} data-open={item.kind === 'secretGate' ? symbols === LAVA_CLIFF_MISSION.symbolCount : undefined}
         data-route={item.route}
-        style={{ '--runner-x': '0%', '--runner-y': item.route === 'upper' || item.route === 'secret' || item.kind === 'eruption' ? `calc(${item.height}% + ${fieldSizeRef.current.footOffset}px)` : `${item.height}%`, transform: 'translateX(' + (item.x * fieldSizeRef.current.width / 100) + 'px) translateX(-50%)' } as CSSProperties}>
+        style={{ '--runner-x': '0%', '--runner-y': item.route !== 'lower' ? `calc(${item.height}% + ${fieldSizeRef.current.footOffset}px)` : `${item.height}%`, transform: 'translateX(' + (item.x * fieldSizeRef.current.width / 100) + 'px) translateX(-50%)' } as CSSProperties}>
         {item.kind === 'symbol' ? <FossilFragmentVisual />
           : item.kind === 'secretGate' ? <SecretDoorVisual open={symbols === LAVA_CLIFF_MISSION.symbolCount} />
           : item.kind === 'eruption' ? <div className="lava-cliff-eruption" role="img" aria-label={item.phase === 'warning' ? '용암 분출 예고' : item.phase === 'active' ? '용암 분출 중' : '용암 분출 종료'}><img className="lava-cliff-eruption__warning" src={lavaValleyStage2Assets.lavaWarningMarker} alt="" aria-hidden="true" draggable={false} /><img className="lava-cliff-eruption__active" src={lavaValleyStage2Assets.lavaEruption} alt="" aria-hidden="true" draggable={false} /></div>
           : item.kind === 'bonusChest' ? <img className="lava-cliff-bonus-chest" src={bonusChestOpen ? lavaValleyStage2Assets.bonusChestOpen : lavaValleyStage2Assets.bonusChestClosed} alt={bonusChestOpen ? '열린 비밀 보너스 상자' : '닫힌 비밀 보너스 상자'} draggable={false} />
+          : item.kind === 'finalTreasure' ? <img className="lava-core-final-treasure" src={lavaValleyStage3Assets.treasureChestClosed} alt="최종 보물상자 위치" draggable={false} />
           : <img src={itemImage(item)} alt={item.kind === 'rock' ? '바위 장애물' : item.kind === 'geyser' ? '용암 분출 장애물' : item.kind === 'coin' ? '공룡 코인' : item.kind === 'health_restore' ? '생명력 회복' : item.kind === 'shopItem' ? (item.label ?? '상점 아이템') + ' 보상' : item.kind === 'shard' ? '희귀 알 조각' : '체크포인트 깃발'} draggable={false} onError={(event) => { if (isObstacle(item.kind)) { invalidObstacleIdsRef.current.add(item.id); event.currentTarget.closest('.lava-runner-item')?.remove(); if (import.meta.env.DEV) console.warn(`[Lava Valley] obstacle asset skipped: ${item.kind}`); } }} />}
       </div>)}
       <div ref={playerMotionRef} className="lava-player-motion"><LavaValleyPlayer intro={intro} invincible={invincible} jumping={jumping} jumpY={0} rising={rising} success={result === 'success'} /></div>
@@ -391,7 +459,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
       {pickupFeedback && <div key={pickupFeedback.id} className={`lava-runner-pickup lava-runner-pickup--${pickupFeedback.kind}`} role="status">{pickupFeedback.label}</div>}
       {speech && <div className="lava-runner-speech lava-panel-root"><img className="lava-panel-bg" src={lavaValleyAssets.events.speechBubble} alt="" /><div className="lava-panel-overlay"><span className="lava-runner-speech__text">{speech}</span></div></div>}
       {combo && <div className="lava-runner-combo"><img src={lavaValleyAssets.events.comboPopup} alt="" /><b>3 콤보!</b></div>}
-      {result === 'success' && !showResult && <div className="lava-runner-finish"><img className="lava-runner-finish__gate" src={lavaValleyAssets.environment.raceGateArch} alt="도착 지점" /><img className="lava-runner-finish__portal" src={lavaValleyAssets.environment.goalPortal} alt="클리어 포털" />{stageNumber === 1 && <img className="lava-runner-finish__chest" src={finishStep < 2 ? lavaValleyAssets.environment.treasureChestClosed : lavaValleyAssets.environment.treasureChestOpen} alt="보물 상자" />}</div>}
+      {result === 'success' && !showResult && <div className="lava-runner-finish"><img className="lava-runner-finish__gate" src={lavaValleyAssets.environment.raceGateArch} alt="도착 지점" /><img className="lava-runner-finish__portal" src={lavaValleyAssets.environment.goalPortal} alt="클리어 포털" />{(stageNumber === 1 || stageNumber === 3) && <img className="lava-runner-finish__chest" src={stageNumber === 3 ? lavaValleyStage3Assets.treasureChestClosed : finishStep < 2 ? lavaValleyAssets.environment.treasureChestClosed : lavaValleyAssets.environment.treasureChestOpen} alt={stageNumber === 3 ? '다음 업데이트에서 열 수 있는 최종 보물상자' : '보물 상자'} />}</div>}
     </main>
     <footer className="lava-runner__controls"><button type="button" className={`lava-runner__dash ${dashing ? 'is-active' : ''}`} disabled={dashCooldownMs > 0 || dashDisabled} onPointerDown={(event) => { event.preventDefault(); dash(); }} aria-label={dashing ? '대시 중' : dashCooldownMs > 0 ? `대시 재사용까지 ${(dashCooldownMs / 1000).toFixed(1)}초` : '대시'}><img src={dashButtonImage} alt="" draggable={false} /><small aria-hidden="true">{!dashing && dashCooldownMs > 0 ? `${(dashCooldownMs / 1000).toFixed(1)}초` : ''}</small></button><button type="button" className={`lava-runner__jump ${jumpGuideActive ? 'lava-runner__jump--guide' : ''}`} onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setJumpPressed(true); jump(); }} onPointerUp={() => setJumpPressed(false)} onPointerCancel={() => setJumpPressed(false)} onPointerLeave={() => setJumpPressed(false)} aria-label="점프"><img src={jumpPressed ? lavaValleyAssets.buttons.jumpPressed : lavaValleyAssets.buttons.jumpNormal} alt="" /></button></footer>
     {!assetsReady && <div className="lava-runner-loading" role="status">모험 준비 중...</div>}

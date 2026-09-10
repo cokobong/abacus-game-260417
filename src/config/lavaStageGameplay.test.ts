@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaJumpPhysics, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY } from './lavaStageGameplay';
+import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaGroundSpawnY, getLavaJumpPhysics, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE } from './lavaStageGameplay';
 import { createLavaValleyShopDropPlan, createRareFragmentSpawnPlan, RARE_FRAGMENT_COUNT_WEIGHTS, normalizeLavaValleyRewards } from './minigameConfig';
 import { getAdventureStage } from './adventureStageCatalog';
 import { getLavaLandingHeight, isInLavaReservedZone } from './lavaStageSegments';
@@ -8,21 +8,23 @@ import { completeAdventureStage, canPlayAdventureStage } from '../utils/adventur
 
 const difficulties = ['easy', 'normal', 'challenge'] as const;
 
-test('Stage 1 물리와 대시는 그대로, Stage 2는 높이를 보존하고 체공시간 82%, 쿨타임 150%', () => {
+test('Stage별 체공시간은 100% → 90% → 85%로 짧아지고 Stage 3만 4층 높이를 확보한다', () => {
   assert.equal(getAdventureStage('lavaValley', 1).playTime, 120);
   assert.equal(getAdventureStage('lavaValley', 2).playTime, 150);
   assert.equal(LAVA_STAGE_GAMEPLAY[1].dashCooldownMs, 2000);
   assert.equal(LAVA_STAGE_GAMEPLAY[2].dashCooldownMs, 3000);
   for (const difficulty of difficulties) {
     const base = LAVA_VALLEY_DIFFICULTY[difficulty];
-    const first = getLavaJumpPhysics(1, difficulty), second = getLavaJumpPhysics(2, difficulty);
+    const first = getLavaJumpPhysics(1, difficulty), second = getLavaJumpPhysics(2, difficulty), third = getLavaJumpPhysics(3, difficulty);
     assert.equal(first.jumpVelocity, base.jumpVelocity);
     assert.equal(first.gravity, base.gravity);
     assert.equal(first.apexHoldMs, base.apexHoldMs);
     const peak = (physics: typeof first) => physics.jumpVelocity ** 2 / (2 * physics.gravity);
     const airtime = (physics: typeof first) => 2 * physics.jumpVelocity / physics.gravity + physics.apexHoldMs / 1000;
     assert.ok(Math.abs(peak(first) - peak(second)) < 1e-10);
-    assert.ok(Math.abs(airtime(second) / airtime(first) - .82) < 1e-10);
+    assert.ok(Math.abs(airtime(second) / airtime(first) - .9) < 1e-10);
+    assert.ok(Math.abs(airtime(third) / airtime(first) - .85) < 1e-10);
+    assert.ok(Math.abs(peak(third) / peak(first) - 1.75) < 1e-10);
     assert.ok(peak(second) > Math.max(...LAVA_CLIFF_MISSION.symbols.map(symbol => symbol.height)));
     // Fixed-step integration at both 60 and 30 fps must still reach the highest platform.
     for (const dt of [1 / 60, 1 / 30]) {
@@ -31,6 +33,18 @@ test('Stage 1 물리와 대시는 그대로, Stage 2는 높이를 보존하고 �
       assert.ok(peakY > 18, `${difficulty} at ${1 / dt} fps`);
       assert.equal(getLavaLandingHeight([{ id: 1, x: 0, width: 100, height: 18 }], 27, peakY, 17, -10), 18);
     }
+  }
+});
+
+test('Stage 3 장애물은 초중후반으로 갈수록 촘촘하고 Stage 1/2보다 자주 등장한다', () => {
+  for (const difficulty of difficulties) {
+    const first = getLavaObstacleSpawnInterval(1, difficulty, 150);
+    const second = getLavaObstacleSpawnInterval(2, difficulty, 150);
+    const opening = getLavaObstacleSpawnInterval(3, difficulty, 30);
+    const middle = getLavaObstacleSpawnInterval(3, difficulty, 90);
+    const final = getLavaObstacleSpawnInterval(3, difficulty, 150);
+    assert.ok(second.min < first.min && opening.min < second.min);
+    assert.ok(middle.min < opening.min && final.min < middle.min);
   }
 });
 
@@ -64,7 +78,8 @@ test('transition ramp는 padding을 포함한 예약 구간이며 PNG 표시 크
     LAVA_CLIFF_MISSION.rampVisualWidthPx, LAVA_CLIFF_MISSION.rampVisualHeightPx,
     LAVA_CLIFF_MISSION.fossilVisualSizePx, LAVA_CLIFF_MISSION.secretDoorWidthPx,
     LAVA_CLIFF_MISSION.secretDoorHeightPx, LAVA_CLIFF_MISSION.hudFossilIconSizePx,
-  ], [190, 50, 60, 110, 130, 24]);
+  ], [190, 50, 60, 150, 176, 24]);
+  assert.equal(LAVA_CLIFF_MISSION.secretDoorExclusionRadius, 26);
 });
 
 test('용암 분출은 1.2초 경고를 완료한 뒤 활성화되고 1.1초 후 피해가 끝난다', () => {
@@ -73,6 +88,11 @@ test('용암 분출은 1.2초 경고를 완료한 뒤 활성화되고 1.1초 후
   assert.equal(getLavaEruptionPhase(2.299), 'active');
   assert.equal(getLavaEruptionPhase(2.301), 'ending');
   assert.equal(getLavaEruptionPhase(2.751), 'done');
+});
+
+test('ground lava는 공통 track surface와 실측 발 보정값을 하나의 좌표로 사용한다', () => {
+  assert.equal(getLavaGroundSpawnY(0), 'calc(20% + 0px)');
+  assert.equal(getLavaGroundSpawnY(12.5), 'calc(20% + 12.5px)');
 });
 
 test('희귀조각 기대량은 Stage 1의 1.2~1.3배이며 보너스에서도 총 3개 상한을 유지한다', () => {
@@ -106,10 +126,26 @@ test('보너스 음식/부화 아이템은 기존 2~3개 계획에서 재배치�
   assert.equal(config.futureRewardConfig.treasureChestEnabled, false);
 });
 
-test('문양 여부와 독립적인 Stage 2 완주는 Stage 3 상태만 해금하고 게임 진입은 막는다', () => {
+test('문양 여부와 독립적인 Stage 2 완주는 플레이 가능한 Stage 3를 해금한다', () => {
   const first = completeAdventureStage({}, 'lavaValley', 1);
   const second = completeAdventureStage(first.progress, 'lavaValley', 2);
   assert.equal(second.unlockedStage, 3);
-  assert.equal(canPlayAdventureStage(second.progress, 'lavaValley', 3), false);
+  assert.equal(canPlayAdventureStage(second.progress, 'lavaValley', 3), true);
   assert.equal(completeAdventureStage(second.progress, 'lavaValley', 2).unlockedStage, null);
+});
+
+test('Stage 3는 180초, 최대 4층 경로, 이동·붕괴 발판과 최종 상자 위치를 갖는다', () => {
+  assert.equal(getAdventureStage('lavaValley', 3).playTime, 180);
+  assert.equal(LAVA_STAGE_GAMEPLAY[3].symbolMission, true);
+  assert.equal(LAVA_STAGE_GAMEPLAY[3].secretRoute, true);
+  assert.equal(LAVA_STAGE_GAMEPLAY[3].eruptions, true);
+  assert.equal(LAVA_VOLCANO_CORE.crumbleDelayMs, 850);
+  assert.equal(LAVA_VOLCANO_CORE.finalTreasureAt, 174);
+  assert.deepEqual(LAVA_VOLCANO_CORE.symbols.map(symbol => symbol.route), ['lower', 'middle', 'top']);
+  assert.equal(LAVA_STAGE_GAMEPLAY[3].maxVerticalLevel, 4);
+  assert.ok(LAVA_VOLCANO_CORE.symbols.every(symbol => symbol.at < LAVA_VOLCANO_CORE.gateAt));
+  for (const difficulty of difficulties) {
+    const physics = getLavaJumpPhysics(3, difficulty);
+    assert.ok(physics.jumpVelocity ** 2 / (2 * physics.gravity) > LAVA_VOLCANO_CORE.topRouteHeight);
+  }
 });

@@ -14,6 +14,13 @@ import stage2FossilPickupEffect from './stage2/effects/lava_stage2_fossil_pickup
 import stage1VolcanoFoothillsCard from './ui/stage-select/stage1_volcano_foothills_card.png';
 import stage2LavaCliffCard from './ui/stage-select/stage2_lava_cliff_card.png';
 import stage3VolcanoCoreCard from './ui/stage-select/stage3_volcano_core_card.png';
+import stage3MovingPlatformChain from './01_moving_platform_chain.png';
+import stage3MovingPlatformHanging from './02_moving_platform_hanging.png';
+import stage3FloatingPlatform from './03_floating_platform.png';
+import stage3CrackingPlatform from './04_cracking_platform.png';
+import stage3BreakingPlatformEffect from './05_breaking_platform_effect.png';
+import stage3VolcanoCoreBackground from './01_stage3_volcano_core_background.png';
+import stage3TreasureChestClosed from './02_stage3_treasure_chest_closed.png';
 import stageSelectedFrame from './ui/stage-select/stage_selected_frame.png';
 import stageLockedOverlay from './ui/stage-select/stage_locked_overlay.png';
 import stageCompletedBadge from './ui/stage-select/stage_completed_badge.png';
@@ -113,6 +120,15 @@ export const lavaValleyStage2Assets = {
   bonusChestClosed: stage2BonusChestClosed,
   bonusChestOpen: stage2BonusChestOpen,
   fossilPickupEffect: stage2FossilPickupEffect,
+} as const;
+export const lavaValleyStage3Assets = {
+  background: stage3VolcanoCoreBackground,
+  movingPlatformChain: stage3MovingPlatformChain,
+  movingPlatformHanging: stage3MovingPlatformHanging,
+  floatingPlatform: stage3FloatingPlatform,
+  crackingPlatform: stage3CrackingPlatform,
+  breakingPlatformEffect: stage3BreakingPlatformEffect,
+  treasureChestClosed: stage3TreasureChestClosed,
 } as const;
 export const lavaValleyStageSelectAssets = {
   cards: {

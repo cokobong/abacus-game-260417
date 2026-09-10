@@ -4,7 +4,7 @@ import { ADVENTURE_STAGE_CATALOG, getAdventureStage } from '../config/adventureS
 import { canPlayAdventureStage, completeAdventureStage, getAdventureStageState, normalizeAdventureStageProgress, visitAdventureStage } from './adventureStageProgress';
 import { applyLavaValleyRewards, createLavaValleyShopDropPlan } from '../config/minigameConfig';
 import { getItemConfig } from '../config/itemConfig';
-import { getLavaLandingHeight, isOnLavaPlatform, LAVA_STAGE_TWO_SEGMENTS } from '../config/lavaStageSegments';
+import { getLavaLandingHeight, isOnLavaPlatform, LAVA_STAGE_THREE_SEGMENTS, LAVA_STAGE_TWO_SEGMENTS } from '../config/lavaStageSegments';
 
 test('기존 저장/손상된 모험 진행은 초기화 없이 Stage 1 기본 해금으로 정규화한다', () => {
   for (const raw of [undefined, null, [], 'bad', { lavaValley: { completedStages: [2, 3], visitedStages: [3] } }]) {
@@ -30,9 +30,20 @@ test('첫 클리어만 다음 Stage를 해금하고 방문 전 NEW, 재선택과
   const second = completeAdventureStage(restored, 'lavaValley', 2);
   assert.equal(second.unlockedStage, 3);
   assert.equal(getAdventureStageState(second.progress, 'lavaValley', 3), 'new');
-  assert.equal(canPlayAdventureStage(second.progress, 'lavaValley', 3), false);
+  assert.equal(canPlayAdventureStage(second.progress, 'lavaValley', 3), true);
   assert.equal(completeAdventureStage({}, 'lavaValley', 2).unlockedStage, null);
   assert.equal(canPlayAdventureStage({}, 'deepSeaCanyon', 1), false);
+});
+
+test('Stage 3 발판 패턴은 초중후반과 최대 4층 경로, 이동·붕괴 동작을 포함한다', () => {
+  assert.deepEqual([...new Set(LAVA_STAGE_THREE_SEGMENTS.map(segment => segment.phase))], ['opening', 'middle', 'final']);
+  const platforms = LAVA_STAGE_THREE_SEGMENTS.flatMap(segment => [...segment.platforms]);
+  assert.ok(platforms.some(platform => platform.route === 'middle'));
+  assert.ok(platforms.some(platform => platform.route === 'high'));
+  assert.ok(platforms.some(platform => platform.route === 'top' && platform.height === 32));
+  assert.ok(platforms.some(platform => platform.behavior === 'moving'));
+  assert.ok(platforms.some(platform => platform.behavior === 'crumbling'));
+  assert.equal(getLavaLandingHeight([{ id: 9, x: 20, width: 40, height: 24, collapsed: true }], 27, 28, 20, -20), null);
 });
 
 test('Stage 1 드롭을 유지하고 Stage 2에서 기존 음식 2종과 2~3회 드롭을 확장한다', () => {
