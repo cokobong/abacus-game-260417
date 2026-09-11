@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaGroundSpawnY, getLavaJumpPhysics, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE } from './lavaStageGameplay';
+import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaGroundSpawnY, getLavaJumpPhysics, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE } from './lavaStageGameplay';
 import { createLavaValleyShopDropPlan, createRareFragmentSpawnPlan, RARE_FRAGMENT_COUNT_WEIGHTS, normalizeLavaValleyRewards } from './minigameConfig';
 import { getAdventureStage } from './adventureStageCatalog';
-import { getLavaLandingHeight, isInLavaReservedZone } from './lavaStageSegments';
+import { getLavaLandingHeight } from './lavaStageSegments';
 import { completeAdventureStage, canPlayAdventureStage } from '../utils/adventureStageProgress';
 
 const difficulties = ['easy', 'normal', 'challenge'] as const;
@@ -68,18 +68,19 @@ test('화석조각 3개는 이번 판에만 존재하며 넉넉한 지상 접촉
   assert.equal(LAVA_CLIFF_MISSION.routeSeconds, 12);
 });
 
-test('transition ramp는 padding을 포함한 예약 구간이며 PNG 표시 크기는 고정 slot이다', () => {
-  const ramp = [{ id: 1, x: 90, width: LAVA_CLIFF_MISSION.rampWidth, height: 14, route: 'transition' as const }];
-  assert.equal(isInLavaReservedZone(ramp, 82), true);
-  assert.equal(isInLavaReservedZone(ramp, 122), true);
-  assert.equal(isInLavaReservedZone(ramp, 81.99), false);
-  assert.equal(isInLavaReservedZone(ramp, 122.01), false);
+test('Stage 2 upper route는 ramp 없이 점프로 진입 가능한 단일 발판을 사용한다', () => {
+  assert.equal(LAVA_CLIFF_MISSION.platformWidth, 90);
   assert.deepEqual([
-    LAVA_CLIFF_MISSION.rampVisualWidthPx, LAVA_CLIFF_MISSION.rampVisualHeightPx,
     LAVA_CLIFF_MISSION.fossilVisualSizePx, LAVA_CLIFF_MISSION.secretDoorWidthPx,
     LAVA_CLIFF_MISSION.secretDoorHeightPx, LAVA_CLIFF_MISSION.hudFossilIconSizePx,
-  ], [190, 50, 60, 150, 176, 24]);
+  ], [60, 150, 176, 24]);
   assert.equal(LAVA_CLIFF_MISSION.secretDoorExclusionRadius, 26);
+});
+
+test('Stage 2/3 비밀상자는 유물조각 없이 고정 보너스를 만든다', () => {
+  const reward = createLavaSecretChestReward(['basic-meat', 'special-snack'], () => 0);
+  assert.deepEqual(reward, { coins: 100, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
+  assert.equal('relicFragments' in reward, false);
 });
 
 test('용암 분출은 1.2초 경고를 완료한 뒤 활성화되고 1.1초 후 피해가 끝난다', () => {
@@ -95,7 +96,7 @@ test('ground lava는 공통 track surface와 실측 발 보정값을 하나의 �
   assert.equal(getLavaGroundSpawnY(12.5), 'calc(20% + 12.5px)');
 });
 
-test('희귀조각 기대량은 Stage 1의 1.2~1.3배이며 보너스에서도 총 3개 상한을 유지한다', () => {
+test('일반 희귀조각 기대량은 Stage 1의 1.2~1.3배이며 판당 3개 상한을 유지한다', () => {
   for (const difficulty of difficulties) {
     const expectation = (weights: readonly number[]) => weights.reduce((sum, weight, count) => sum + weight * count, 0);
     const ratio = expectation(LAVA_CLIFF_RARE_WEIGHTS[difficulty]) / expectation(RARE_FRAGMENT_COUNT_WEIGHTS[difficulty]);

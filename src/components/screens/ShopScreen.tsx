@@ -1,4 +1,3 @@
-import type { AdventureStageProgress } from '../../utils/adventureStageProgress';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -47,11 +46,11 @@ type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'food' | 'egg' | 'hatchItem';
 
 export interface ShopScreenProps {
-  stageProgress?: AdventureStageProgress;
   coins: number;
   feedback: string;
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
+  discoveredSpeciesIds: string[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: (itemId: string) => void;
@@ -69,13 +68,15 @@ const shopItemAssets: Record<string, string> = {
   'rare-spark-egg': eggSpecial,
   'rare-egg': eggRare,
   'legend-egg': eggLegendary,
+  'magmarex-legend-egg': eggLegendary,
+  'luminadon-legend-egg': eggLegendary,
   'hatch-warm-stone': shopItemHatchWarmStone,
   'hatch-warm-blanket': shopItemHatchWarmBlanket,
   'hatch-spark-energy': shopItemHatchSparkleEnergy,
   'rare-egg-fragment': shopItemHatchRareFragment,
 };
 
-export function ShopScreen({ stageProgress, coins, feedback, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
+export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, discoveredSpeciesIds, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
   const [activeCategory, setActiveCategory] = useState<ShopCategoryId>('food');
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
   const visibleItems = useMemo(
@@ -152,6 +153,7 @@ export function ShopScreen({ stageProgress, coins, feedback, inventory, ownedDin
                   coins={coins}
                   inventory={inventory}
                   ownedDinosaurs={ownedDinosaurs}
+                  discoveredSpeciesIds={discoveredSpeciesIds}
                   ownedEggs={ownedEggs}
                   ownedCostumeIds={ownedCostumeIds}
                   onOpenDetails={() => setDetailItemId(item.id)}
@@ -165,11 +167,11 @@ export function ShopScreen({ stageProgress, coins, feedback, inventory, ownedDin
 
       {detailItem && createPortal(
         <ShopItemDetailDialog
-          stageProgress={stageProgress}
           item={detailItem}
           coins={coins}
           inventory={inventory}
           ownedDinosaurs={ownedDinosaurs}
+          discoveredSpeciesIds={discoveredSpeciesIds}
           ownedEggs={ownedEggs}
           ownedCostumeIds={ownedCostumeIds}
           onPurchase={() => onPurchase(detailItem.id)}
@@ -186,23 +188,24 @@ function ShopProductCard({
   coins,
   inventory,
   ownedDinosaurs,
+  discoveredSpeciesIds,
   ownedEggs,
   ownedCostumeIds,
   onOpenDetails,
   onPurchase,
 }: {
   key?: string;
-  stageProgress?: AdventureStageProgress;
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
+  discoveredSpeciesIds: string[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onOpenDetails: () => void;
   onPurchase: () => void;
 }) {
-  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds);
   const itemAsset = shopItemAssets[item.id];
   const [isPressed, setIsPressed] = useState(false);
   const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
@@ -279,33 +282,35 @@ function ShopProductCard({
 }
 
 function ShopItemDetailDialog({
-  stageProgress,
   item,
   coins,
   inventory,
   ownedDinosaurs,
+  discoveredSpeciesIds,
   ownedEggs,
   ownedCostumeIds,
   onPurchase,
   onClose,
 }: {
-  stageProgress?: AdventureStageProgress;
   item: ItemConfig;
   coins: number;
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
+  discoveredSpeciesIds: string[];
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: () => void;
   onClose: () => void;
 }) {
-  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds);
   const itemAsset = shopItemAssets[item.id];
   const effectLabel = getShopItemEffectLabel(item);
   const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
-  const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary' ? getLegendaryCategoryStates(ownedDinosaurs, undefined, stageProgress) : [];
+  const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary'
+    ? getLegendaryCategoryStates(ownedDinosaurs, undefined, discoveredSpeciesIds).filter((category) => !item.eggHabitatId || category.habitatId === item.eggHabitatId)
+    : [];
 
   return (
     <div
@@ -373,7 +378,7 @@ function ShopItemDetailDialog({
 
           {legendaryCategories.length > 0 && (
             <div className="mt-[1%] grid w-[90%] grid-cols-2 gap-1 text-[clamp(0.58rem,1.15dvh,0.72rem)] font-black">
-              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} Stage 3 {category.stage3Unlocked ? '✓' : '🔒'} · 유물 {category.relicFragmentCount}/{category.requiredRelicFragments} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
+              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} 도감 {category.dexFound}/{category.requiredDexDiscoveries} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
             </div>
           )}
 
@@ -421,9 +426,9 @@ function getCategoryLead(category: ShopCategoryId) {
   return '알을 더 따뜻하게 돌볼 부화 재료예요';
 }
 
-function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[]) {
+function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[], discoveredSpeciesIds: string[]) {
   if (item.category === 'egg') {
-    const purchaseState = getEggPurchaseState(item, coins, inventory, ownedDinosaurs, ownedEggs);
+    const purchaseState = getEggPurchaseState(item, coins, inventory, ownedDinosaurs, ownedEggs, undefined, discoveredSpeciesIds);
     return { ownedQuantity: purchaseState.ownedQuantity, actionLabel: purchaseState.label, canBuy: !purchaseState.disabled };
   }
   const ownedQuantity = getOwnedQuantity(item, inventory, ownedEggs, ownedCostumeIds);

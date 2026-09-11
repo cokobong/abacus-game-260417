@@ -315,7 +315,7 @@ export const itemConfigs: ItemConfig[] = [
     name: '전설 알',
     category: 'egg',
     price: 0,
-    description: '지역 Stage 3 해금과 유물조각 2개가 필요해요. 희귀조각 20개로 만날 수 있어요.',
+    description: '지역 도감에서 공룡 5종을 발견하면 희귀조각 20개로 만날 수 있어요.',
     sortOrder: 32,
     rarity: 'legendary',
     eggType: 'legendary',
@@ -372,7 +372,7 @@ export const legacyEggItemConfigs: EggItemConfig[] = [
 // Reserved regional products; excluded from SHOP_CATALOG while relics are unavailable.
 export const regionalLegendaryEggConfigs: EggItemConfig[] = REPLACEMENT_LEGENDARY_EGGS.map((entry, index) => ({
   id: entry.id, name: entry.name, category: 'egg', price: 0, sortOrder: 200 + index,
-  description: entry.speciesName + '를 만나는 알이에요. Stage 3 해금 · 유물조각 2개 필요 (준비중)',
+  description: entry.speciesName + '를 만나는 알이에요. 해당 지역 도감 5종 발견이 필요해요.',
   rarity: 'legendary', eggType: 'legendary', eggCategory: 'legendary', eggHabitatId: entry.habitat,
   linkedSpeciesId: entry.speciesId, purchaseLimit: 1,
   requiredFragments: [{ itemId: 'rare-egg-fragment', amount: LEGENDARY_EGG_RARE_FRAGMENT_COST }],

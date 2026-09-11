@@ -1,4 +1,4 @@
-export type LavaRoute = 'lower' | 'middle' | 'high' | 'top' | 'upper' | 'transition' | 'secret';
+export type LavaRoute = 'lower' | 'middle' | 'high' | 'top' | 'upper' | 'secret';
 export type LavaPlatformBehavior = 'static' | 'moving' | 'crumbling';
 export interface LavaPlatform { id: number; x: number; width: number; height: number; route?: Exclude<LavaRoute, 'lower'>; behavior?: LavaPlatformBehavior; baseHeight?: number; motionPhase?: number; crumbleStartedAt?: number; collapsed?: boolean }
 export interface LavaSegment { kind: 'ground' | 'upper' | 'branch' | 'return'; length: number; platforms: ReadonlyArray<{ offset: number; width: number; height: number }> }
@@ -40,8 +40,4 @@ export function isOnLavaPlatform(platforms: readonly LavaPlatform[], playerX: nu
 
 export function getLavaPlatformAt(platforms: readonly LavaPlatform[], playerX: number, height: number) {
   return platforms.find(platform => !platform.collapsed && playerX >= platform.x && playerX <= platform.x + platform.width && Math.abs(height - platform.height) < .25);
-}
-
-export function isInLavaReservedZone(platforms: readonly LavaPlatform[], x: number, padding = 8) {
-  return platforms.some(platform => platform.route === 'transition' && x >= platform.x - padding && x <= platform.x + platform.width + padding);
 }

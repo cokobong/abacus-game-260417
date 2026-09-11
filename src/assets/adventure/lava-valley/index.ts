@@ -1,7 +1,6 @@
 import background from './background/lava_valley_background.png';
 import runnerBackground from './background/lava_valley_background2.png';
 export { default as lavaCliffBackground } from './background/stage2/bg_lava_valley_stage2_lava_cliff.png';
-import stage2RampPlatform from './stage2/platform/lava_stage2_ramp_platform.png';
 import stage2FossilFragment from './stage2/collectibles/lava_stage2_fossil_fragment.png';
 import stage2FossilHudIcon from './stage2/collectibles/lava_stage2_fossil_hud_icon.png';
 import stage2LavaWarningMarker from './stage2/hazards/lava_stage2_lava_warning_marker.png';
@@ -21,6 +20,8 @@ import stage3CrackingPlatform from './04_cracking_platform.png';
 import stage3BreakingPlatformEffect from './05_breaking_platform_effect.png';
 import stage3VolcanoCoreBackground from './01_stage3_volcano_core_background.png';
 import stage3TreasureChestClosed from './02_stage3_treasure_chest_closed.png';
+import stage3TreasureChestOpen from './03_stage3_treasure_chest_open.png';
+import stage3TreasureOpenEffect from './04_stage3_treasure_open_effect.png';
 import stageSelectedFrame from './ui/stage-select/stage_selected_frame.png';
 import stageLockedOverlay from './ui/stage-select/stage_locked_overlay.png';
 import stageCompletedBadge from './ui/stage-select/stage_completed_badge.png';
@@ -110,7 +111,6 @@ export const lavaValleyEffectAssets = { dinosaurContactShadow, jumpDust, landing
 export const lavaValleyEnvironmentAssets = { checkpoint: upgradedCheckpointFlag, warningSign, lavaTorchTotem, magmaCrystalAltar, raceGateArch, goalPortal, treasureChestClosed, treasureChestOpen } as const;
 export const lavaValleyEventUiAssets = { pauseMenu: pauseMenuPanel, resultClear: resultClearPanel, speechBubble: dinoSpeechBubble, comboPopup } as const;
 export const lavaValleyStage2Assets = {
-  rampPlatform: stage2RampPlatform,
   fossilFragment: stage2FossilFragment,
   fossilHudIcon: stage2FossilHudIcon,
   lavaWarningMarker: stage2LavaWarningMarker,
@@ -129,6 +129,8 @@ export const lavaValleyStage3Assets = {
   crackingPlatform: stage3CrackingPlatform,
   breakingPlatformEffect: stage3BreakingPlatformEffect,
   treasureChestClosed: stage3TreasureChestClosed,
+  treasureChestOpen: stage3TreasureChestOpen,
+  treasureOpenEffect: stage3TreasureOpenEffect,
 } as const;
 export const lavaValleyStageSelectAssets = {
   cards: {

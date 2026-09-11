@@ -1,5 +1,6 @@
 import type { CoinRewardMultiplier } from './rewardConfig';
 import { LAVA_VALLEY_SHOP_DROP_POOLS, type LavaValleyShopDropCategory } from './shopCatalog';
+import type { RelicChestOutcome } from './worldMapRelicConfig';
 
 export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-ruins';
 
@@ -65,6 +66,15 @@ export interface MinigameRunRewards {
   coins: number;
   rareFragments: number;
   shopItems: MinigameItemReward[];
+  secretChestBonus?: MinigameSecretChestBonus;
+  finalChestBonus?: MinigameSecretChestBonus;
+  relicOutcome?: RelicChestOutcome;
+}
+
+export interface MinigameSecretChestBonus {
+  coins: number;
+  rareFragments: number;
+  shopItems: MinigameItemReward[];
 }
 
 export interface LavaValleyShopDropPlanItem {
@@ -105,10 +115,20 @@ export function normalizeLavaValleyRewards(rewards: MinigameRunRewards, pool = L
     }
     return result;
   }, {});
+  const normalizeChestBonus = (bonus?: MinigameSecretChestBonus) => bonus ? {
+    coins: Math.max(0, Math.floor(bonus.coins)),
+    rareFragments: Math.max(0, Math.floor(bonus.rareFragments)),
+    shopItems: bonus.shopItems.filter(item => allowedIds.has(item.itemId) && Number.isFinite(item.quantity) && item.quantity > 0).map(item => ({ ...item, quantity: Math.floor(item.quantity) })),
+  } : undefined;
+  const secretChestBonus = normalizeChestBonus(rewards.secretChestBonus);
+  const finalChestBonus = normalizeChestBonus(rewards.finalChestBonus);
   return {
     coins: Math.max(0, Math.floor(rewards.coins)),
-    rareFragments: Math.min(MAX_RARE_FRAGMENTS_PER_RUN, Math.max(0, Math.floor(rewards.rareFragments))),
+    rareFragments: Math.min(MAX_RARE_FRAGMENTS_PER_RUN + (secretChestBonus?.rareFragments ?? 0) + (finalChestBonus?.rareFragments ?? 0), Math.max(0, Math.floor(rewards.rareFragments))),
     shopItems: Object.entries(quantities).map(([itemId, quantity]) => ({ itemId, quantity })),
+    secretChestBonus,
+    finalChestBonus,
+    relicOutcome: rewards.relicOutcome,
   };
 }
 
@@ -134,7 +154,8 @@ function addQuantity(inventory: MinigameEconomyState['inventory'], itemId: strin
 
 export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS) {
   const normalized = normalizeLavaValleyRewards(rawRewards, pool);
-  const rewards = { ...normalized, coins: getAdjustedMinigameCoins(normalized.coins, multiplier) };
+  const chestCoins = (normalized.secretChestBonus?.coins ?? 0) + (normalized.finalChestBonus?.coins ?? 0);
+  const rewards = { ...normalized, coins: getAdjustedMinigameCoins(Math.max(0, normalized.coins - chestCoins), multiplier) + chestCoins };
   const inventoryWithShopItems = rewards.shopItems.reduce((inventory, item) => addQuantity(inventory, item.itemId, item.quantity), state.inventory);
   return {
     state: {

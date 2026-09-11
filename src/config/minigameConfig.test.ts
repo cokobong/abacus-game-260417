@@ -85,6 +85,35 @@ test('용암계곡은 120초이며 한 판 드롭 계획은 판매 중인 비알
   }
 });
 
+test('비밀상자 보너스는 일반 희귀조각 상한과 별도로 inventory와 결과 데이터에 유지된다', () => {
+  const result = applyLavaValleyRewards(
+    { coins: 10, inventory: [] },
+    {
+      coins: 150,
+      rareFragments: MAX_RARE_FRAGMENTS_PER_RUN + 1,
+      shopItems: [{ itemId: 'basic-meat', quantity: 1 }],
+      secretChestBonus: { coins: 100, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] },
+    },
+    1.3,
+  );
+  assert.equal(result.state.coins, 175);
+  assert.equal(result.rewards.rareFragments, MAX_RARE_FRAGMENTS_PER_RUN + 1);
+  assert.equal(result.state.inventory.find(item => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 4);
+  assert.equal(result.state.inventory.find(item => item.itemId === 'basic-meat')?.quantity, 1);
+  assert.deepEqual(result.rewards.secretChestBonus, { coins: 100, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
+});
+
+test('Stage 3 최종 상자 보너스도 고정 코인과 별도 희귀조각 상한을 유지한다', () => {
+  const result = applyLavaValleyRewards(
+    { coins: 0, inventory: [] },
+    { coins: 200, rareFragments: 4, shopItems: [{ itemId: 'basic-meat', quantity: 1 }], finalChestBonus: { coins: 150, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] } },
+    1.3,
+  );
+  assert.equal(result.rewards.coins, 215);
+  assert.equal(result.rewards.rareFragments, 4);
+  assert.deepEqual(result.rewards.finalChestBonus, { coins: 150, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
+});
+
 test('희귀조각은 난이도별 예약 분포를 사용하고 획득 보상은 판당 3개로 제한한다', () => {
   assert.deepEqual(RARE_FRAGMENT_COUNT_WEIGHTS.normal, [0.22, 0.50, 0.23, 0.05]);
   assert.equal(MAX_RARE_FRAGMENTS_PER_RUN, 3);

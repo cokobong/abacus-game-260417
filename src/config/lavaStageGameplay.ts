@@ -42,9 +42,6 @@ export const LAVA_CLIFF_MISSION = {
   symbolCount: 3,
   symbols: [{ at: 18, height: 10 }, { at: 46, height: 14 }, { at: 78, height: 18 }],
   platformWidth: 90,
-  rampWidth: 24,
-  rampVisualWidthPx: 190,
-  rampVisualHeightPx: 50,
   fossilVisualSizePx: 60,
   secretDoorWidthPx: 150,
   secretDoorHeightPx: 176,
@@ -63,6 +60,17 @@ export const LAVA_CLIFF_MISSION = {
   eruptionEndSeconds: .45,
   maxItems: 28,
 } as const;
+
+export const LAVA_SECRET_CHEST_REWARD = { coins: 100, rareFragments: 1, itemQuantity: 1 } as const;
+
+export function createLavaSecretChestReward(itemPool: readonly string[], random: () => number = Math.random) {
+  const itemId = itemPool[Math.min(itemPool.length - 1, Math.floor(random() * itemPool.length))];
+  return {
+    coins: LAVA_SECRET_CHEST_REWARD.coins,
+    rareFragments: LAVA_SECRET_CHEST_REWARD.rareFragments,
+    shopItems: itemId ? [{ itemId, quantity: LAVA_SECRET_CHEST_REWARD.itemQuantity }] : [],
+  };
+}
 
 export function getLavaStageGameplay(stage: AdventureStageNumber) {
   return LAVA_STAGE_GAMEPLAY[stage];

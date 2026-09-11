@@ -5,7 +5,7 @@ export type AdventureStageState = 'locked' | 'new' | 'unlocked' | 'completed';
 export type RegionStageProgress = { completedStages: AdventureStageNumber[]; visitedStages: AdventureStageNumber[] };
 export type AdventureStageProgress = Partial<Record<AdventureRegionId, RegionStageProgress>>;
 // Future metadata contracts only; no relic counters, rewards, or ending are persisted yet.
-export interface FutureRegionRelicProgress { relicProgress: number; regionRelicCompleted: boolean; dexCompleted: boolean }
+export interface FutureRegionRelicProgress { ownedRelicPartIds: string[]; regionRelicCompleted: boolean }
 export interface FutureObeliskProgress { completedRegionRelics: AdventureRegionId[] }
 
 export function normalizeAdventureStageProgress(raw: unknown): AdventureStageProgress {

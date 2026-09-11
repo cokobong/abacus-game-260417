@@ -39,16 +39,15 @@ test('구형 해금/보유 전설알은 새 전설종을 주지 않고 신규 �
   }
 });
 
-test('Stage 3와 유물 2개를 모두 요구하고 코인 0/희귀조각 20 규칙을 가지며 판매는 준비중이다', () => {
-  const progress = { lavaValley: { completedStages: [1, 2] as (1 | 2)[], visitedStages: [] } };
-  assert.equal(getLegendaryCategoryStates([], undefined, progress)[0].status, 'locked');
-  assert.equal(getLegendaryCategoryStates([], undefined, {}, { 'volcano-island': 2 })[0].status, 'locked');
-  for (const count of [0, 1, NaN, Infinity]) assert.equal(getLegendaryCategoryStates([], undefined, progress, { 'volcano-island': count })[0].status, 'locked');
-  assert.equal(getLegendaryCategoryStates([], undefined, progress, { 'volcano-island': 2 })[0].status, 'available');
-  for (const id of ['legend-egg', ...REPLACEMENT_LEGENDARY_EGGS.map(e => e.id)]) {
+test('지역 도감 5종과 희귀조각 20개로 신규 지역 전설알을 구매한다', () => {
+  for (const entry of REPLACEMENT_LEGENDARY_EGGS) {
+    const discoveredIds = dinosaurSpecies.filter(species => species.habitat === entry.habitat && species.rarity !== 'legendary').slice(0, 5).map(species => species.speciesId);
+    assert.equal(getLegendaryCategoryStates([], undefined, discoveredIds).find(state => state.habitatId === entry.habitat)?.status, 'available');
+    const id = entry.id;
     const config = getEggItemConfig(id)!;
     assert.equal(config.price, 0);
     assert.deepEqual(getEggRequiredFragments(config), [{ itemId: 'rare-egg-fragment', amount: 20 }]);
-    for (const quantity of [19, 20, 999]) assert.equal(getEggPurchaseState(config, 0, [{ itemId: 'rare-egg-fragment', quantity }], legacyOwned, []).status, 'comingSoon');
+    assert.equal(getEggPurchaseState(config, 0, [{ itemId: 'rare-egg-fragment', quantity: 19 }], legacyOwned, [], undefined, discoveredIds).status, 'insufficientFragments');
+    assert.equal(getEggPurchaseState(config, 0, [{ itemId: 'rare-egg-fragment', quantity: 20 }], legacyOwned, [], undefined, discoveredIds).status, 'available');
   }
 });

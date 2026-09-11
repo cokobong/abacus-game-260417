@@ -27,10 +27,12 @@ import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
+import { canRestoreRegionRelic, normalizeRegionRelicProgress, resolveLavaFinalChest, type RegionRelicProgress } from './config/worldMapRelicConfig';
 import { ADMIN_LIMITS } from './config/adminConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
 import { adventureAreas } from './data/adventures';
+import type { AdventureRegionId } from './data/adventureRegions';
 import { dinosaurSpecies, getDinosaurSpecies, getStarterSelectableSpecies } from './data/dinosaurSpecies';
 import { useTrainingSession } from './hooks/useTrainingSession';
 import { useAbacusBLE } from './hooks/useAbacusBLE';
@@ -91,6 +93,7 @@ type CompletedTrainingSummary = TrainingRewardResult & {
 };
 type GameState = {
   adventureStageProgress: AdventureStageProgress;
+  regionRelicProgress: Record<AdventureRegionId, RegionRelicProgress>;
   eggSystemMigrationVersion?: number;
   dexWorldMigrationVersion?: number;
   userProfile: UserProfile | null;
@@ -224,6 +227,7 @@ const showDeveloperPanels = false;
 const showSettingsAdvancedPanels = true;
 const defaultGameState: GameState = {
   adventureStageProgress: {},
+  regionRelicProgress: normalizeRegionRelicProgress(),
   userProfile: null,
   player: { coins: 1240 },
   selectedDinosaurId: initialOwnedDinosaur.id,
@@ -311,6 +315,7 @@ function normalizeGameState(state: Partial<GameState>): GameState {
     ...defaultGameState,
     ...state,
     adventureStageProgress: normalizeAdventureStageProgress(state.adventureStageProgress),
+    regionRelicProgress: normalizeRegionRelicProgress(state.regionRelicProgress),
     eggSystemMigrationVersion: EGG_SYSTEM_MIGRATION_VERSION,
     dexWorldMigrationVersion: 2,
     player: {
@@ -1798,7 +1803,7 @@ export default function App() {
     }
 
     if (item.category === 'egg') {
-      const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool);
+      const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool, gameState.discoveredSpeciesIds);
       if (purchaseState.status === 'comingSoon') {
         setShopFeedback(purchaseState.label);
         return;
@@ -2021,15 +2026,23 @@ export default function App() {
     const rewards = normalizeLavaValleyRewards(rawRewards, stage.itemPool);
     const current = gameStateRef.current;
     const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool);
-    const adjustedRewards = applied.rewards;
+    let adjustedRewards = applied.rewards;
     if (committedAdventureRunIdsRef.current.has(runId)) return adjustedRewards;
     committedAdventureRunIdsRef.current.add(runId);
     const completion = completeAdventureStage(current.adventureStageProgress, regionId, run.stageNumber);
     if (completion.unlockedStage) setStageUnlockNotice(`Stage ${completion.unlockedStage}가 열렸어요!${getAdventureStage(regionId, completion.unlockedStage).implemented ? ' 지도에서 자유롭게 선택해요.' : ' 콘텐츠는 준비 중이에요.'}`);
 
+    let regionRelicProgress = normalizeRegionRelicProgress(current.regionRelicProgress);
+    if (regionId === 'lavaValley' && run.stageNumber === 3 && adjustedRewards.finalChestBonus) {
+      const relicResolution = resolveLavaFinalChest(regionRelicProgress.lavaValley);
+      regionRelicProgress = { ...regionRelicProgress, lavaValley: relicResolution.progress };
+      adjustedRewards = { ...adjustedRewards, relicOutcome: relicResolution.outcome };
+    }
+
     const nextState = {
       ...current,
       adventureStageProgress: completion.progress,
+      regionRelicProgress,
       player: { ...current.player, coins: applied.state.coins },
       inventory: applied.state.inventory,
     };
@@ -2043,6 +2056,16 @@ export default function App() {
   function exitAdventureGame() {
     activeAdventureRunRef.current = null;
     setActiveAdventureRun(null);
+  }
+
+  function restoreRegionRelic(regionId: AdventureRegionId) {
+    const current = gameStateRef.current;
+    const progress = normalizeRegionRelicProgress(current.regionRelicProgress);
+    if (!canRestoreRegionRelic(regionId, progress[regionId])) return;
+    const nextState = { ...current, regionRelicProgress: { ...progress, [regionId]: { ...progress[regionId], completed: true } } };
+    gameStateRef.current = nextState;
+    setGameState(nextState);
+    saveGameState(nextState);
   }
 
   function runAdventure(areaId: string) {
@@ -2111,16 +2134,18 @@ export default function App() {
     const hatchedTemplate = selectHatchCandidate(currentActiveEgg, hatchCandidates);
 
     if (!hatchedTemplate) {
-      setGameState((current) => ({
+      setGameState((current) => {
+        const discoveredSpeciesIds = getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]);
+        return {
         ...current,
         ownedDinosaurs: uniqueOwnedDinosaurs,
-        discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId)]),
+        discoveredSpeciesIds,
         egg: {
           ...current.egg,
           ...(activeEggToEggState(currentActiveEgg) ?? {}),
           lastHatchMessage: '이 알에서 만날 수 있는 새 공룡을 모두 만났어요. 다른 알을 부화해보세요.',
         },
-      }));
+      }; });
       isHatchingRef.current = false;
       return;
     }
@@ -2148,11 +2173,12 @@ export default function App() {
 
       const nextOwnedEggs = current.ownedEggs.filter((egg) => egg.id !== currentActiveEgg.id);
       const nextActiveEgg = getSelectedOwnedEgg(nextOwnedEggs, nextOwnedEggs[0]?.id);
+      const discoveredSpeciesIds = getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId), newDinosaur.speciesId]);
 
       return {
         ...current,
         ownedDinosaurs: [...uniqueOwnedDinosaurs, newDinosaur],
-        discoveredSpeciesIds: getUniqueSpeciesIds([...current.discoveredSpeciesIds, ...uniqueOwnedDinosaurs.map((dinosaur) => dinosaur.speciesId), newDinosaur.speciesId]),
+        discoveredSpeciesIds,
         ownedEggs: nextOwnedEggs,
         activeEggId: nextActiveEgg?.id ?? null,
         dinosaur: ownedDinosaurToDinosaurState(newDinosaur),
@@ -2611,11 +2637,11 @@ export default function App() {
         )}
         {activeTab === 'shop' && (
           <ShopScreen
-            stageProgress={gameState.adventureStageProgress}
             coins={gameState.player.coins}
             feedback={shopFeedback}
             inventory={gameState.inventory}
             ownedDinosaurs={gameState.ownedDinosaurs}
+            discoveredSpeciesIds={gameState.discoveredSpeciesIds}
             ownedEggs={gameState.ownedEggs}
             ownedCostumeIds={gameState.ownedCostumeIds}
             onPurchase={purchaseItem}
@@ -2635,7 +2661,7 @@ export default function App() {
         {activeTab === 'adventure' && (
           activeAdventureRun
             ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={() => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber)} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
-            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} stageProgress={gameState.adventureStageProgress} discoveredSpeciesIds={gameState.discoveredSpeciesIds} onStartGame={(gameId, stageNumber) => startAdventureGame(gameId, undefined, true, stageNumber)} /></div>
+            : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} stageProgress={gameState.adventureStageProgress} discoveredSpeciesIds={gameState.discoveredSpeciesIds} relicProgress={gameState.regionRelicProgress} onRestoreRelic={restoreRegionRelic} onStartGame={(gameId, stageNumber) => startAdventureGame(gameId, undefined, true, stageNumber)} /></div>
         )}
         {stageUnlockNotice && activeTab === 'adventure' && <div role="status" className="adventure-stage-notice"><span>{stageUnlockNotice}</span><button type="button" aria-label="Stage 해금 안내 닫기" onClick={() => setStageUnlockNotice(null)}>확인</button></div>}
         {pendingAdventureEntry && <MinigameEntryConfirm title={`${pendingAdventureEntry.gameId === 'sky-number-clouds' ? '하늘섬' : '용암계곡'} Stage ${pendingAdventureEntry.stageNumber}`} coins={gameState.player.coins} entryCost={MINIGAME_ENTRY_COST[pendingAdventureEntry.gameId as keyof typeof MINIGAME_ENTRY_COST]!} processing={entryProcessing} onCancel={() => { if (!entryProcessingRef.current) setPendingAdventureEntry(null); }} onConfirm={confirmAdventureEntry} />}

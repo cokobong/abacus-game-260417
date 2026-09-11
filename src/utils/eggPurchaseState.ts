@@ -1,5 +1,4 @@
-import { LEGENDARY_EGG_REQUIRED_RELIC_FRAGMENTS, LEGENDARY_PURCHASE_ENABLED, LEGENDARY_REGION_BY_HABITAT } from '../config/legendaryEggConfig';
-import { getAdventureStageState, type AdventureStageProgress } from './adventureStageProgress';
+import { LEGENDARY_EGG_REQUIRED_DEX_DISCOVERIES, LEGENDARY_PURCHASE_ENABLED } from '../config/legendaryEggConfig';
 import { getEggRequiredFragments, type EggItemConfig } from '../config/itemConfig';
 import { dexHabitats, dinosaurSpecies, type DinosaurHabitatId, type DinosaurSpecies } from '../data/dinosaurSpecies';
 import type { OwnedDinosaur, OwnedEgg } from '../types/game';
@@ -19,19 +18,18 @@ export type EggPurchaseState = {
   availablePoolCount: number;
 };
 
-export type LegendaryCategoryState = { habitatId: DinosaurHabitatId; stage3Unlocked: boolean; relicFragmentCount: number; requiredRelicFragments: number; status: 'available' | 'locked' | 'completed' | 'unavailable'; legendarySpeciesId?: string };
+export type LegendaryCategoryState = { habitatId: DinosaurHabitatId; dexFound: number; requiredDexDiscoveries: number; status: 'available' | 'locked' | 'completed' | 'unavailable'; legendarySpeciesId?: string };
 
-export function getLegendaryCategoryStates(ownedDinosaurs: OwnedDinosaur[], speciesPool: DinosaurSpecies[] = dinosaurSpecies, stageProgress: AdventureStageProgress = {}, relicFragments: Partial<Record<DinosaurHabitatId, number>> = {}): LegendaryCategoryState[] {
+export function getLegendaryCategoryStates(ownedDinosaurs: OwnedDinosaur[], speciesPool: DinosaurSpecies[] = dinosaurSpecies, discoveredSpeciesIds: readonly string[] = ownedDinosaurs.map((dinosaur) => dinosaur.speciesId)): LegendaryCategoryState[] {
   const ownedIds = new Set(ownedDinosaurs.map((dinosaur) => dinosaur.speciesId));
+  const discoveredIds = new Set(discoveredSpeciesIds);
   return dexHabitats.map((habitatId) => {
     const categorySpecies = speciesPool.filter((species) => species.habitat === habitatId && !species.isPlaceholder && species.status !== 'planned');
     const legendary = categorySpecies.find((species) => species.rarity === 'legendary');
-    const stage3Unlocked = getAdventureStageState(stageProgress, LEGENDARY_REGION_BY_HABITAT[habitatId], 3) !== 'locked';
-    const rawCount = relicFragments[habitatId];
-    const relicFragmentCount = typeof rawCount === 'number' && Number.isFinite(rawCount) ? Math.max(0, Math.floor(rawCount)) : 0;
-    const requiredRelicFragments = LEGENDARY_EGG_REQUIRED_RELIC_FRAGMENTS;
-    const status = !legendary ? 'unavailable' : ownedIds.has(legendary.speciesId) ? 'completed' : stage3Unlocked && relicFragmentCount >= requiredRelicFragments ? 'available' : 'locked';
-    return { habitatId, stage3Unlocked, relicFragmentCount, requiredRelicFragments, status, legendarySpeciesId: legendary?.speciesId };
+    const dexFound = categorySpecies.filter((species) => discoveredIds.has(species.speciesId)).length;
+    const requiredDexDiscoveries = LEGENDARY_EGG_REQUIRED_DEX_DISCOVERIES;
+    const status = !legendary ? 'unavailable' : ownedIds.has(legendary.speciesId) ? 'completed' : dexFound >= requiredDexDiscoveries ? 'available' : 'locked';
+    return { habitatId, dexFound, requiredDexDiscoveries, status, legendarySpeciesId: legendary?.speciesId };
   });
 }
 
@@ -42,6 +40,7 @@ export function getEggPurchaseState(
   ownedDinosaurs: OwnedDinosaur[],
   ownedEggs: OwnedEgg[],
   speciesPool: DinosaurSpecies[] = dinosaurSpecies,
+  discoveredSpeciesIds: readonly string[] = ownedDinosaurs.map((dinosaur) => dinosaur.speciesId),
 ): EggPurchaseState {
   const ownedQuantity = getOwnedEggCount(ownedEggs, item.id);
   const availability = canBuyEggItem(item, ownedDinosaurs, ownedEggs, speciesPool);
@@ -53,11 +52,11 @@ export function getEggPurchaseState(
 
   if (item.eggCategory === 'legendary') {
     if (!LEGENDARY_PURCHASE_ENABLED) return { ...base, status: 'comingSoon', disabled: true, label: '준비중' };
-    const categories = getLegendaryCategoryStates(ownedDinosaurs, speciesPool);
-    const implemented = categories.filter((category) => category.status !== 'unavailable');
+    const categories = getLegendaryCategoryStates(ownedDinosaurs, speciesPool, discoveredSpeciesIds);
+    const implemented = categories.filter((category) => category.status !== 'unavailable' && (!item.eggHabitatId || category.habitatId === item.eggHabitatId));
     if (implemented.length === 0) return { ...base, status: 'locked', disabled: true, label: '전설 준비 중' };
     if (implemented.every((category) => category.status === 'completed')) return { ...base, status: 'completed', disabled: true, label: '모든 전설 완료' };
-    if (!implemented.some((category) => category.status === 'available')) return { ...base, status: 'locked', disabled: true, label: 'Stage 3 · 유물조각 조건 필요' };
+    if (!implemented.some((category) => category.status === 'available')) return { ...base, status: 'locked', disabled: true, label: `지역 도감 ${LEGENDARY_EGG_REQUIRED_DEX_DISCOVERIES}종 필요` };
   }
 
   if (purchaseLimitReached || linkedSpeciesOwned || (!availability.hasEggInCategory && availability.remainingCandidateCount === 0)) {
