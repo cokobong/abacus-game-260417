@@ -1,4 +1,4 @@
-import { LEGENDARY_EGG_RARE_FRAGMENT_COST, REPLACEMENT_LEGENDARY_EGGS } from './legendaryEggConfig';
+import { LEGENDARY_EGG_RARE_FRAGMENT_COST } from './legendaryEggConfig';
 import type { CostumeSlot, DinosaurState } from '../types/game';
 import type { DinosaurDiet, DinosaurHabitatId } from '../data/dinosaurSpecies';
 
@@ -315,7 +315,7 @@ export const itemConfigs: ItemConfig[] = [
     name: '전설 알',
     category: 'egg',
     price: 0,
-    description: '지역 도감에서 공룡 5종을 발견하면 희귀조각 20개로 만날 수 있어요.',
+    description: '열린 지역에서 공룡 5종과 유물 부품 2종을 모으면 희귀조각 20개로 만날 수 있어요.',
     sortOrder: 32,
     rarity: 'legendary',
     eggType: 'legendary',
@@ -369,17 +369,8 @@ export const legacyEggItemConfigs: EggItemConfig[] = [
   { id: 'legacy-legend-rare-egg', name: '전설 알 (구형)', category: 'egg', price: 0, description: '기존 보유 알', sortOrder: 106, rarity: 'rare', eggType: 'rare', eggCategory: 'rare', eggHabitatId: 'secret-land', purchaseLimit: 1, requiredFragments: [{ itemId: 'rare-egg-fragment', amount: RARE_EGG_FRAGMENT_COST }] },
 ];
 
-// Reserved regional products; excluded from SHOP_CATALOG while relics are unavailable.
-export const regionalLegendaryEggConfigs: EggItemConfig[] = REPLACEMENT_LEGENDARY_EGGS.map((entry, index) => ({
-  id: entry.id, name: entry.name, category: 'egg', price: 0, sortOrder: 200 + index,
-  description: entry.speciesName + '를 만나는 알이에요. 해당 지역 도감 5종 발견이 필요해요.',
-  rarity: 'legendary', eggType: 'legendary', eggCategory: 'legendary', eggHabitatId: entry.habitat,
-  linkedSpeciesId: entry.speciesId, purchaseLimit: 1,
-  requiredFragments: [{ itemId: 'rare-egg-fragment', amount: LEGENDARY_EGG_RARE_FRAGMENT_COST }],
-}));
-
 export function getItemConfig(itemId: string) {
-  return itemConfigs.find((item) => item.id === itemId) ?? regionalLegendaryEggConfigs.find((item) => item.id === itemId) ?? null;
+  return itemConfigs.find((item) => item.id === itemId) ?? null;
 }
 
 export function getFoodItemConfig(itemId: string) {

@@ -30,7 +30,7 @@ import {
   shopPopupPricePanel,
   shopStatusChip,
 } from '../../assets/shop';
-import { getEggRequiredFragments, itemConfigs, type ItemConfig } from '../../config/itemConfig';
+import { getEggRequiredFragments, getItemConfig, type ItemConfig } from '../../config/itemConfig';
 import type { OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getEggPurchaseState, getLegendaryCategoryStates } from '../../utils/eggPurchaseState';
 import { getFoodDietLabel } from '../../utils/dinosaurDiet';
@@ -41,6 +41,8 @@ import { lavaValleyAssets } from '../../assets/adventure/lava-valley';
 import { LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID } from '../../config/minigameConfig';
 import { ResourceChip } from '../ResourceChip';
 import { SHOP_CATALOG } from '../../config/shopCatalog';
+import type { AdventureRegionId } from '../../data/adventureRegions';
+import type { RegionRelicProgress } from '../../config/worldMapRelicConfig';
 
 type InventoryItemState = { itemId: string; quantity: number };
 type ShopCategoryId = 'food' | 'egg' | 'hatchItem';
@@ -51,6 +53,7 @@ export interface ShopScreenProps {
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
+  relicProgress: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>;
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: (itemId: string) => void;
@@ -68,26 +71,24 @@ const shopItemAssets: Record<string, string> = {
   'rare-spark-egg': eggSpecial,
   'rare-egg': eggRare,
   'legend-egg': eggLegendary,
-  'magmarex-legend-egg': eggLegendary,
-  'luminadon-legend-egg': eggLegendary,
   'hatch-warm-stone': shopItemHatchWarmStone,
   'hatch-warm-blanket': shopItemHatchWarmBlanket,
   'hatch-spark-energy': shopItemHatchSparkleEnergy,
   'rare-egg-fragment': shopItemHatchRareFragment,
 };
 
-export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, discoveredSpeciesIds, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
+export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, discoveredSpeciesIds, relicProgress, ownedEggs, ownedCostumeIds, onPurchase }: ShopScreenProps) {
   const [activeCategory, setActiveCategory] = useState<ShopCategoryId>('food');
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
   const visibleItems = useMemo(
     () =>
       SHOP_CATALOG[activeCategory]
-        .map((itemId) => itemConfigs.find((item) => item.id === itemId))
+        .map((itemId) => getItemConfig(itemId))
         .filter((item): item is ItemConfig => Boolean(item))
         .sort((a, b) => a.sortOrder - b.sortOrder),
     [activeCategory],
   );
-  const detailItem = detailItemId ? itemConfigs.find((item) => item.id === detailItemId) ?? null : null;
+  const detailItem = detailItemId ? getItemConfig(detailItemId) : null;
   const rareFragments = getOwnedInventoryQuantity(inventory, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID);
 
   useEffect(() => {
@@ -154,6 +155,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, discove
                   inventory={inventory}
                   ownedDinosaurs={ownedDinosaurs}
                   discoveredSpeciesIds={discoveredSpeciesIds}
+                  relicProgress={relicProgress}
                   ownedEggs={ownedEggs}
                   ownedCostumeIds={ownedCostumeIds}
                   onOpenDetails={() => setDetailItemId(item.id)}
@@ -172,6 +174,7 @@ export function ShopScreen({ coins, feedback, inventory, ownedDinosaurs, discove
           inventory={inventory}
           ownedDinosaurs={ownedDinosaurs}
           discoveredSpeciesIds={discoveredSpeciesIds}
+          relicProgress={relicProgress}
           ownedEggs={ownedEggs}
           ownedCostumeIds={ownedCostumeIds}
           onPurchase={() => onPurchase(detailItem.id)}
@@ -189,6 +192,7 @@ function ShopProductCard({
   inventory,
   ownedDinosaurs,
   discoveredSpeciesIds,
+  relicProgress,
   ownedEggs,
   ownedCostumeIds,
   onOpenDetails,
@@ -200,12 +204,13 @@ function ShopProductCard({
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
+  relicProgress: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>;
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onOpenDetails: () => void;
   onPurchase: () => void;
 }) {
-  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds, relicProgress);
   const itemAsset = shopItemAssets[item.id];
   const [isPressed, setIsPressed] = useState(false);
   const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
@@ -287,6 +292,7 @@ function ShopItemDetailDialog({
   inventory,
   ownedDinosaurs,
   discoveredSpeciesIds,
+  relicProgress,
   ownedEggs,
   ownedCostumeIds,
   onPurchase,
@@ -297,19 +303,20 @@ function ShopItemDetailDialog({
   inventory: InventoryItemState[];
   ownedDinosaurs: OwnedDinosaur[];
   discoveredSpeciesIds: string[];
+  relicProgress: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>;
   ownedEggs: OwnedEgg[];
   ownedCostumeIds: string[];
   onPurchase: () => void;
   onClose: () => void;
 }) {
-  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds);
+  const status = getItemStatus(item, coins, inventory, ownedDinosaurs, ownedEggs, ownedCostumeIds, discoveredSpeciesIds, relicProgress);
   const itemAsset = shopItemAssets[item.id];
   const effectLabel = getShopItemEffectLabel(item);
   const isFragmentEgg = item.category === 'egg' && isFragmentPricedEgg(item);
   const requiredFragment = item.category === 'egg' ? getEggRequiredFragments(item)[0] : null;
   const fragmentQuantity = requiredFragment ? getOwnedInventoryQuantity(inventory, requiredFragment.itemId) : 0;
   const legendaryCategories = item.category === 'egg' && item.eggCategory === 'legendary'
-    ? getLegendaryCategoryStates(ownedDinosaurs, undefined, discoveredSpeciesIds).filter((category) => !item.eggHabitatId || category.habitatId === item.eggHabitatId)
+    ? getLegendaryCategoryStates(ownedDinosaurs, undefined, discoveredSpeciesIds, relicProgress)
     : [];
 
   return (
@@ -378,7 +385,7 @@ function ShopItemDetailDialog({
 
           {legendaryCategories.length > 0 && (
             <div className="mt-[1%] grid w-[90%] grid-cols-2 gap-1 text-[clamp(0.58rem,1.15dvh,0.72rem)] font-black">
-              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} 도감 {category.dexFound}/{category.requiredDexDiscoveries} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
+              {legendaryCategories.map((category) => <span key={category.habitatId} className="rounded-full bg-violet-50 px-2 py-1 text-violet-900">{getHabitatLabel(category.habitatId)} 도감 {category.dexFound}/{category.requiredDexDiscoveries} · 유물 {category.relicPartCount}/{category.requiredRelicParts} {category.status === 'completed' ? '완료' : category.status === 'available' ? '✓' : '🔒'}</span>)}
             </div>
           )}
 
@@ -426,9 +433,9 @@ function getCategoryLead(category: ShopCategoryId) {
   return '알을 더 따뜻하게 돌볼 부화 재료예요';
 }
 
-function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[], discoveredSpeciesIds: string[]) {
+function getItemStatus(item: ItemConfig, coins: number, inventory: InventoryItemState[], ownedDinosaurs: OwnedDinosaur[], ownedEggs: OwnedEgg[], ownedCostumeIds: string[], discoveredSpeciesIds: string[], relicProgress: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>) {
   if (item.category === 'egg') {
-    const purchaseState = getEggPurchaseState(item, coins, inventory, ownedDinosaurs, ownedEggs, undefined, discoveredSpeciesIds);
+    const purchaseState = getEggPurchaseState(item, coins, inventory, ownedDinosaurs, ownedEggs, undefined, discoveredSpeciesIds, relicProgress);
     return { ownedQuantity: purchaseState.ownedQuantity, actionLabel: purchaseState.label, canBuy: !purchaseState.disabled };
   }
   const ownedQuantity = getOwnedQuantity(item, inventory, ownedEggs, ownedCostumeIds);

@@ -1,5 +1,5 @@
 import { PackageOpen } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavigationArrow } from '../NavigationArrow';
 import {
   getEggItemConfig,
@@ -11,6 +11,9 @@ import type { EggState, OwnedDinosaur, OwnedEgg } from '../../types/game';
 import { getHatchCandidates } from '../../utils/hatchCandidates';
 import { playSound } from '../../audio/audioManager';
 import { getDinosaurSpecies } from '../../data/dinosaurSpecies';
+import { ADVENTURE_REGIONS, type AdventureRegionId } from '../../data/adventureRegions';
+import type { RegionRelicProgress } from '../../config/worldMapRelicConfig';
+import { getLegendaryCategoryStates } from '../../utils/eggPurchaseState';
 import hatcheryBackground from '../../assets/hatchery/backgrounds/hatchery_bg_common.png';
 import hatcheryProgressPanel from '../../assets/hatchery/ui/hatchery_progress_panel.png';
 import hatchItemSelectedPanel from '../../assets/hatchery/ui/hatch_item_selected_panel.png';
@@ -67,11 +70,13 @@ export interface HatcheryScreenProps {
   ownedEggs: OwnedEgg[];
   activeEggId: string | null;
   ownedDinosaurs: OwnedDinosaur[];
+  discoveredSpeciesIds: string[];
+  relicProgress: Partial<Record<AdventureRegionId, Partial<RegionRelicProgress>>>;
   inventory: InventoryItemState[];
   hatchResult: HatchResult | null;
   onSelectEgg: (eggId: string) => void;
   onUseHatchItem: (itemId: string) => void;
-  onHatchEgg: () => void;
+  onHatchEgg: (legendaryRegionId?: AdventureRegionId) => void;
   onGoToDex: () => void;
   onGoToDino: () => void;
   onCloseHatchResult: () => void;
@@ -81,6 +86,8 @@ export function HatcheryScreen({
   ownedEggs,
   activeEggId,
   ownedDinosaurs,
+  discoveredSpeciesIds,
+  relicProgress,
   inventory,
   hatchResult,
   onSelectEgg,
@@ -91,6 +98,7 @@ export function HatcheryScreen({
   onCloseHatchResult,
 }: HatcheryScreenProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedLegendaryRegionId, setSelectedLegendaryRegionId] = useState<AdventureRegionId | null>(null);
   const activeEgg = getSelectedEgg(ownedEggs, activeEggId);
   const eggOptions = useMemo(() => groupOwnedEggs(ownedEggs, activeEggId), [ownedEggs, activeEggId]);
   const activeIndex = activeEgg ? eggOptions.findIndex((option) => option.egg.eggItemId === activeEgg.eggItemId) : -1;
@@ -105,8 +113,18 @@ export function HatcheryScreen({
   const selectedItem = hatchItems.find((item) => item.config.id === selectedItemId) ?? null;
   const progress = clampProgress(activeEgg?.hatchProgress ?? 0);
   const candidates = useMemo(() => getHatchCandidates(activeEgg, ownedDinosaurs), [activeEgg, ownedDinosaurs]);
+  const isLegendaryEgg = activeEgg?.eggItemId === 'legend-egg';
+  const legendaryRegions = useMemo(
+    () => getLegendaryCategoryStates(ownedDinosaurs, undefined, discoveredSpeciesIds, relicProgress),
+    [discoveredSpeciesIds, ownedDinosaurs, relicProgress],
+  );
+  const selectedLegendaryRegion = legendaryRegions.find((region) => region.regionId === selectedLegendaryRegionId && region.status === 'available');
   const canUseItem = Boolean(activeEgg && selectedItem && selectedItem.quantity > 0 && selectedItem.config.effect.hatchProgress > 0 && !hatchResult);
-  const canHatch = Boolean(activeEgg && progress >= 100 && candidates.candidates.length > 0 && !hatchResult);
+  const canHatch = Boolean(activeEgg && progress >= 100 && (isLegendaryEgg ? selectedLegendaryRegion : candidates.candidates.length > 0) && !hatchResult);
+
+  useEffect(() => {
+    setSelectedLegendaryRegionId(null);
+  }, [activeEgg?.id]);
 
   function selectAdjacent(direction: -1 | 1) {
     if (eggOptions.length <= 1 || activeIndex < 0) return;
@@ -154,6 +172,14 @@ export function HatcheryScreen({
         </section>
 
         <section className="hatchery-controls" aria-label="부화 제어 영역">
+          {isLegendaryEgg && (
+            <div className="mb-2 grid grid-cols-5 gap-1 rounded-xl bg-violet-50/95 p-2" aria-label="전설 부화 지역 선택">
+              {legendaryRegions.map((region) => {
+                const available = region.status === 'available';
+                return <button key={region.regionId} type="button" disabled={!available} aria-pressed={selectedLegendaryRegionId === region.regionId} onClick={() => setSelectedLegendaryRegionId(region.regionId)} className={`rounded-lg px-1 py-2 text-xs font-black ${selectedLegendaryRegionId === region.regionId ? 'bg-violet-600 text-white' : available ? 'bg-white text-violet-900' : 'bg-slate-200 text-slate-500'}`}>{ADVENTURE_REGIONS[region.regionId].name} {available ? '✅' : '🔒'}</button>;
+              })}
+            </div>
+          )}
           <div className="hatchery-control-row">
             <div className="hatchery-progress-column">
               <HatchProgressPanel activeEgg={activeEgg} progress={progress} />
@@ -173,7 +199,7 @@ export function HatcheryScreen({
                   disabled={!canHatch}
                   onClick={() => {
                     playSound('ui_button_tap');
-                    onHatchEgg();
+                    onHatchEgg(selectedLegendaryRegion?.regionId);
                   }}
                 />
               </div>

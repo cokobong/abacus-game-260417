@@ -51,8 +51,8 @@ import {
   TRAINING_INPUT_MODE_STORAGE_KEY,
 } from './utils/gameStorage';
 import { createAdventureResult, type AdventureRunResult } from './utils/adventureRewards';
-import { getEggCategoryForOwnedEgg, getHatchCandidates, selectHatchCandidate } from './utils/hatchCandidates';
-import { getEggPurchaseState } from './utils/eggPurchaseState';
+import { getEggCategoryForOwnedEgg, getHatchCandidates, getLegendaryHatchCandidate, selectHatchCandidate } from './utils/hatchCandidates';
+import { getEggPurchaseState, getLegendaryCategoryStates } from './utils/eggPurchaseState';
 import { EGG_SYSTEM_MIGRATION_VERSION, canonicalizeEggItemId, migrateEggSystemV2 } from './utils/eggMigration';
 import { calculateTrainingRewards, formatNumberCountRewardLabel, type TrainingRewardResult } from './utils/trainingRewards';
 import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trainingHistory';
@@ -1803,8 +1803,8 @@ export default function App() {
     }
 
     if (item.category === 'egg') {
-      const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool, gameState.discoveredSpeciesIds);
-      if (purchaseState.status === 'comingSoon') {
+      const purchaseState = getEggPurchaseState(item, gameState.player.coins, gameState.inventory, getUniqueOwnedDinosaurs(gameState.ownedDinosaurs), gameState.ownedEggs, hatchableDinosaurPool, gameState.discoveredSpeciesIds, gameState.regionRelicProgress);
+      if (purchaseState.status === 'comingSoon' || purchaseState.status === 'completed') {
         setShopFeedback(purchaseState.label);
         return;
       }
@@ -1833,7 +1833,7 @@ export default function App() {
     }
 
     const requiredEggFragments = item.category === 'egg' ? getEggRequiredFragments(item) : [];
-    if (item.category === 'egg' && item.eggCategory === 'rare' && requiredEggFragments.length > 0) {
+    if (item.category === 'egg' && (item.eggCategory === 'rare' || item.eggCategory === 'legendary') && requiredEggFragments.length > 0) {
       const requiredFragments = requiredEggFragments;
       const newEgg = createOwnedEggFromItem(item.id);
       if (!newEgg) {
@@ -1848,7 +1848,7 @@ export default function App() {
         activeEggId: current.activeEggId ?? newEgg.id,
         egg: current.activeEggId ? current.egg : activeEggToEggState(newEgg) ?? current.egg,
       }));
-      setShopFeedback(`희귀알을 얻었어요! 희귀조각 ${requiredFragments.reduce((total, fragment) => total + fragment.amount, 0)}개 사용`);
+      setShopFeedback(`${getEggCategoryLabel(item.eggCategory)}을 얻었어요! 희귀조각 ${requiredFragments.reduce((total, fragment) => total + fragment.amount, 0)}개 사용`);
       return;
     }
 
@@ -2122,7 +2122,7 @@ export default function App() {
     setAdventureFeedback(result.hasDexHint ? '도감 힌트를 발견했어요!' : `${area.title}을 다녀왔어요.`);
   }
 
-  function hatchEgg() {
+  function hatchEgg(legendaryRegionId?: AdventureRegionId) {
     if (hatchResult || isHatchingRef.current) return;
 
     const currentActiveEgg = getSelectedOwnedEgg(gameState.ownedEggs, gameState.activeEggId);
@@ -2130,8 +2130,14 @@ export default function App() {
 
     isHatchingRef.current = true;
     const uniqueOwnedDinosaurs = getUniqueOwnedDinosaurs(gameState.ownedDinosaurs);
-    const hatchCandidates = getHatchCandidates(currentActiveEgg, uniqueOwnedDinosaurs, hatchableDinosaurPool).candidates;
-    const hatchedTemplate = selectHatchCandidate(currentActiveEgg, hatchCandidates);
+    const isLegendaryEgg = currentActiveEgg.eggItemId === 'legend-egg';
+    const legendaryState = isLegendaryEgg && legendaryRegionId
+      ? getLegendaryCategoryStates(uniqueOwnedDinosaurs, hatchableDinosaurPool, gameState.discoveredSpeciesIds, gameState.regionRelicProgress).find((state) => state.regionId === legendaryRegionId && state.status === 'available')
+      : null;
+    const hatchCandidates = isLegendaryEgg ? [] : getHatchCandidates(currentActiveEgg, uniqueOwnedDinosaurs, hatchableDinosaurPool).candidates;
+    const hatchedTemplate = isLegendaryEgg
+      ? legendaryState ? getLegendaryHatchCandidate(legendaryState.regionId, hatchableDinosaurPool) : null
+      : selectHatchCandidate(currentActiveEgg, hatchCandidates);
 
     if (!hatchedTemplate) {
       setGameState((current) => {
@@ -2618,6 +2624,8 @@ export default function App() {
             ownedEggs={gameState.ownedEggs}
             activeEggId={gameState.activeEggId}
             ownedDinosaurs={gameState.ownedDinosaurs}
+            discoveredSpeciesIds={gameState.discoveredSpeciesIds}
+            relicProgress={gameState.regionRelicProgress}
             inventory={gameState.inventory}
             hatchResult={hatchResult}
             onSelectEgg={selectActiveEgg}
@@ -2642,6 +2650,7 @@ export default function App() {
             inventory={gameState.inventory}
             ownedDinosaurs={gameState.ownedDinosaurs}
             discoveredSpeciesIds={gameState.discoveredSpeciesIds}
+            relicProgress={gameState.regionRelicProgress}
             ownedEggs={gameState.ownedEggs}
             ownedCostumeIds={gameState.ownedCostumeIds}
             onPurchase={purchaseItem}

@@ -1,6 +1,6 @@
 import type { OwnedEgg } from '../types/game';
 
-export const EGG_SYSTEM_MIGRATION_VERSION = 2;
+export const EGG_SYSTEM_MIGRATION_VERSION = 3;
 
 export const LEGACY_EGG_ID_MAP = {
   'green-forest-rare-egg': 'rare-egg',
@@ -9,6 +9,8 @@ export const LEGACY_EGG_ID_MAP = {
   'ocean-blue-egg': 'rare-egg',
   'secret-land-rare-egg': 'rare-egg',
   'legacy-legend-rare-egg': 'rare-egg',
+  'magmarex-legend-egg': 'legend-egg',
+  'luminadon-legend-egg': 'legend-egg',
 } as const satisfies Readonly<Record<string, string>>;
 
 export function canonicalizeEggItemId(id: string, egg?: Pick<OwnedEgg, 'eggCategory' | 'eggType'>) {
@@ -27,13 +29,14 @@ export function migrateEggSystemV2(ownedEggs: OwnedEgg[], activeEggId: string | 
   const migrated = ownedEggs.map((egg) => {
     const eggItemId = canonicalizeEggItemId(egg.eggItemId, egg);
     if (eggItemId === egg.eggItemId) return egg;
+    const isLegendary = eggItemId === 'legend-egg';
     return {
       ...egg,
       eggItemId,
-      name: '희귀 알',
-      rarity: 'rare' as const,
-      eggType: 'rare',
-      eggCategory: 'rare' as const,
+      name: isLegendary ? '전설 알' : '희귀 알',
+      rarity: isLegendary ? 'legendary' as const : 'rare' as const,
+      eggType: isLegendary ? 'legendary' : 'rare',
+      eggCategory: isLegendary ? 'legendary' as const : 'rare' as const,
       eggHabitatId: undefined,
     };
   });

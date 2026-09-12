@@ -45,3 +45,9 @@ test('rare metadata를 가진 과거 legend-egg만 rare-egg로 바꾼다', () =>
   assert.equal(canonicalizeEggItemId('legend-egg', { eggCategory: 'rare', eggType: 'rare' }), 'rare-egg');
   assert.equal(canonicalizeEggItemId('legend-egg', { eggCategory: 'legendary', eggType: 'legendary' }), 'legend-egg');
 });
+
+test('지역별 전설알을 진행도 보존한 공통 legend-egg로 바꾼다', () => {
+  const regional: OwnedEgg = { ...egg('legend-egg', 65, 4), id: 'regional-legend', eggItemId: 'magmarex-legend-egg', name: '화산지대 전설알', eggHabitatId: 'volcano-island' };
+  const result = migrateEggSystemV2([regional], regional.id);
+  assert.deepEqual(result.ownedEggs[0], { ...regional, eggItemId: 'legend-egg', name: '전설 알', eggHabitatId: undefined });
+});
