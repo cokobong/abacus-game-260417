@@ -1,6 +1,8 @@
 import type { CoinRewardMultiplier } from './rewardConfig';
 import { LAVA_VALLEY_SHOP_DROP_POOLS, type LavaValleyShopDropCategory } from './shopCatalog';
 import type { RelicChestOutcome } from './worldMapRelicConfig';
+import type { AdventureStageNumber } from './adventureStageCatalog';
+import { getAdventureRunCost, settleAdventureRunCoins } from './adventureMinigameEconomy';
 
 export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-ruins';
 
@@ -16,11 +18,12 @@ export const LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID = 'rare-egg-fragment';
 export const LAVA_VALLEY_DURATION_SECONDS = 120;
 export const SKY_ISLAND_DURATION_SECONDS = 120;
 export const MAX_RARE_FRAGMENTS_PER_RUN = 3;
-export type RareFragmentDifficulty = 'easy' | 'normal' | 'challenge';
+export type RareFragmentDifficulty = 'easy' | 'normal' | 'challenge' | 'hard';
 export const RARE_FRAGMENT_COUNT_WEIGHTS: Record<RareFragmentDifficulty, readonly [number, number, number, number]> = {
   easy: [0.30, 0.52, 0.15, 0.03],
   normal: [0.22, 0.50, 0.23, 0.05],
   challenge: [0.15, 0.48, 0.28, 0.09],
+  hard: [0.15, 0.48, 0.28, 0.09],
 };
 export interface RareFragmentSpawn { id: number; spawnAtSeconds: number }
 
@@ -64,6 +67,7 @@ export interface MinigameItemReward {
 
 export interface MinigameRunRewards {
   coins: number;
+  runCoins?: number;
   rareFragments: number;
   shopItems: MinigameItemReward[];
   secretChestBonus?: MinigameSecretChestBonus;
@@ -89,8 +93,9 @@ export interface MinigameEconomyState {
   inventory: Array<{ itemId: string; quantity: number }>;
 }
 
-export function chargeMinigameEntry(coins: number, gameId: MinigameId) {
-  const cost = MINIGAME_ENTRY_COST[gameId];
+export function chargeMinigameEntry(coins: number, gameId: MinigameId, stage: AdventureStageNumber = 1, retryAfterFailure = false) {
+  const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : 'ancientRuins';
+  const cost = gameId === 'lava-stepping-stones' ? getAdventureRunCost(regionId, stage, retryAfterFailure) : MINIGAME_ENTRY_COST[gameId];
   if (cost === undefined || coins < cost) return null;
   return coins - cost;
 }
@@ -124,6 +129,7 @@ export function normalizeLavaValleyRewards(rewards: MinigameRunRewards, pool = L
   const finalChestBonus = normalizeChestBonus(rewards.finalChestBonus);
   return {
     coins: Math.max(0, Math.floor(rewards.coins)),
+    runCoins: rewards.runCoins === undefined ? undefined : Math.max(0, Math.floor(rewards.runCoins)),
     rareFragments: Math.min(MAX_RARE_FRAGMENTS_PER_RUN + (secretChestBonus?.rareFragments ?? 0) + (finalChestBonus?.rareFragments ?? 0), Math.max(0, Math.floor(rewards.rareFragments))),
     shopItems: Object.entries(quantities).map(([itemId, quantity]) => ({ itemId, quantity })),
     secretChestBonus,
@@ -152,10 +158,10 @@ function addQuantity(inventory: MinigameEconomyState['inventory'], itemId: strin
     : [...inventory, { itemId, quantity }];
 }
 
-export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS) {
+export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS, stage: AdventureStageNumber = 1) {
   const normalized = normalizeLavaValleyRewards(rawRewards, pool);
-  const chestCoins = (normalized.secretChestBonus?.coins ?? 0) + (normalized.finalChestBonus?.coins ?? 0);
-  const rewards = { ...normalized, coins: getAdjustedMinigameCoins(Math.max(0, normalized.coins - chestCoins), multiplier) + chestCoins };
+  const runCoins = Math.max(0, Math.floor(rawRewards.runCoins ?? rawRewards.coins));
+  const rewards = { ...normalized, runCoins, coins: settleAdventureRunCoins('lavaValley', stage, getAdjustedMinigameCoins(runCoins, multiplier)) };
   const inventoryWithShopItems = rewards.shopItems.reduce((inventory, item) => addQuantity(inventory, item.itemId, item.quantity), state.inventory);
   return {
     state: {

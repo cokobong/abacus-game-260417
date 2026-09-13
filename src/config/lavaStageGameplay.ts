@@ -1,11 +1,11 @@
 import { getAdventureStage, type AdventureStageNumber } from './adventureStageCatalog';
-import { createLavaValleyShopDropPlan, createRareFragmentSpawnPlan, scheduleRareFragmentSpawns, type RareFragmentDifficulty } from './minigameConfig';
+import { createLavaValleyShopDropPlan, scheduleRareFragmentSpawns } from './minigameConfig';
+import { LAVA_VALLEY_ECONOMY, type AdventureDifficulty } from './adventureMinigameEconomy';
 
 // Stage 1 values are the original runner values; Stage 2 scales time, not height.
 export const LAVA_VALLEY_DIFFICULTY = {
-  easy: { playerVisualScale: 1.28, obstacleVisualScale: 1.2, runSpeed: 26.5, obstacleSpawnIntervalMin: 3100, obstacleSpawnIntervalMax: 4400, jumpVelocity: 101, gravity: 195, apexHoldMs: 120, playerHitboxScale: .68, obstacleHitboxScale: .72, coyoteTimeMs: 180, jumpBufferMs: 250, jumpGuideEnabled: true, geyserChance: .18 },
   normal: { playerVisualScale: 1.25, obstacleVisualScale: 1.18, runSpeed: 32, obstacleSpawnIntervalMin: 2400, obstacleSpawnIntervalMax: 3600, jumpVelocity: 98, gravity: 215, apexHoldMs: 100, playerHitboxScale: .76, obstacleHitboxScale: .78, coyoteTimeMs: 110, jumpBufferMs: 120, jumpGuideEnabled: false, geyserChance: .35 },
-  challenge: { playerVisualScale: 1.25, obstacleVisualScale: 1.18, runSpeed: 36, obstacleSpawnIntervalMin: 2100, obstacleSpawnIntervalMax: 3100, jumpVelocity: 96, gravity: 228, apexHoldMs: 80, playerHitboxScale: .84, obstacleHitboxScale: .88, coyoteTimeMs: 70, jumpBufferMs: 70, jumpGuideEnabled: false, geyserChance: .5 },
+  hard: { playerVisualScale: 1.25, obstacleVisualScale: 1.18, runSpeed: 34, obstacleSpawnIntervalMin: 2050, obstacleSpawnIntervalMax: 2950, jumpVelocity: 98, gravity: 215, apexHoldMs: 100, playerHitboxScale: .82, obstacleHitboxScale: .86, coyoteTimeMs: 110, jumpBufferMs: 120, jumpGuideEnabled: false, geyserChance: .52 },
 } as const;
 
 export const LAVA_STAGE_GAMEPLAY = {
@@ -24,11 +24,7 @@ export const LAVA_VOLCANO_CORE = {
   highRouteHeight: 24,
   topRouteHeight: 32,
   highRouteRewardMultiplier: 1.35,
-  symbols: [
-    { at: 28, height: 4, route: 'lower' },
-    { at: 72, height: 19, route: 'middle' },
-    { at: 118, height: 36, route: 'top' },
-  ],
+  symbols: LAVA_VALLEY_ECONOMY.fossilFragmentRules.stages[3],
   gateAt: 151,
 } as const;
 
@@ -40,7 +36,7 @@ export function getLavaGroundSpawnY(footOffsetPx: number) {
 
 export const LAVA_CLIFF_MISSION = {
   symbolCount: 3,
-  symbols: [{ at: 18, height: 10 }, { at: 46, height: 14 }, { at: 78, height: 18 }],
+  symbols: LAVA_VALLEY_ECONOMY.fossilFragmentRules.stages[2],
   platformWidth: 90,
   fossilVisualSizePx: 60,
   secretDoorWidthPx: 150,
@@ -61,7 +57,7 @@ export const LAVA_CLIFF_MISSION = {
   maxItems: 28,
 } as const;
 
-export const LAVA_SECRET_CHEST_REWARD = { coins: 100, rareFragments: 1, itemQuantity: 1 } as const;
+export const LAVA_SECRET_CHEST_REWARD = { coins: LAVA_VALLEY_ECONOMY.secretChestWalletCoinReward, rareFragments: 0, itemQuantity: 1 } as const;
 
 export function createLavaSecretChestReward(itemPool: readonly string[], random: () => number = Math.random) {
   const itemId = itemPool[Math.min(itemPool.length - 1, Math.floor(random() * itemPool.length))];
@@ -76,7 +72,7 @@ export function getLavaStageGameplay(stage: AdventureStageNumber) {
   return LAVA_STAGE_GAMEPLAY[stage];
 }
 
-export function getLavaJumpPhysics(stage: AdventureStageNumber, difficulty: RareFragmentDifficulty) {
+export function getLavaJumpPhysics(stage: AdventureStageNumber, difficulty: AdventureDifficulty) {
   const base = LAVA_VALLEY_DIFFICULTY[difficulty];
   const config = getLavaStageGameplay(stage);
   const airtime = config.jumpAirTimeMultiplier, height = config.jumpHeightMultiplier;
@@ -84,24 +80,23 @@ export function getLavaJumpPhysics(stage: AdventureStageNumber, difficulty: Rare
   return { jumpVelocity: base.jumpVelocity * height / airtime, gravity: base.gravity * height / (airtime * airtime), apexHoldMs: base.apexHoldMs * airtime };
 }
 
-export function getLavaObstacleSpawnInterval(stage: AdventureStageNumber, difficulty: RareFragmentDifficulty, elapsedSeconds = 0) {
+export function getLavaObstacleSpawnInterval(stage: AdventureStageNumber, difficulty: AdventureDifficulty, elapsedSeconds = 0) {
   const base = LAVA_VALLEY_DIFFICULTY[difficulty];
   const stageScale = getLavaStageGameplay(stage).obstacleIntervalScale;
   const phaseScale = stage !== 3 ? 1 : elapsedSeconds < 60 ? 1 : elapsedSeconds < 125 ? .83 : .73;
   return { min: base.obstacleSpawnIntervalMin * stageScale * phaseScale, max: base.obstacleSpawnIntervalMax * stageScale * phaseScale };
 }
 
-export const LAVA_CLIFF_RARE_WEIGHTS = {
-  easy: [.18, .54, .24, .04], normal: [.10, .49, .32, .09], challenge: [.07, .38, .38, .17],
-} as const;
-
-export function createLavaStageRarePlan(stage: AdventureStageNumber, difficulty: RareFragmentDifficulty, random: () => number = Math.random) {
+export function createLavaStageRarePlan(stage: AdventureStageNumber, difficulty: AdventureDifficulty, random: () => number = Math.random) {
   const duration = getAdventureStage('lavaValley', stage).playTime;
-  if (stage !== 2) return createRareFragmentSpawnPlan(difficulty, duration, random);
-  const roll = random(); let sum = 0;
-  const count = LAVA_CLIFF_RARE_WEIGHTS[difficulty].findIndex(weight => { sum += weight; return roll < sum; });
-  return scheduleRareFragmentSpawns(count < 0 ? 3 : count, duration, random);
+  return scheduleRareFragmentSpawns(random() < LAVA_VALLEY_ECONOMY.rareFragmentDropRate[stage][difficulty] ? 1 : 0, duration, random);
 }
+
+// Kept as an exported view for existing tuning diagnostics.
+export const LAVA_CLIFF_RARE_WEIGHTS = {
+  normal: [1 - LAVA_VALLEY_ECONOMY.rareFragmentDropRate[2].normal, LAVA_VALLEY_ECONOMY.rareFragmentDropRate[2].normal, 0, 0],
+  hard: [1 - LAVA_VALLEY_ECONOMY.rareFragmentDropRate[2].hard, LAVA_VALLEY_ECONOMY.rareFragmentDropRate[2].hard, 0, 0],
+} as const;
 
 export type LavaEruptionPhase = 'warning' | 'active' | 'ending' | 'done';
 export function getLavaEruptionPhase(age: number): LavaEruptionPhase {

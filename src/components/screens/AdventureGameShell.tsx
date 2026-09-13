@@ -12,13 +12,14 @@ export interface AdventureGameShellProps {
   onExit: () => void;
   runId: string;
   onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards;
-  onRetry: () => void;
+  onRetry: (retryAfterFailure?: boolean) => void;
+  relicPartCount?: number;
   externalMainModalOpen?: boolean;
 }
 
-export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, externalMainModalOpen }: AdventureGameShellProps) {
+export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, relicPartCount, externalMainModalOpen }: AdventureGameShellProps) {
   if (gameId === 'lava-stepping-stones') {
-    return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} externalMainModalOpen={externalMainModalOpen} />;
+    return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} externalMainModalOpen={externalMainModalOpen} />;
   }
 
   if (gameId === 'sky-number-clouds') {

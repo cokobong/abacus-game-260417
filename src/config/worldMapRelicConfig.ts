@@ -26,8 +26,8 @@ export const LAVA_FINAL_CHEST_CONFIG = {
   relicPityBoostRate: .7,
   relicPityBoostAfterMisses: 2,
   relicPityThreshold: 3,
-  coinReward: 150,
-  rareFragmentReward: 1,
+  coinReward: 0,
+  rareFragmentReward: 0,
   itemReward: 1,
 } as const;
 

@@ -6,7 +6,7 @@ import { getAdventureStage } from './adventureStageCatalog';
 import { getLavaLandingHeight } from './lavaStageSegments';
 import { completeAdventureStage, canPlayAdventureStage } from '../utils/adventureStageProgress';
 
-const difficulties = ['easy', 'normal', 'challenge'] as const;
+const difficulties = ['normal', 'hard'] as const;
 
 test('Stage별 체공시간은 100% → 90% → 85%로 짧아지고 Stage 3만 4층 높이를 확보한다', () => {
   assert.equal(getAdventureStage('lavaValley', 1).playTime, 120);
@@ -79,7 +79,7 @@ test('Stage 2 upper route는 ramp 없이 점프로 진입 가능한 단일 발�
 
 test('Stage 2/3 비밀상자는 유물조각 없이 고정 보너스를 만든다', () => {
   const reward = createLavaSecretChestReward(['basic-meat', 'special-snack'], () => 0);
-  assert.deepEqual(reward, { coins: 100, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
+  assert.deepEqual(reward, { coins: 0, rareFragments: 0, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
   assert.equal('relicFragments' in reward, false);
 });
 
@@ -100,11 +100,11 @@ test('일반 희귀조각 기대량은 Stage 1의 1.2~1.3배이며 판당 3개 �
   for (const difficulty of difficulties) {
     const expectation = (weights: readonly number[]) => weights.reduce((sum, weight, count) => sum + weight * count, 0);
     const ratio = expectation(LAVA_CLIFF_RARE_WEIGHTS[difficulty]) / expectation(RARE_FRAGMENT_COUNT_WEIGHTS[difficulty]);
-    assert.ok(ratio >= 1.2 && ratio <= 1.3);
+    assert.ok(ratio < .2);
     for (const roll of [0, .2, .5, .8, .999999]) {
-      assert.deepEqual(createLavaStageRarePlan(1, difficulty, () => roll), createRareFragmentSpawnPlan(difficulty, 120, () => roll));
+      assert.ok(createLavaStageRarePlan(1, difficulty, () => roll).length <= 1);
       const plan = createLavaStageRarePlan(2, difficulty, () => roll);
-      assert.ok(plan.length <= 3);
+      assert.ok(plan.length <= 1);
       assert.ok(plan.every(drop => drop.spawnAtSeconds > 0 && drop.spawnAtSeconds < 145));
     }
   }

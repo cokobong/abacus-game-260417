@@ -60,6 +60,7 @@ import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecov
 import { canDinosaurEat, getIncompatibleFoodMessage } from './utils/dinosaurDiet';
 import { defaultGrowthSpeedMultiplier, growthConfig, type GrowthSpeedMultiplier } from './config/growthConfig';
 import { applyLavaValleyRewards, chargeMinigameEntry, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID, MINIGAME_ENTRY_COST, normalizeLavaValleyRewards, type MinigameId, type MinigameRunRewards } from './config/minigameConfig';
+import { getAdventureRunCost } from './config/adventureMinigameEconomy';
 import { trainingUiAssets } from './assets/ui/training';
 import { bottomNavAssets } from './assets/ui/bottom-nav';
 import { trainingAnswerPanel, trainingBackground, trainingCompleteFeedButton, trainingCompletePopupPanel, trainingCompleteRetryButton, trainingCompleteTitleBadge, trainingKeyDefault, trainingKeyDelete, trainingKeypadPanel, trainingKeyPressed, trainingKeySubmit, trainingProblemBoard, trainingStatusCorrectBanner, trainingStatusWrongBanner } from './assets/training';
@@ -69,7 +70,7 @@ import { playBackgroundMusic, playSound, setAudioSettings, stopBackgroundMusic, 
 type MainTab = 'training' | 'dino' | 'hatchery' | 'shop' | 'pokedex' | 'adventure' | 'settings';
 type AppScreen = 'home' | MainTab;
 type ActiveAdventureRun = { gameId: string; runId: string; stageNumber: AdventureStageNumber };
-type PendingAdventureEntry = { gameId: string; expectedRunId?: string; stageNumber: AdventureStageNumber };
+type PendingAdventureEntry = { gameId: string; expectedRunId?: string; stageNumber: AdventureStageNumber; retryAfterFailure?: boolean; entryCost: number };
 type DinoView = 'care' | 'playground';
 type DinosaurInteractionChange = Partial<Pick<DinosaurState, 'exp' | 'mood' | 'stamina'>>;
 type InventoryItemState = { itemId: string; quantity: number };
@@ -1922,7 +1923,7 @@ export default function App() {
     setShopFeedback(`${item.name}를 구매했어요! 코인 -${item.price}`);
   }
 
-  function startAdventureGame(gameId: string, expectedRunId?: string, entryConfirmed = false, stageNumber: AdventureStageNumber = 1) {
+  function startAdventureGame(gameId: string, expectedRunId?: string, entryConfirmed = false, stageNumber: AdventureStageNumber = 1, retryAfterFailure = false) {
     const regionId = getRegionForGame(gameId);
     if (!regionId || !canPlayAdventureStage(gameStateRef.current.adventureStageProgress, regionId, stageNumber)) return;
     if (expectedRunId) {
@@ -1931,7 +1932,7 @@ export default function App() {
       return;
     }
 
-    const entryCost = MINIGAME_ENTRY_COST[gameId as keyof typeof MINIGAME_ENTRY_COST];
+    const entryCost = gameId === 'lava-stepping-stones' ? getAdventureRunCost('lavaValley', stageNumber, retryAfterFailure) : MINIGAME_ENTRY_COST[gameId as keyof typeof MINIGAME_ENTRY_COST];
     if (entryCost === undefined) {
       return;
     }
@@ -1956,7 +1957,7 @@ export default function App() {
     if (entryConfirmed) {
       if (entryProcessingRef.current) return;
       entryProcessingRef.current = true;
-      const nextCoins = chargeMinigameEntry(current.player.coins, gameId as MinigameId);
+      const nextCoins = chargeMinigameEntry(current.player.coins, gameId as MinigameId, stageNumber, retryAfterFailure);
       if (nextCoins === null) {
         entryProcessingRef.current = false;
         setAdventureEntryShortage({ coins: current.player.coins, entryCost, expectedRunId });
@@ -1977,7 +1978,7 @@ export default function App() {
 
     entryProcessingRef.current = false;
     setEntryProcessing(false);
-    setPendingAdventureEntry({ gameId, expectedRunId, stageNumber });
+    setPendingAdventureEntry({ gameId, expectedRunId, stageNumber, retryAfterFailure, entryCost });
   }
 
   function confirmAdventureEntry() {
@@ -1990,9 +1991,9 @@ export default function App() {
 
     entryProcessingRef.current = true;
     setEntryProcessing(true);
-    const entryCost = MINIGAME_ENTRY_COST[pending.gameId as keyof typeof MINIGAME_ENTRY_COST];
+    const entryCost = pending.entryCost;
     const current = gameStateRef.current;
-    const nextCoins = chargeMinigameEntry(current.player.coins, pending.gameId as MinigameId);
+    const nextCoins = chargeMinigameEntry(current.player.coins, pending.gameId as MinigameId, pending.stageNumber, pending.retryAfterFailure);
     if (entryCost === undefined || nextCoins === null) {
       entryProcessingRef.current = false;
       setEntryProcessing(false);
@@ -2025,7 +2026,7 @@ export default function App() {
     const stage = getAdventureStage(regionId, run.stageNumber);
     const rewards = normalizeLavaValleyRewards(rawRewards, stage.itemPool);
     const current = gameStateRef.current;
-    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool);
+    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber);
     let adjustedRewards = applied.rewards;
     if (committedAdventureRunIdsRef.current.has(runId)) return adjustedRewards;
     committedAdventureRunIdsRef.current.add(runId);
@@ -2669,11 +2670,11 @@ export default function App() {
         )}
         {activeTab === 'adventure' && (
           activeAdventureRun
-            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={() => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber)} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
+            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={(retryAfterFailure) => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber, retryAfterFailure)} relicPartCount={normalizeRegionRelicProgress(gameState.regionRelicProgress).lavaValley.ownedPartIds.length} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
             : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} stageProgress={gameState.adventureStageProgress} discoveredSpeciesIds={gameState.discoveredSpeciesIds} relicProgress={gameState.regionRelicProgress} onRestoreRelic={restoreRegionRelic} onStartGame={(gameId, stageNumber) => startAdventureGame(gameId, undefined, true, stageNumber)} /></div>
         )}
         {stageUnlockNotice && activeTab === 'adventure' && <div role="status" className="adventure-stage-notice"><span>{stageUnlockNotice}</span><button type="button" aria-label="Stage 해금 안내 닫기" onClick={() => setStageUnlockNotice(null)}>확인</button></div>}
-        {pendingAdventureEntry && <MinigameEntryConfirm title={`${pendingAdventureEntry.gameId === 'sky-number-clouds' ? '하늘섬' : '용암계곡'} Stage ${pendingAdventureEntry.stageNumber}`} coins={gameState.player.coins} entryCost={MINIGAME_ENTRY_COST[pendingAdventureEntry.gameId as keyof typeof MINIGAME_ENTRY_COST]!} processing={entryProcessing} onCancel={() => { if (!entryProcessingRef.current) setPendingAdventureEntry(null); }} onConfirm={confirmAdventureEntry} />}
+        {pendingAdventureEntry && <MinigameEntryConfirm title={`${pendingAdventureEntry.gameId === 'sky-number-clouds' ? '하늘섬' : '용암계곡'} Stage ${pendingAdventureEntry.stageNumber}`} coins={gameState.player.coins} entryCost={pendingAdventureEntry.entryCost} processing={entryProcessing} onCancel={() => { if (!entryProcessingRef.current) setPendingAdventureEntry(null); }} onConfirm={confirmAdventureEntry} />}
         {adventureEntryShortage && <MinigameEntryShortage coins={adventureEntryShortage.coins} entryCost={adventureEntryShortage.entryCost} onClose={() => setAdventureEntryShortage(null)} />}
         {activeTab === 'settings' && (
           <PortraitSettingsView

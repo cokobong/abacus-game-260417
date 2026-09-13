@@ -52,7 +52,7 @@ test('용암계곡 보상은 기존 코인과 먹이/희귀조각 인벤토리�
     { coins: 50, shopItems: [{ itemId: 'basic-meat', quantity: 2 }, { itemId: 'hatch-warm-stone', quantity: 1 }, { itemId: 'green-starter-egg', quantity: 1 }, { itemId: 'rare-egg-fragment', quantity: 1 }], rareFragments: 1 },
     1,
   );
-  assert.equal(result.state.coins, 900);
+  assert.equal(result.state.coins, 880);
   assert.equal(result.state.inventory.find((item) => item.itemId === 'basic-meat')?.quantity, 4);
   assert.equal(result.state.inventory.find((item) => item.itemId === 'hatch-warm-stone')?.quantity, 1);
   assert.equal(result.state.inventory.find((item) => item.itemId === 'green-starter-egg'), undefined);
@@ -65,8 +65,8 @@ test('코인 배율은 보상에만 적용하고 희귀조각은 판당 2개로 
     { coins: 50, shopItems: [], rareFragments: 99 },
     1.3,
   );
-  assert.equal(result.rewards.coins, 65);
-  assert.equal(result.state.coins, 915);
+  assert.equal(result.rewards.coins, 30);
+  assert.equal(result.state.coins, 880);
   assert.equal(result.rewards.rareFragments, MAX_RARE_FRAGMENTS_PER_RUN);
   assert.equal(result.state.inventory.find((item) => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 3);
 });
@@ -96,7 +96,7 @@ test('비밀상자 보너스는 일반 희귀조각 상한과 별도로 inventor
     },
     1.3,
   );
-  assert.equal(result.state.coins, 175);
+  assert.equal(result.state.coins, 40);
   assert.equal(result.rewards.rareFragments, MAX_RARE_FRAGMENTS_PER_RUN + 1);
   assert.equal(result.state.inventory.find(item => item.itemId === LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID)?.quantity, 4);
   assert.equal(result.state.inventory.find(item => item.itemId === 'basic-meat')?.quantity, 1);
@@ -109,7 +109,7 @@ test('Stage 3 최종 상자 보너스도 고정 코인과 별도 희귀조각 �
     { coins: 200, rareFragments: 4, shopItems: [{ itemId: 'basic-meat', quantity: 1 }], finalChestBonus: { coins: 150, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] } },
     1.3,
   );
-  assert.equal(result.rewards.coins, 215);
+  assert.equal(result.rewards.coins, 30);
   assert.equal(result.rewards.rareFragments, 4);
   assert.deepEqual(result.rewards.finalChestBonus, { coins: 150, rareFragments: 1, shopItems: [{ itemId: 'basic-meat', quantity: 1 }] });
 });
