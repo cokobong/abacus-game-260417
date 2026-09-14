@@ -9,6 +9,7 @@ export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-
 export const MINIGAME_ENTRY_COST: Partial<Record<MinigameId, number>> = {
   'lava-stepping-stones': 150,
   'sky-number-clouds': 150,
+  'number-ruins': 0,
 };
 
 export const LAVA_VALLEY_ENTRY_COST = MINIGAME_ENTRY_COST['lava-stepping-stones']!;

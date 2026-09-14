@@ -3,7 +3,7 @@ import type { AdventureRegionId, AdventureRegionStatus } from '../data/adventure
 export const ADVENTURE_REGION_STATUS: Record<AdventureRegionId, AdventureRegionStatus> = {
   lavaValley: 'open',
   skyIsland: 'open',
-  ancientRuins: 'comingSoon',
+  ancientRuins: 'open',
   deepSeaCanyon: 'locked',
   iceContinent: 'locked',
 };

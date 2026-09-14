@@ -2329,7 +2329,39 @@ summary:focus-visible {
   .adventure-stage-intro__panel button:active { transform: translateY(3px); box-shadow: 0 2px 0 #075985; }
   .adventure-stage-intro--lava .adventure-stage-intro__number { background: #ea580c; }
   .adventure-stage-intro--lava .adventure-stage-intro__panel h2 { color: #9a3412; }
-  .adventure-stage-intro--lava .adventure-stage-intro__panel button { background: linear-gradient(#facc15, #f97316); box-shadow: 0 5px 0 #9a3412; }
+.adventure-stage-intro--lava .adventure-stage-intro__panel button { background: linear-gradient(#facc15, #f97316); box-shadow: 0 5px 0 #9a3412; }
+.adventure-stage-intro--ruins .adventure-stage-intro__number { background: #5f7d55; }
+.adventure-stage-intro--ruins .adventure-stage-intro__panel h2 { color: #365243; }
+.adventure-stage-intro--ruins .adventure-stage-intro__panel button { background: linear-gradient(#91ad68, #54754e); box-shadow: 0 5px 0 #2e493b; }
+
+.ruins-mirror-shell { position: relative; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; width: 100%; height: 100%; min-height: 0; overflow: hidden; color: #fff8df; background: #17251f; isolation: isolate; }
+.ruins-mirror-hud { z-index: 10; display: grid; grid-template-columns: minmax(4.6rem,.7fr) minmax(0,2fr) minmax(5.8rem,.8fr); align-items: center; gap: .45rem; padding: max(.35rem,env(safe-area-inset-top)) max(.65rem,env(safe-area-inset-right)) .35rem max(.65rem,env(safe-area-inset-left)); background: #223a30; border-bottom: 2px solid #8f754d; }
+.ruins-mirror-hud > div { min-width: 0; text-align: center; }
+.ruins-mirror-hud strong,.ruins-mirror-hud span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ruins-mirror-hud strong { color: #ffe08a; font-size: clamp(.68rem,2.1vw,.88rem); letter-spacing: .035em; }
+.ruins-mirror-hud span { font-size: clamp(.8rem,2.6vw,1rem); font-weight: 900; }
+.ruins-mirror-hud button { display: inline-flex; min-height: 2.55rem; align-items: center; justify-content: center; gap: .25rem; border: 2px solid #c5a66c; border-radius: .75rem; padding: .3rem .5rem; color: #fff8df; background: #456251; font-size: .82rem; font-weight: 900; touch-action: manipulation; }
+.ruins-mirror-hud button svg { width: 1.15rem; }
+.ruins-mirror-hud button:disabled { opacity: .45; }
+.ruins-mirror-instruction { z-index: 9; min-height: 2.65rem; display: grid; place-items: center; padding: .3rem .8rem; text-align: center; color: #49351f; background: #f3dfb2; font-size: clamp(.78rem,2.5vw,.96rem); font-weight: 900; }
+.ruins-mirror-canvas { position: relative; min-height: 0; overflow: hidden; background: #17251f; }
+.ruins-mirror-canvas canvas { display: block; margin: auto; touch-action: none; }
+.ruins-mirror-footer { z-index: 9; display: flex; min-height: 3.6rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem max(.9rem,env(safe-area-inset-right)) calc(.6rem + env(safe-area-inset-bottom)) max(.9rem,env(safe-area-inset-left)); color: #f8ead0; background: #223a30; font-size: clamp(.68rem,2.2vw,.88rem); font-weight: 800; }
+.ruins-mirror-footer span:last-child { color: #cfe7b8; text-align: right; }
+.ruins-mirror-overlay { position: absolute; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; text-align: center; color: #fff8df; background: rgb(14 30 24 / 78%); font-size: 1.05rem; font-weight: 900; }
+.ruins-mirror-complete { width: min(92%,28rem); border: 4px solid #dec17d; border-radius: 1.6rem; padding: 1.5rem; color: #3c2d1e; background: #fff3cf; box-shadow: 0 10px 0 rgb(30 45 37 / 55%); }
+.ruins-mirror-complete > span { display: inline-block; border-radius: 999px; padding: .35rem .85rem; color: #fff; background: #56774f; font-size: .8rem; font-weight: 1000; letter-spacing: .08em; }
+.ruins-mirror-complete h2 { margin-top: .75rem; font-size: clamp(1.45rem,5vw,2rem); font-weight: 1000; }
+.ruins-mirror-complete p { margin-top: .4rem; font-weight: 800; }
+.ruins-mirror-complete div { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1.25rem; }
+.ruins-mirror-complete button { min-height: 3.3rem; border-radius: 1rem; padding: .5rem; color: #fff; background: #5f7d55; font-weight: 1000; touch-action: manipulation; }
+.ruins-mirror-complete button:last-child { background: #69513a; }
+
+@media (orientation: landscape) and (max-height: 760px) {
+  .ruins-mirror-hud { padding-top: .35rem; padding-bottom: .35rem; }
+  .ruins-mirror-instruction { min-height: 2.7rem; }
+  .ruins-mirror-footer { min-height: 2.8rem; padding-top: .35rem; padding-bottom: calc(.35rem + env(safe-area-inset-bottom)); }
+}
   .lava-runner-pause-panel,.lava-runner-result-panel { position: relative; border: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; }
   .lava-runner-pause-panel { width: min(78%, 21rem) !important; }.lava-runner-pause-panel > img { width: 100%; }.lava-runner-pause-panel > div { position: absolute !important; inset: 33% 16% 12%; display: grid !important; grid-template-rows: repeat(3, 1fr); gap: 3%; }.lava-runner-pause-panel > div button { opacity: .01; width: 100%; min-height: 0; }.lava-runner-pause-panel fieldset { position: absolute; right: 8%; bottom: -3.2rem; left: 8%; display: flex; justify-content: center; gap: .35rem; }.lava-runner-pause-panel legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }.lava-runner-pause-panel fieldset button { min-height: 2.4rem; border: 2px solid #fed7aa; padding: .25rem .65rem; }.lava-runner-pause-panel fieldset button[aria-pressed='true'] { outline: 3px solid #facc15; }
   .lava-runner-result-panel { width: min(86%, 22rem) !important; }.lava-runner-result-panel > img { width: 100%; }.lava-runner-result-panel__content { position: absolute !important; inset: 68% 11% auto; display: grid !important; gap: .25rem; color: #78350f; text-align: center; }.lava-runner-result-panel__content h2 { font-size: clamp(.88rem, 3.2vw, 1.2rem); }.lava-runner-result-panel__content p { margin: 0; font-size: clamp(.68rem, 2.3vw, .9rem); }.lava-runner-result-panel__content .lava-runner-reward-items { max-height: 5rem; overflow: auto; margin: .15rem 0; padding: .25rem; }.lava-runner-result-panel__content .lava-runner-reward-items img { width: 1.7rem; height: 1.7rem; }.lava-runner-result-panel__content .lava-runner-modal__actions { margin-top: .25rem; }.lava-runner-result-panel--failure { width: min(90%, 25rem) !important; border: 5px solid #fed7aa !important; padding: 1rem !important; background: linear-gradient(#fff7ed,#ffedd5) !important; }.lava-runner-result-panel--failure .lava-runner-result-panel__content { position: static !important; }

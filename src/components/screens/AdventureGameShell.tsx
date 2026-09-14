@@ -1,6 +1,7 @@
 import type { OwnedDinosaur } from '../../types/game';
 import { LavaPathPrototype } from './LavaPathPrototype';
 import { SkyIslandPrototype } from './SkyIslandPrototype';
+import { RuinsMirrorGameHost } from './RuinsMirrorGameHost';
 import type { MinigameRunRewards } from '../../config/minigameConfig';
 import type { AdventureStageNumber } from '../../config/adventureStageCatalog';
 
@@ -25,6 +26,10 @@ export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runI
 
   if (gameId === 'sky-number-clouds') {
     return <SkyIslandPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} fossilFragmentIds={fossilFragmentIds} externalMainModalOpen={externalMainModalOpen} />;
+  }
+
+  if (gameId === 'number-ruins' && (stageNumber === 1 || stageNumber === 2)) {
+    return <RuinsMirrorGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
   }
 
   return (

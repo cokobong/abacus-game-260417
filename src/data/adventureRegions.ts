@@ -29,8 +29,9 @@ export const ADVENTURE_REGIONS: Record<AdventureRegionId, AdventureRegion> = {
     gameId: 'sky-number-clouds', entryCost: MINIGAME_ENTRY_COST['sky-number-clouds'],
   },
   ancientRuins: {
-    id: 'ancientRuins', name: '오래된 유적지', description: '블록을 밀어 길을 만들고 유물을 찾아요!', status: ADVENTURE_REGION_STATUS.ancientRuins,
-    position: { left: 51, top: 51 }, poster: adventureMapAssets.regionPanels.ancientRuins, unavailableLabel: '준비 중',
+    id: 'ancientRuins', name: '오래된 유적지', description: '거울을 돌려 빛을 제단까지 연결해요!', status: ADVENTURE_REGION_STATUS.ancientRuins,
+    position: { left: 51, top: 51 }, poster: adventureMapAssets.regionPanels.ancientRuins,
+    gameId: 'number-ruins', entryCost: MINIGAME_ENTRY_COST['number-ruins'],
   },
   deepSeaCanyon: {
     id: 'deepSeaCanyon', name: '심해협곡', description: '깊은 바닷속 미스터리를 탐험해요!', status: ADVENTURE_REGION_STATUS.deepSeaCanyon,

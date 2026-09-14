@@ -25,7 +25,7 @@ export const LAVA_STAGE_TWO_POOL: StageItemPool = {
 function regionStages(regionId: AdventureRegionId, names: readonly string[], descriptions: readonly string[]): AdventureStage[] {
   return ([1, 2, 3] as const).map((stageNumber, index) => ({
     id: `${regionId}-${stageNumber}`, stageNumber, name: names[index], description: descriptions[index],
-    implemented: regionId === 'lavaValley' || regionId === 'skyIsland',
+    implemented: regionId === 'lavaValley' || regionId === 'skyIsland' || (regionId === 'ancientRuins' && stageNumber <= 2),
     playTime: regionId === 'lavaValley' && stageNumber === 1 ? LAVA_VALLEY_DURATION_SECONDS
       : regionId === 'skyIsland' && stageNumber === 1 ? SKY_ISLAND_DURATION_SECONDS : [120, 150, 180][index],
     itemPool: regionId === 'lavaValley' ? stageNumber === 1 ? LAVA_VALLEY_SHOP_DROP_POOLS : LAVA_STAGE_TWO_POOL : emptyPool,

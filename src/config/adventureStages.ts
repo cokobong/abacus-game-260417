@@ -2,7 +2,7 @@ export interface AdventureStageConfig {
   stage: number;
   title: string;
   instruction: string;
-  theme: 'lava' | 'sky';
+  theme: 'lava' | 'sky' | 'ruins';
 }
 
 export const SKY_ISLAND_STAGE_CONFIG: AdventureStageConfig = {
