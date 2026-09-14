@@ -6,6 +6,7 @@ import { ADVENTURE_REGIONS, adventureRegions, type AdventureRegion, type Adventu
 import { playSound } from '../../audio/audioManager';
 import { ADVENTURE_STAGE_CATALOG, type AdventureStageNumber } from '../../config/adventureStageCatalog';
 import { lavaValleyStageSelectAssets } from '../../assets/adventure/lava-valley';
+import { skyIslandAssets } from '../../assets/adventure/sky-island';
 import { canPlayAdventureStage, getAdventureStageState, type AdventureStageProgress } from '../../utils/adventureStageProgress';
 import { dinosaurSpecies } from '../../data/dinosaurSpecies';
 import { canRestoreRegionRelic, normalizeRegionRelicProgress, REGION_DEX_HABITAT, WORLD_GATE_REQUIRED_RELICS, type RegionRelicProgress } from '../../config/worldMapRelicConfig';
@@ -234,7 +235,7 @@ function RegionDetailModal({ region, coins, onClose, onStart, stageProgress }: {
 
   return createPortal(
     <div className="adventure-region-modal fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-3" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="adventure-region-title" className={`adventure-region-modal__panel relative overflow-hidden rounded-[1.75rem] border-4 border-amber-200 bg-[#fff3ce] shadow-2xl ${region.id === 'lavaValley' ? 'adventure-region-modal__panel--stage-cards' : ''}`}>
+      <section role="dialog" aria-modal="true" aria-labelledby="adventure-region-title" className={`adventure-region-modal__panel relative overflow-hidden rounded-[1.75rem] border-4 border-amber-200 bg-[#fff3ce] shadow-2xl ${region.id === 'lavaValley' || region.id === 'skyIsland' ? 'adventure-region-modal__panel--stage-cards' : ''}`}>
         <button type="button" onClick={onClose} className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-md" aria-label="상세 창 닫기"><X /></button>
         <img src={region.poster} alt={`${region.name} 포스터`} className="adventure-region-modal__poster object-contain" draggable={false} />
         <div className="adventure-region-modal__body text-center">
@@ -246,7 +247,7 @@ function RegionDetailModal({ region, coins, onClose, onStart, stageProgress }: {
               const enabled = isOpen && canPlayAdventureStage(stageProgress, region.id, stage.stageNumber);
               const label = state === 'locked' ? 'LOCKED · 잠김' : state === 'completed' ? '완료 · 다시 선택' : state === 'new' ? 'NEW' : '선택 가능';
               const isSelected = selectedStage === stage.stageNumber;
-              const card = region.id === 'lavaValley' ? lavaValleyStageSelectAssets.cards[stage.stageNumber] : null;
+              const card = region.id === 'lavaValley' ? lavaValleyStageSelectAssets.cards[stage.stageNumber] : region.id === 'skyIsland' ? skyIslandAssets.stageEntries[stage.stageNumber] : null;
               const showLocked = state === 'locked' || !stage.implemented;
               return <button key={stage.id} type="button" disabled={!enabled} aria-pressed={isSelected} aria-label={`Stage ${stage.stageNumber} · ${stage.name} · ${label}${!stage.implemented ? ' · 준비 중' : ` · ${stage.playTime}초`}`} onClick={() => setSelectedStage(stage.stageNumber)} className={`adventure-stage-option ${card ? 'adventure-stage-option--card' : ''}`}>
                 {card && <span className="adventure-stage-card__visual">

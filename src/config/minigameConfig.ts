@@ -73,6 +73,7 @@ export interface MinigameRunRewards {
   secretChestBonus?: MinigameSecretChestBonus;
   finalChestBonus?: MinigameSecretChestBonus;
   relicOutcome?: RelicChestOutcome;
+  fossilFragmentIds?: number[];
 }
 
 export interface MinigameSecretChestBonus {
@@ -95,7 +96,8 @@ export interface MinigameEconomyState {
 
 export function chargeMinigameEntry(coins: number, gameId: MinigameId, stage: AdventureStageNumber = 1, retryAfterFailure = false) {
   const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : 'ancientRuins';
-  const cost = gameId === 'lava-stepping-stones' ? getAdventureRunCost(regionId, stage, retryAfterFailure) : MINIGAME_ENTRY_COST[gameId];
+  const configuredCost = getAdventureRunCost(regionId, stage, retryAfterFailure);
+  const cost = gameId === 'number-ruins' ? MINIGAME_ENTRY_COST[gameId] : configuredCost;
   if (cost === undefined || coins < cost) return null;
   return coins - cost;
 }
@@ -135,6 +137,7 @@ export function normalizeLavaValleyRewards(rewards: MinigameRunRewards, pool = L
     secretChestBonus,
     finalChestBonus,
     relicOutcome: rewards.relicOutcome,
+    fossilFragmentIds: [...new Set((rewards.fossilFragmentIds ?? []).filter(id => id >= 1 && id <= 3))],
   };
 }
 
@@ -158,10 +161,10 @@ function addQuantity(inventory: MinigameEconomyState['inventory'], itemId: strin
     : [...inventory, { itemId, quantity }];
 }
 
-export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS, stage: AdventureStageNumber = 1) {
+export function applyLavaValleyRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, pool = LAVA_VALLEY_SHOP_DROP_POOLS, stage: AdventureStageNumber = 1, regionId: 'lavaValley' | 'skyIsland' = 'lavaValley') {
   const normalized = normalizeLavaValleyRewards(rawRewards, pool);
   const runCoins = Math.max(0, Math.floor(rawRewards.runCoins ?? rawRewards.coins));
-  const rewards = { ...normalized, runCoins, coins: settleAdventureRunCoins('lavaValley', stage, getAdjustedMinigameCoins(runCoins, multiplier)) };
+  const rewards = { ...normalized, runCoins, coins: settleAdventureRunCoins(regionId, stage, getAdjustedMinigameCoins(runCoins, multiplier)) };
   const inventoryWithShopItems = rewards.shopItems.reduce((inventory, item) => addQuantity(inventory, item.itemId, item.quantity), state.inventory);
   return {
     state: {

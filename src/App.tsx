@@ -27,7 +27,7 @@ import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
 import { defaultCoinRewardMultiplier, type CoinRewardMultiplier } from './config/rewardConfig';
-import { canRestoreRegionRelic, normalizeRegionRelicProgress, resolveLavaFinalChest, type RegionRelicProgress } from './config/worldMapRelicConfig';
+import { canRestoreRegionRelic, normalizeRegionRelicProgress, resolveLavaFinalChest, resolveRegionFinalChest, type RegionRelicProgress } from './config/worldMapRelicConfig';
 import { ADMIN_LIMITS } from './config/adminConfig';
 import { abacusLevels, getAbacusLevel, getDefaultStageIdForLevel, getLevelForStageId, getStagesForLevel } from './data/abacusLevels';
 import { abacusStages, getGeneratorFallbackStage, getStageById } from './data/abacusStages';
@@ -1932,7 +1932,7 @@ export default function App() {
       return;
     }
 
-    const entryCost = gameId === 'lava-stepping-stones' ? getAdventureRunCost('lavaValley', stageNumber, retryAfterFailure) : MINIGAME_ENTRY_COST[gameId as keyof typeof MINIGAME_ENTRY_COST];
+    const entryCost = regionId === 'lavaValley' || regionId === 'skyIsland' ? getAdventureRunCost(regionId, stageNumber, retryAfterFailure) : MINIGAME_ENTRY_COST[gameId as keyof typeof MINIGAME_ENTRY_COST];
     if (entryCost === undefined) {
       return;
     }
@@ -2026,7 +2026,7 @@ export default function App() {
     const stage = getAdventureStage(regionId, run.stageNumber);
     const rewards = normalizeLavaValleyRewards(rawRewards, stage.itemPool);
     const current = gameStateRef.current;
-    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber);
+    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber, regionId === 'skyIsland' ? 'skyIsland' : 'lavaValley');
     let adjustedRewards = applied.rewards;
     if (committedAdventureRunIdsRef.current.has(runId)) return adjustedRewards;
     committedAdventureRunIdsRef.current.add(runId);
@@ -2038,6 +2038,17 @@ export default function App() {
       const relicResolution = resolveLavaFinalChest(regionRelicProgress.lavaValley);
       regionRelicProgress = { ...regionRelicProgress, lavaValley: relicResolution.progress };
       adjustedRewards = { ...adjustedRewards, relicOutcome: relicResolution.outcome };
+    }
+    if (regionId === 'lavaValley' || regionId === 'skyIsland') {
+      const fossilFragmentIds = [...new Set([...(regionRelicProgress[regionId].fossilFragmentIds ?? []), ...(adjustedRewards.fossilFragmentIds ?? [])])];
+      regionRelicProgress = { ...regionRelicProgress, [regionId]: { ...regionRelicProgress[regionId], fossilFragmentIds } };
+    }
+    if (regionId === 'skyIsland') {
+      if (run.stageNumber === 3 && adjustedRewards.finalChestBonus) {
+        const relicResolution = resolveRegionFinalChest('skyIsland', regionRelicProgress.skyIsland);
+        regionRelicProgress = { ...regionRelicProgress, skyIsland: relicResolution.progress };
+        adjustedRewards = { ...adjustedRewards, relicOutcome: relicResolution.outcome };
+      }
     }
 
     const nextState = {
@@ -2670,7 +2681,7 @@ export default function App() {
         )}
         {activeTab === 'adventure' && (
           activeAdventureRun
-            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={(retryAfterFailure) => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber, retryAfterFailure)} relicPartCount={normalizeRegionRelicProgress(gameState.regionRelicProgress).lavaValley.ownedPartIds.length} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
+            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={(retryAfterFailure) => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber, retryAfterFailure)} relicPartCount={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].ownedPartIds.length} fossilFragmentIds={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].fossilFragmentIds} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
             : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} stageProgress={gameState.adventureStageProgress} discoveredSpeciesIds={gameState.discoveredSpeciesIds} relicProgress={gameState.regionRelicProgress} onRestoreRelic={restoreRegionRelic} onStartGame={(gameId, stageNumber) => startAdventureGame(gameId, undefined, true, stageNumber)} /></div>
         )}
         {stageUnlockNotice && activeTab === 'adventure' && <div role="status" className="adventure-stage-notice"><span>{stageUnlockNotice}</span><button type="button" aria-label="Stage 해금 안내 닫기" onClick={() => setStageUnlockNotice(null)}>확인</button></div>}

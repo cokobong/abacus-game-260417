@@ -110,8 +110,14 @@ export function canEnterLavaSecretRoute(symbols: number, distanceFromDoor: numbe
   return symbols >= LAVA_CLIFF_MISSION.symbolCount && distanceFromDoor <= 12;
 }
 
-export function createLavaCliffMission() {
-  return { symbols: 0, spawned: 0, gateSpawned: false, gatePassed: false, chestOpened: false, bonusStart: -1, bonusEnd: -1, bonusNextCoin: 0, eruptions: 0 };
+export function createLavaCliffMission(accumulatedFossils = 0) {
+  return { symbols: Math.max(0, Math.min(LAVA_CLIFF_MISSION.symbolCount, accumulatedFossils)), spawned: 0, gateSpawned: false, gatePassed: false, chestOpened: false, bonusStart: -1, bonusEnd: -1, bonusNextCoin: 0, eruptions: 0 };
+}
+
+export function getLavaFossilOpportunityChance(stage: AdventureStageNumber, ownedCount: number) {
+  if (stage === 1 || ownedCount >= LAVA_CLIFF_MISSION.symbolCount) return 0;
+  if (ownedCount === 2) return stage === 3 ? .72 : .12;
+  return stage === 3 ? .58 : .38;
 }
 
 export function isLavaBonusRouteActive(mission: ReturnType<typeof createLavaCliffMission>, elapsed: number) {

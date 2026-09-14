@@ -48,9 +48,36 @@ export const ADVENTURE_MINIGAME_ECONOMY: Partial<Record<AdventureRegionId, Adven
     selectedDifficultyStoragePrefix: 'lavaStage',
     secretChestWalletCoinReward: 0,
   },
+  skyIsland: {
+    stageEntryCost: { 1: 150, 2: 150, 3: 150 },
+    retryCost: { 1: 0, 2: 50, 3: 150 },
+    runCoinSettlementCap: { 1: 30, 2: 35, 3: 40 },
+    rareFragmentDropRate: {
+      1: { normal: .06, hard: .09 },
+      2: { normal: .09, hard: .13 },
+      3: { normal: .12, hard: .18 },
+    },
+    fossilFragmentRules: {
+      count: 3,
+      stages: {
+        1: [{ at: 58, height: 0, route: 'safe', risk: 'low' }],
+        2: [{ at: 72, height: 0, route: 'changing', risk: 'medium' }],
+        3: [{ at: 78, height: 0, route: 'danger', risk: 'high' }],
+      },
+    },
+    difficultyUnlockRules: { stage3HardRequiresRelicParts: 1 },
+    selectedDifficultyStoragePrefix: 'skyStage',
+    secretChestWalletCoinReward: 0,
+  },
 };
 
 export const LAVA_VALLEY_ECONOMY = ADVENTURE_MINIGAME_ECONOMY.lavaValley!;
+export const SKY_ISLAND_ECONOMY = ADVENTURE_MINIGAME_ECONOMY.skyIsland!;
+export const SKY_FOSSIL_OPPORTUNITY_CHANCE: Record<AdventureStageNumber, Record<AdventureDifficulty, number>> = {
+  1: { normal: .42, hard: .5 },
+  2: { normal: .56, hard: .64 },
+  3: { normal: .72, hard: .8 },
+};
 
 export function getAdventureRunCost(regionId: AdventureRegionId, stage: AdventureStageNumber, retryAfterFailure = false) {
   const config = ADVENTURE_MINIGAME_ECONOMY[regionId];

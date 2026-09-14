@@ -12,7 +12,7 @@ import { LAVA_VALLEY_STAGE_CONFIG } from '../../config/adventureStages';
 import { AdventureStageIntro } from '../AdventureStageIntro';
 import { getAdventureStage, type AdventureStageNumber } from '../../config/adventureStageCatalog';
 import { getLavaLandingHeight, getLavaPlatformAt, isOnLavaPlatform, LAVA_STAGE_THREE_MAX_PLATFORMS, LAVA_STAGE_THREE_SEGMENTS, LAVA_STAGE_TWO_SEGMENTS, LAVA_STAGE_TWO_MAX_PLATFORMS, type LavaPlatform, type LavaRoute } from '../../config/lavaStageSegments';
-import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaGroundSpawnY, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, createLavaStageRarePlan, getLavaEruptionPhase, getLavaJumpPhysics, getLavaStageGameplay, LAVA_CLIFF_MISSION, LAVA_GROUND_TRACK_SURFACE_PERCENT, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE, type LavaEruptionPhase } from '../../config/lavaStageGameplay';
+import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaFossilOpportunityChance, getLavaGroundSpawnY, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, createLavaStageRarePlan, getLavaEruptionPhase, getLavaJumpPhysics, getLavaStageGameplay, LAVA_CLIFF_MISSION, LAVA_GROUND_TRACK_SURFACE_PERCENT, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE, type LavaEruptionPhase } from '../../config/lavaStageGameplay';
 import { LAVA_FINAL_CHEST_CONFIG } from '../../config/worldMapRelicConfig';
 import { getDifficultyStorageKey, isAdventureDifficultyUnlocked, type AdventureDifficulty } from '../../config/adventureMinigameEconomy';
 export { LAVA_VALLEY_DIFFICULTY } from '../../config/lavaStageGameplay';
@@ -34,7 +34,7 @@ const randomBetween = (min: number, max: number) => min + Math.random() * (max -
 const isObstacle = (kind: RunnerItemKind): kind is ObstacleKind => kind === 'rock' || kind === 'geyser';
 const isCollectible = (kind: RunnerItemKind): kind is CollectibleKind => kind === 'coin' || kind === 'shard' || kind === 'shopItem' || kind === 'health_restore';
 
-export interface LavaPathPrototypeProps { stageNumber?: AdventureStageNumber; dinosaur: OwnedDinosaur; onExit: () => void; runId: string; onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards; onRetry: (retryAfterFailure?: boolean) => void; relicPartCount?: number; externalMainModalOpen?: boolean }
+export interface LavaPathPrototypeProps { stageNumber?: AdventureStageNumber; dinosaur: OwnedDinosaur; onExit: () => void; runId: string; onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards; onRetry: (retryAfterFailure?: boolean) => void; relicPartCount?: number; fossilFragmentIds?: number[]; externalMainModalOpen?: boolean }
 
 const PLAYER_PRELOAD_ASSETS = [lavaValleyAssets.player.idle, lavaValleyAssets.player.runSheet, lavaValleyAssets.player.jumpUp, lavaValleyAssets.player.fall, lavaValleyAssets.player.hurt, lavaValleyAssets.player.victory, adventureCommonAssets.healthRestore] as const;
 
@@ -52,14 +52,14 @@ const FossilFragmentVisual = memo(function FossilFragmentVisual() { return <img 
 const FossilCounterVisual = memo(function FossilCounterVisual({ count, bonusLabel }: { count: number; bonusLabel?: string }) { return <div className={`lava-cliff-mission ${count === LAVA_CLIFF_MISSION.symbolCount ? 'is-complete' : ''}`} role="status"><img className="lava-cliff-mission__icon" src={lavaValleyStage2Assets.fossilHudIcon} alt="" aria-hidden="true" draggable={false} /> 화석조각 <b>{count}/{LAVA_CLIFF_MISSION.symbolCount}</b>{bonusLabel && <small>{bonusLabel}</small>}</div>; });
 const SecretDoorVisual = memo(function SecretDoorVisual({ open }: { open: boolean }) { return <img className="lava-cliff-gate" src={open ? lavaValleyStage2Assets.secretDoorOpen : lavaValleyStage2Assets.secretDoorClosed} alt={open ? '열린 비밀문, 가까이 가면 입장' : '잠긴 비밀문, 화석조각 3개 필요'} draggable={false} />; });
 
-export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun, onRetry, relicPartCount = 0, externalMainModalOpen = false }: LavaPathPrototypeProps) {
+export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun, onRetry, relicPartCount = 0, fossilFragmentIds = [], externalMainModalOpen = false }: LavaPathPrototypeProps) {
   const stageConfig = getAdventureStage('lavaValley', stageNumber);
   const gameDuration = stageConfig.playTime;
   const gameplay = getLavaStageGameplay(stageNumber);
   const background = stageNumber === 3 ? lavaValleyStage3Assets.background : stageNumber === 2 ? lavaCliffBackground : lavaValleyAssets.runnerBackground;
   const introConfig = useMemo(() => ({ ...LAVA_VALLEY_STAGE_CONFIG, stage: stageNumber, title: stageNumber === 1 ? LAVA_VALLEY_STAGE_CONFIG.title : stageConfig.name, instruction: stageNumber === 2 ? '화석조각을 모아 비밀문을 열어보세요!' : stageNumber === 3 ? '3단 발판에서 화석조각 3개를 모아 비밀문을 열어보세요!' : LAVA_VALLEY_STAGE_CONFIG.instruction }), [stageNumber, stageConfig]);
-  const [symbols, setSymbols] = useState(0), [bonusRoute, setBonusRoute] = useState(false), [bonusChestOpen, setBonusChestOpen] = useState(false);
-  const missionRef = useRef(createLavaCliffMission());
+  const [symbols, setSymbols] = useState(fossilFragmentIds.length), [bonusRoute, setBonusRoute] = useState(false), [bonusChestOpen, setBonusChestOpen] = useState(false);
+  const missionRef = useRef(createLavaCliffMission(fossilFragmentIds.length));
   const hudRef = useRef({ second: -1, invincible: false, dashing: false, cooldownBucket: -1 });
   const renderedItemIdsRef = useRef('');
   const [platforms, setPlatforms] = useState<LavaPlatform[]>([]);
@@ -93,6 +93,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const guidedObstacleIdsRef = useRef(new Set<number>()), highGuideCountRef = useRef(0), jumpGuideTimerRef = useRef<number | null>(null), coinStreakRef = useRef({ count: 0, lastAt: 0, lastComboAt: 0 });
   const coinsRef = useRef(0), shopItemsRef = useRef<MinigameItemReward[]>([]), rareShardsRef = useRef(0), rewardCommittedRef = useRef(false);
   const secretChestBonusRef = useRef<MinigameRunRewards['secretChestBonus']>();
+  const fossilIdsRef = useRef([...fossilFragmentIds]), fossilOpportunityRef = useRef(false);
   const finalChestBonusRef = useRef<MinigameRunRewards['finalChestBonus']>(), finalChestOpeningRef = useRef(false);
   const shopDropPlanRef = useRef<ReturnType<typeof createLavaStageShopPlan>>([]), spawnedShopDropIdsRef = useRef(new Set<number>()), timersRef = useRef<number[]>([]);
   const rareDropPlanRef = useRef<ReturnType<typeof createLavaStageRarePlan>>([]), spawnedRareDropIdsRef = useRef(new Set<number>()), rareStatsRef = useRef({ scheduled: 0, spawned: 0, collected: 0 });
@@ -102,11 +103,11 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const showBurst = useCallback((kind: Burst['kind'], x: number, y: number) => setBurst({ id: nextIdRef.current++, kind, x, y }), []);
   const showFeedback = useCallback((kind: PickupFeedback['kind'], label: string) => { const feedback = { id: nextIdRef.current++, kind, label }; setPickupFeedback(feedback); later(() => setPickupFeedback((current) => current?.id === feedback.id ? null : current), 850); }, [later]);
   const showSpeech = useCallback((message: string) => { setSpeech(message); later(() => setSpeech((current) => current === message ? null : current), 2100); }, [later]);
-  const beginRun = useCallback(() => { if (!introRef.current) return; introRef.current = false; setIntro(false); const now = performance.now(); shopDropPlanRef.current = createLavaStageShopPlan(stageNumber); rareDropPlanRef.current = createLavaStageRarePlan(stageNumber, difficultyRef.current); spawnedRareDropIdsRef.current.clear(); rareStatsRef.current = { scheduled: rareDropPlanRef.current.length, spawned: 0, collected: 0 }; startTimeRef.current = now; lastFrameRef.current = now; nextObstacleRef.current = now + 1500; nextCollectibleRef.current = now + 1000; showSpeech(introConfig.instruction); }, [showSpeech, stageNumber, introConfig]);
+  const beginRun = useCallback(() => { if (!introRef.current) return; introRef.current = false; setIntro(false); const now = performance.now(); fossilOpportunityRef.current = Math.random() < getLavaFossilOpportunityChance(stageNumber, fossilIdsRef.current.length); shopDropPlanRef.current = createLavaStageShopPlan(stageNumber); rareDropPlanRef.current = createLavaStageRarePlan(stageNumber, difficultyRef.current); spawnedRareDropIdsRef.current.clear(); rareStatsRef.current = { scheduled: rareDropPlanRef.current.length, spawned: 0, collected: 0 }; startTimeRef.current = now; lastFrameRef.current = now; nextObstacleRef.current = now + 1500; nextCollectibleRef.current = now + 1000; showSpeech(introConfig.instruction); }, [showSpeech, stageNumber, introConfig]);
   const restartCurrentSession = useCallback((_reason: Extract<LavaValleyEndReason, 'hp_depleted' | 'manual_restart'>) => {
     if (_reason === 'hp_depleted') { onRetry(true); return; }
     timersRef.current.forEach(window.clearTimeout); timersRef.current = [];
-    missionRef.current = createLavaCliffMission(); setSymbols(0); setBonusRoute(false); setBonusChestOpen(false);
+    fossilIdsRef.current = [...fossilFragmentIds]; missionRef.current = createLavaCliffMission(fossilIdsRef.current.length); setSymbols(fossilIdsRef.current.length); setBonusRoute(false); setBonusChestOpen(false);
     hudRef.current = { second: -1, invincible: false, dashing: false, cooldownBucket: -1 }; renderedItemIdsRef.current = '';
     if (jumpGuideTimerRef.current) window.clearTimeout(jumpGuideTimerRef.current);
     platformsRef.current = []; setPlatforms([]); platformElementsRef.current.clear(); itemElementsRef.current.clear(); invalidObstacleIdsRef.current.clear(); travelRef.current = 0; nextSegmentRef.current = { index: 0, start: 0 }; ridingPlatformIdRef.current = null; finalTreasureSpawnedRef.current = false; finalChestOpeningRef.current = false;
@@ -124,7 +125,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const openSettings = () => { if (resultRef.current !== 'playing' || introRef.current) return; pauseStartedRef.current = performance.now(); pausedRef.current = true; setPaused(true); };
   const closeSettings = () => { const pausedFor = performance.now() - pauseStartedRef.current; startTimeRef.current += pausedFor; nextObstacleRef.current += pausedFor; nextCollectibleRef.current += pausedFor; invincibleUntilRef.current += pausedFor; if (dashUntilRef.current) dashUntilRef.current += pausedFor; if (dashReadyAtRef.current) dashReadyAtRef.current += pausedFor; if (apexHoldUntilRef.current) apexHoldUntilRef.current += pausedFor; lastFrameRef.current = performance.now(); pausedRef.current = false; setPaused(false); };
   const chooseDifficulty = (next: Difficulty) => { if (!isAdventureDifficultyUnlocked('lavaValley', stageNumber, next, relicPartCount)) return; difficultyRef.current = next; setDifficulty(next); window.localStorage.setItem(getDifficultyStorageKey('lavaValley', stageNumber), next); setJumpGuideActive(false); const preset = LAVA_VALLEY_DIFFICULTY[next]; nextObstacleRef.current = performance.now() + randomBetween(preset.obstacleSpawnIntervalMin, preset.obstacleSpawnIntervalMax); };
-  const finish = useCallback((next: Exclude<Result, 'playing'>) => { if (resultRef.current !== 'playing') return; resultRef.current = next; itemsRef.current = []; setItems([]); const reason: LavaValleyEndReason = next === 'success' ? 'completed' : 'hp_depleted'; if (shouldCommitLavaValleyRewards(reason) && !rewardCommittedRef.current) { rewardCommittedRef.current = true; const rewards = normalizeLavaValleyRewards({ coins: 0, runCoins: coinsRef.current, rareFragments: rareShardsRef.current, shopItems: shopItemsRef.current, secretChestBonus: secretChestBonusRef.current, finalChestBonus: finalChestBonusRef.current }, stageConfig.itemPool); setCommittedRewards(onFinishRun(runId, rewards)); } setResult(next); if (next === 'success') { setFinishStep(1); showBurst('clear', 70, 48); later(() => setFinishStep(2), 700); later(() => setShowResult(true), 1500); } else { setCommittedRewards(null); setShowResult(true); } }, [later, onFinishRun, runId, showBurst, stageConfig]);
+  const finish = useCallback((next: Exclude<Result, 'playing'>) => { if (resultRef.current !== 'playing') return; resultRef.current = next; itemsRef.current = []; setItems([]); const reason: LavaValleyEndReason = next === 'success' ? 'completed' : 'hp_depleted'; if (shouldCommitLavaValleyRewards(reason) && !rewardCommittedRef.current) { rewardCommittedRef.current = true; const rewards = normalizeLavaValleyRewards({ coins: 0, runCoins: coinsRef.current, rareFragments: rareShardsRef.current, shopItems: shopItemsRef.current, fossilFragmentIds: fossilIdsRef.current, secretChestBonus: secretChestBonusRef.current, finalChestBonus: finalChestBonusRef.current }, stageConfig.itemPool); setCommittedRewards(onFinishRun(runId, rewards)); } setResult(next); if (next === 'success') { setFinishStep(1); showBurst('clear', 70, 48); later(() => setFinishStep(2), 700); later(() => setShowResult(true), 1500); } else { setCommittedRewards(null); setShowResult(true); } }, [later, onFinishRun, runId, showBurst, stageConfig]);
 
   const openFinalChest = useCallback(() => {
     if (stageNumber !== 3 || finalChestOpeningRef.current || finalChestPhase !== 'closed') return;
@@ -140,7 +141,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
     coinsRef.current += bonus.coins; rareShardsRef.current += bonus.rareFragments; shopItemsRef.current.push(...bonus.shopItems);
     setCoins(coinsRef.current); setRareShards(rareShardsRef.current); setShopItemCount(shopItemsRef.current.reduce((sum, reward) => sum + reward.quantity, 0));
     rewardCommittedRef.current = true;
-    const rewards = normalizeLavaValleyRewards({ coins: 0, runCoins: coinsRef.current, rareFragments: rareShardsRef.current, shopItems: shopItemsRef.current, secretChestBonus: secretChestBonusRef.current, finalChestBonus: bonus }, stageConfig.itemPool);
+    const rewards = normalizeLavaValleyRewards({ coins: 0, runCoins: coinsRef.current, rareFragments: rareShardsRef.current, shopItems: shopItemsRef.current, fossilFragmentIds: fossilIdsRef.current, secretChestBonus: secretChestBonusRef.current, finalChestBonus: bonus }, stageConfig.itemPool);
     setCommittedRewards(onFinishRun(runId, rewards));
     showBurst('clear', 62, 42); showFeedback('coin', `최종 보물상자! 코인 +${bonus.coins} · 희귀조각 +${bonus.rareFragments} · 아이템 +1`);
     later(() => setFinalChestPhase('open'), 500);
@@ -180,7 +181,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
       const mission = missionRef.current;
       const isNearSecretDoor = (x: number) => itemsRef.current.some(item => item.kind === 'secretGate' && Math.abs(item.x - x) <= LAVA_CLIFF_MISSION.secretDoorExclusionRadius);
       const symbolPlan = stageNumber === 3 ? LAVA_VOLCANO_CORE.symbols : LAVA_CLIFF_MISSION.symbols;
-      const symbol = gameplay.symbolMission ? symbolPlan[mission.spawned] : undefined;
+      const symbol = gameplay.symbolMission && fossilOpportunityRef.current && mission.spawned === 0 ? symbolPlan[fossilIdsRef.current.length] : undefined;
       if (symbol && elapsed >= symbol.at) {
         const route = 'route' in symbol ? symbol.route : 'upper';
         if (stageNumber === 2) addMissionPlatform(symbol.height);
@@ -403,7 +404,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
         if (invalidObstacleIdsRef.current.has(item.id)) { removed.add(item.id); continue; }
         if (item.kind === 'symbol') {
           if (Math.abs(item.x - LAVA_RUNNER_CONFIG.playerX) <= 8 && Math.abs(jumpYRef.current - item.height) <= 9) {
-            removed.add(item.id); missionRef.current.symbols += 1; setSymbols(missionRef.current.symbols);
+            removed.add(item.id); const fossilId = fossilIdsRef.current.length + 1; fossilIdsRef.current = [...new Set([...fossilIdsRef.current, fossilId])]; missionRef.current.symbols = fossilIdsRef.current.length; setSymbols(missionRef.current.symbols);
             showBurst('fossil', item.x, item.height + 20);
             showSpeech(missionRef.current.symbols === LAVA_CLIFF_MISSION.symbolCount ? '비밀문이 열렸어요!' : `화석조각 ${missionRef.current.symbols}/3!`);
           }
@@ -413,7 +414,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
           const mission = missionRef.current;
           const doorDistance = Math.abs(item.x - LAVA_RUNNER_CONFIG.playerX);
           if (!mission.gatePassed && canEnterLavaSecretRoute(mission.symbols, doorDistance)) {
-            mission.gatePassed = true; mission.bonusStart = elapsed; mission.bonusEnd = elapsed + LAVA_CLIFF_MISSION.routeSeconds; mission.bonusNextCoin = elapsed;
+            mission.gatePassed = true; mission.bonusStart = elapsed; mission.bonusEnd = elapsed + LAVA_CLIFF_MISSION.routeSeconds; mission.bonusNextCoin = Number.POSITIVE_INFINITY;
             removed.add(item.id);
             platformsRef.current = [{ id: nextIdRef.current++, x: 0, width: 125, height: LAVA_CLIFF_MISSION.routeHeight, route: 'secret' }];
             setPlatforms([...platformsRef.current]); setBonusRoute(true);

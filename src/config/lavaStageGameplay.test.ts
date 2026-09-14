@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaGroundSpawnY, getLavaJumpPhysics, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE } from './lavaStageGameplay';
+import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageRarePlan, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaEruptionPhase, getLavaFossilOpportunityChance, getLavaGroundSpawnY, getLavaJumpPhysics, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, LAVA_CLIFF_MISSION, LAVA_CLIFF_RARE_WEIGHTS, LAVA_STAGE_GAMEPLAY, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE } from './lavaStageGameplay';
 import { createLavaValleyShopDropPlan, createRareFragmentSpawnPlan, RARE_FRAGMENT_COUNT_WEIGHTS, normalizeLavaValleyRewards } from './minigameConfig';
 import { getAdventureStage } from './adventureStageCatalog';
 import { getLavaLandingHeight } from './lavaStageSegments';
@@ -48,7 +48,7 @@ test('Stage 3 장애물은 초중후반으로 갈수록 촘촘하고 Stage 1/2�
   }
 });
 
-test('화석조각 3개는 이번 판에만 존재하며 넉넉한 지상 접촉으로 비밀문을 연다', () => {
+test('누적 화석조각 3개로 넉넉한 지상 접촉에서 비밀문을 연다', () => {
   const mission = createLavaCliffMission();
   assert.equal(mission.symbols, 0);
   assert.equal(LAVA_CLIFF_MISSION.symbols.length, 3);
@@ -63,6 +63,9 @@ test('화석조각 3개는 이번 판에만 존재하며 넉넉한 지상 접촉
   assert.equal(isLavaBonusRouteActive(mission, 124.99), true);
   assert.equal(isLavaBonusRouteActive(mission, 125), false);
   assert.equal(createLavaCliffMission().symbols, 0);
+  assert.equal(createLavaCliffMission(2).symbols, 2);
+  assert.equal(getLavaFossilOpportunityChance(1, 0), 0);
+  assert.ok(getLavaFossilOpportunityChance(3, 2) > getLavaFossilOpportunityChance(2, 2));
   assert.equal(createLavaCliffMission().chestOpened, false);
   assert.equal(isLavaBonusRouteActive(createLavaCliffMission(), 0), false);
   assert.equal(LAVA_CLIFF_MISSION.routeSeconds, 12);

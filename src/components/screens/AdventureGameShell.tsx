@@ -14,16 +14,17 @@ export interface AdventureGameShellProps {
   onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards;
   onRetry: (retryAfterFailure?: boolean) => void;
   relicPartCount?: number;
+  fossilFragmentIds?: number[];
   externalMainModalOpen?: boolean;
 }
 
-export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, relicPartCount, externalMainModalOpen }: AdventureGameShellProps) {
+export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, relicPartCount, fossilFragmentIds, externalMainModalOpen }: AdventureGameShellProps) {
   if (gameId === 'lava-stepping-stones') {
-    return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} externalMainModalOpen={externalMainModalOpen} />;
+    return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} fossilFragmentIds={fossilFragmentIds} externalMainModalOpen={externalMainModalOpen} />;
   }
 
   if (gameId === 'sky-number-clouds') {
-    return <SkyIslandPrototype dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} externalMainModalOpen={externalMainModalOpen} />;
+    return <SkyIslandPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} fossilFragmentIds={fossilFragmentIds} externalMainModalOpen={externalMainModalOpen} />;
   }
 
   return (

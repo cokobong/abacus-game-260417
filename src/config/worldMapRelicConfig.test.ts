@@ -3,6 +3,13 @@ import test from 'node:test';
 import { REGION_RELICS } from './regionalRelicConfig';
 import { canRestoreRegionRelic, normalizeRegionRelicProgress, resolveLavaFinalChest } from './worldMapRelicConfig';
 
+test('화석조각 진행도는 화산계곡과 하늘섬에만 지역별로 분리된다', () => {
+  const progress = normalizeRegionRelicProgress({ lavaValley: { fossilFragmentIds: [1, 2] }, skyIsland: { fossilFragmentIds: [1] }, ancientRuins: { fossilFragmentIds: [1, 2, 3] } });
+  assert.deepEqual(progress.lavaValley.fossilFragmentIds, [1, 2]);
+  assert.deepEqual(progress.skyIsland.fossilFragmentIds, [1]);
+  assert.equal(progress.ancientRuins.fossilFragmentIds, undefined);
+});
+
 test('5개 지역은 고유한 유물 부품 5종씩을 가진다', () => {
   const definitions = Object.values(REGION_RELICS);
   const partIds = definitions.flatMap((definition) => definition.parts.map((part) => part.id));

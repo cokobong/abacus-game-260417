@@ -9,6 +9,7 @@ export type RegionRelicProgress = {
   consecutiveMisses: number;
   stage3FirstCleared: boolean;
   chestOpenedCount: number;
+  fossilFragmentIds?: number[];
 };
 
 export type RelicChestOutcome = {
@@ -66,12 +67,17 @@ export function normalizeRegionRelicProgress(progress?: Partial<Record<Adventure
       consecutiveMisses: Math.max(0, Math.floor(Number(saved?.consecutiveMisses) || 0)),
       stage3FirstCleared: saved?.stage3FirstCleared === true,
       chestOpenedCount: Math.max(0, Math.floor(Number(saved?.chestOpenedCount) || 0)),
+      ...((regionId === 'lavaValley' || regionId === 'skyIsland') ? { fossilFragmentIds: Array.isArray(saved?.fossilFragmentIds) ? [...new Set(saved.fossilFragmentIds.filter(id => id === 1 || id === 2 || id === 3))] : [] } : {}),
     }];
   })) as Record<AdventureRegionId, RegionRelicProgress>;
 }
 
 export function resolveLavaFinalChest(progress: RegionRelicProgress, random: () => number = Math.random) {
-  const missingParts = getMissingRelicParts('lavaValley', progress.ownedPartIds);
+  return resolveRegionFinalChest('lavaValley', progress, random);
+}
+
+export function resolveRegionFinalChest(regionId: AdventureRegionId, progress: RegionRelicProgress, random: () => number = Math.random) {
+  const missingParts = getMissingRelicParts(regionId, progress.ownedPartIds);
   const eligible = missingParts.length > 0;
   const dropRate = progress.consecutiveMisses >= LAVA_FINAL_CHEST_CONFIG.relicPityThreshold
     ? 1
@@ -88,6 +94,7 @@ export function resolveLavaFinalChest(progress: RegionRelicProgress, random: () 
     consecutiveMisses: eligible ? acquired ? 0 : progress.consecutiveMisses + 1 : progress.consecutiveMisses,
     stage3FirstCleared: true,
     chestOpenedCount: progress.chestOpenedCount + 1,
+    fossilFragmentIds: progress.fossilFragmentIds,
   };
   const outcome: RelicChestOutcome = { acquired, partId: acquiredPart?.id, partName: acquiredPart?.name, partImage: acquiredPart?.image, ownedPartCount: ownedPartIds.length, goal: REGION_RELIC_PART_GOAL, newlyCompleted: false };
   return { progress: nextProgress, outcome };
