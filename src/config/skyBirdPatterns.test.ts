@@ -6,7 +6,7 @@ test('bird flock weight rises by Stage and hard difficulty', () => {
   assert.ok(SKY_BIRD_SPAWN_CHANCE[1].normal < SKY_BIRD_SPAWN_CHANCE[2].normal);
   assert.ok(SKY_BIRD_SPAWN_CHANCE[2].normal < SKY_BIRD_SPAWN_CHANCE[3].normal);
   assert.ok(SKY_BIRD_SPAWN_CHANCE[3].hard > SKY_BIRD_SPAWN_CHANCE[3].normal);
-  assert.equal(SKY_BIRD_SPAWN_CHANCE[3].normal, .39);
+  assert.equal(SKY_BIRD_SPAWN_CHANCE[3].normal, .44);
 });
 
 test('Stage 1 stays single while Stage 3 hard can create three-flock lane patterns', () => {

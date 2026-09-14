@@ -10,6 +10,7 @@ import { shopItemImages } from '../../assets/shop';
 import { preloadImages } from '../../utils/preloadImages';
 import { LAVA_VALLEY_STAGE_CONFIG } from '../../config/adventureStages';
 import { AdventureStageIntro } from '../AdventureStageIntro';
+import { AdventureFinalTreasure, type AdventureFinalTreasurePhase } from '../AdventureFinalTreasure';
 import { getAdventureStage, type AdventureStageNumber } from '../../config/adventureStageCatalog';
 import { getLavaLandingHeight, getLavaPlatformAt, isOnLavaPlatform, LAVA_STAGE_THREE_MAX_PLATFORMS, LAVA_STAGE_THREE_SEGMENTS, LAVA_STAGE_TWO_SEGMENTS, LAVA_STAGE_TWO_MAX_PLATFORMS, type LavaPlatform, type LavaRoute } from '../../config/lavaStageSegments';
 import { canEnterLavaSecretRoute, createLavaCliffMission, createLavaSecretChestReward, createLavaStageShopPlan, getLavaCoinIntervalScale, getLavaFossilOpportunityChance, getLavaGroundSpawnY, getLavaObstacleSpawnInterval, isLavaBonusRouteActive, createLavaStageRarePlan, getLavaEruptionPhase, getLavaJumpPhysics, getLavaStageGameplay, LAVA_CLIFF_MISSION, LAVA_GROUND_TRACK_SURFACE_PERCENT, LAVA_VALLEY_DIFFICULTY, LAVA_VOLCANO_CORE, type LavaEruptionPhase } from '../../config/lavaStageGameplay';
@@ -75,7 +76,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
   const [coins, setCoins] = useState(0), [shopItemCount, setShopItemCount] = useState(0), [rareShards, setRareShards] = useState(0), [health, setHealth] = useState(3), [timeLeft, setTimeLeft] = useState(gameDuration);
   const [jumping, setJumping] = useState(false), [invincible, setInvincible] = useState(false), [paused, setPaused] = useState(false), [result, setResult] = useState<Result>('playing');
   const [intro, setIntro] = useState(true), [showResult, setShowResult] = useState(false), [finishStep, setFinishStep] = useState<0 | 1 | 2>(0);
-  const [finalChestPhase, setFinalChestPhase] = useState<'hidden' | 'closed' | 'opening' | 'open'>('hidden');
+  const [finalChestPhase, setFinalChestPhase] = useState<AdventureFinalTreasurePhase>('hidden');
   const [committedRewards, setCommittedRewards] = useState<MinigameRunRewards | null>(null);
   const initialDifficulty = useMemo<Difficulty>(() => {
     const saved = window.localStorage.getItem(getDifficultyStorageKey('lavaValley', stageNumber));
@@ -483,7 +484,7 @@ export function LavaPathPrototype({ stageNumber = 1, onExit, runId, onFinishRun,
           : item.kind === 'secretGate' ? <SecretDoorVisual open={symbols === LAVA_CLIFF_MISSION.symbolCount} />
           : item.kind === 'eruption' ? <div className="lava-cliff-eruption" role="img" aria-label={item.phase === 'warning' ? '용암 분출 예고' : item.phase === 'active' ? '용암 분출 중' : '용암 분출 종료'}><img className="lava-cliff-eruption__warning" src={lavaValleyStage2Assets.lavaWarningMarker} alt="" aria-hidden="true" draggable={false} /><img className="lava-cliff-eruption__active" src={lavaValleyStage2Assets.lavaEruption} alt="" aria-hidden="true" draggable={false} /></div>
           : item.kind === 'bonusChest' ? <img className="lava-cliff-bonus-chest" src={bonusChestOpen ? lavaValleyStage2Assets.bonusChestOpen : lavaValleyStage2Assets.bonusChestClosed} alt={bonusChestOpen ? '열린 비밀 보너스 상자' : '닫힌 비밀 보너스 상자'} draggable={false} />
-          : item.kind === 'finalTreasure' ? <button type="button" className="lava-core-final-treasure-button" disabled={finalChestPhase !== 'closed'} onClick={openFinalChest} aria-label={finalChestPhase === 'closed' ? '최종 보물상자 열기' : '열린 최종 보물상자'}><img className="lava-core-final-treasure" src={finalChestPhase === 'open' ? lavaValleyStage3Assets.treasureChestOpen : lavaValleyStage3Assets.treasureChestClosed} alt="" draggable={false} />{finalChestPhase === 'opening' && <img className="lava-core-final-treasure-effect" src={lavaValleyStage3Assets.treasureOpenEffect} alt="" aria-hidden="true" />}</button>
+          : item.kind === 'finalTreasure' ? <AdventureFinalTreasure phase={finalChestPhase} closedImage={lavaValleyStage3Assets.treasureChestClosed} openImage={lavaValleyStage3Assets.treasureChestOpen} effectImage={lavaValleyStage3Assets.treasureOpenEffect} onOpen={openFinalChest} />
           : <img src={itemImage(item)} alt={item.kind === 'rock' ? '바위 장애물' : item.kind === 'geyser' ? '용암 분출 장애물' : item.kind === 'coin' ? '공룡 코인' : item.kind === 'health_restore' ? '생명력 회복' : item.kind === 'shopItem' ? (item.label ?? '상점 아이템') + ' 보상' : item.kind === 'shard' ? '희귀 알 조각' : '체크포인트 깃발'} draggable={false} onError={(event) => { if (isObstacle(item.kind)) { invalidObstacleIdsRef.current.add(item.id); event.currentTarget.closest('.lava-runner-item')?.remove(); if (import.meta.env.DEV) console.warn(`[Lava Valley] obstacle asset skipped: ${item.kind}`); } }} />}
       </div>)}
       <div ref={playerMotionRef} className="lava-player-motion"><LavaValleyPlayer intro={intro} invincible={invincible} jumping={jumping} jumpY={0} rising={rising} success={result === 'success'} /></div>

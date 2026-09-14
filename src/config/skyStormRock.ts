@@ -1,6 +1,6 @@
 import type { AdventureDifficulty } from './adventureMinigameEconomy';
 
-export const SKY_STORM_ROCK_SPAWN_CHANCE: Record<AdventureDifficulty, number> = { normal: .19, hard: .46 };
+export const SKY_STORM_ROCK_SPAWN_CHANCE: Record<AdventureDifficulty, number> = { normal: .215, hard: .52 };
 export const SKY_STORM_ROCK_WAVE_AMPLITUDE: Record<AdventureDifficulty, number> = { normal: 5, hard: 11 };
 export const SKY_STORM_ROCK_SPEED_MULTIPLIER: Record<AdventureDifficulty, number> = { normal: .95, hard: 1.08 };
 export const SKY_STORM_ROCK_TRACKING_STRENGTH: Record<AdventureDifficulty, number> = { normal: .72, hard: .88 };

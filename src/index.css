@@ -3942,6 +3942,10 @@ summary:focus-visible {
 .lava-runner-item.lava-runner-item--finalTreasure { width: clamp(8rem, 30vw, 13rem); height: 7rem; aspect-ratio: auto; filter: none; }
 .lava-core-final-treasure-button:disabled { cursor: default; }
 .lava-core-final-treasure-effect { position: absolute; width: 150%; max-width: none; animation: lava-final-chest-flash 500ms ease-out both; pointer-events: none; }
+.sky-treasure-event { position: absolute; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .65rem; padding: 1.25rem; color: #0c4a6e; background: radial-gradient(circle at 50% 42%,rgb(224 242 254 / 92%),rgb(14 116 144 / 78%)); text-align: center; }
+.sky-treasure-event h2,.sky-treasure-event p { margin: 0; }.sky-treasure-event h2 { font-size: clamp(1.45rem,5vw,2.3rem); font-weight: 1000; }.sky-treasure-event p { min-height: 1.5rem; font-weight: 900; }
+.sky-final-treasure-button { width: clamp(10rem,36vw,15rem); min-height: 8rem; filter: drop-shadow(0 10px 14px rgb(8 47 73 / 35%)); }
+.sky-treasure-event .lava-relic-result { max-width: min(30rem,92vw); }
 .lava-final-chest-summary { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: .35rem .7rem; border-radius: .9rem; padding: .55rem .7rem; color: #7c2d12; background: #ffedd5; font-size: clamp(.68rem, 2.2vw, .86rem); font-weight: 900; }
 .lava-final-chest-summary > strong, .lava-relic-result { grid-column: 1 / -1; }
 .lava-final-chest-summary > strong { text-align: center; }

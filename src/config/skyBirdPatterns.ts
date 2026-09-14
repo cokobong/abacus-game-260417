@@ -4,7 +4,7 @@ import type { AdventureStageNumber } from './adventureStageCatalog';
 export const SKY_BIRD_SPAWN_CHANCE: Record<AdventureStageNumber, Record<AdventureDifficulty, number>> = {
   1: { normal: .06, hard: .1 },
   2: { normal: .34, hard: .44 },
-  3: { normal: .39, hard: .68 },
+  3: { normal: .44, hard: .76 },
 };
 
 export type SkyBirdPattern = 'single' | 'same-lane' | 'adjacent' | 'zigzag';

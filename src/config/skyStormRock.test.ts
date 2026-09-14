@@ -5,7 +5,7 @@ import { getSkyStormRockMotion, getSkyStormRockTrackingY, SKY_STAGE_3_NORMAL_DAN
 test('storm rocks are tuned for Stage 3 normal and hard patterns', () => {
   assert.ok(SKY_STORM_ROCK_SPAWN_CHANCE.hard > SKY_STORM_ROCK_SPAWN_CHANCE.normal);
   assert.ok(SKY_STORM_ROCK_WAVE_AMPLITUDE.hard > SKY_STORM_ROCK_WAVE_AMPLITUDE.normal);
-  assert.equal(SKY_STORM_ROCK_SPAWN_CHANCE.normal, .19);
+  assert.equal(SKY_STORM_ROCK_SPAWN_CHANCE.normal, .215);
   assert.equal(SKY_STORM_ROCK_SPEED_MULTIPLIER.normal, .95);
   assert.ok(SKY_STORM_ROCK_TRACKING_STRENGTH.hard > SKY_STORM_ROCK_TRACKING_STRENGTH.normal);
   assert.equal(SKY_STAGE_3_NORMAL_INTERVAL_MULTIPLIER, 1.25);
