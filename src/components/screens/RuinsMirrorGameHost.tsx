@@ -21,7 +21,6 @@ export function RuinsMirrorGameHost({ stageNumber, runId, onExit, onFinishRun, o
   const [started, setStarted] = useState(false);
   const [stageComplete, setStageComplete] = useState(false);
   const [mission, setMission] = useState({ number: 1, title: '첫 번째 빛', instruction: '거울을 눌러 빛을 제단까지 연결해요.' });
-  const [mirrorInventory, setMirrorInventory] = useState<{ remaining: number; total: number } | null>(null);
   finishRunRef.current = onFinishRun;
 
   useEffect(() => {
@@ -35,7 +34,7 @@ export function RuinsMirrorGameHost({ stageNumber, runId, onExit, onFinishRun, o
           setMission({ number, title, instruction });
           setLoading(false);
         },
-        onInventoryChange: (remaining, total) => setMirrorInventory({ remaining, total }),
+        onInventoryChange: () => undefined,
         onStageComplete: () => {
           if (!committedRef.current) {
             committedRef.current = true;
@@ -60,7 +59,7 @@ export function RuinsMirrorGameHost({ stageNumber, runId, onExit, onFinishRun, o
       <header className="ruins-mirror-hud">
         <button type="button" onClick={onExit} aria-label="모험 지도로 돌아가기">지도</button>
         <div>
-          <strong>STAGE {stageNumber} · MISSION {mission.number}/4</strong>
+          <strong>STAGE {stageNumber} · MISSION {mission.number}/{stageNumber === 2 ? 6 : 4}</strong>
           <span>{mission.title}</span>
         </div>
         <button type="button" onClick={() => controllerRef.current?.resetMission()} disabled={!started || stageComplete} aria-label="현재 미션 처음부터">
@@ -70,8 +69,8 @@ export function RuinsMirrorGameHost({ stageNumber, runId, onExit, onFinishRun, o
       <div className="ruins-mirror-instruction" role="status">{mission.instruction}</div>
       <div className="ruins-mirror-canvas" ref={parentRef} aria-hidden="true" />
       <footer className="ruins-mirror-footer">
-        <span>{stageNumber === 2 && mirrorInventory ? `남은 거울 ${mirrorInventory.remaining}/${mirrorInventory.total}` : '거울을 터치하면 90° 돌아가요.'}</span>
-        {stageNumber === 2 && <span>빈 슬롯: 설치 · 거울: 회전 · −: 회수</span>}
+        <span>거울을 터치하면 90° 돌아가요.</span>
+        {stageNumber === 2 && <span>금색: 회전 거울 · 은색: 고정 거울 · 보라색: 분기석</span>}
         <span>시간제한 · 실패 페널티 없음</span>
       </footer>
       {loading && <div className="ruins-mirror-overlay" role="status">유적의 빛을 준비하고 있어요...</div>}

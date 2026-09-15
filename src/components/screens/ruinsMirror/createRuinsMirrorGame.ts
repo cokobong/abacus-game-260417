@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getRuinsMirrorObstacles, getRuinsMirrorSource, RUINS_MIRROR_STAGE_1_MISSIONS, RUINS_MIRROR_STAGE_2_MISSIONS, type RuinsMirrorDefinition, type RuinsMirrorOrientation, type RuinsMirrorPuzzleConfig } from '../../../config/ruinsMirror';
+import { getRuinsMirrorObstacles, getRuinsMirrorSource, getRuinsMirrorTargets, RUINS_MIRROR_STAGE_1_MISSIONS, RUINS_MIRROR_STAGE_2_MISSIONS, type RuinsMirrorDefinition, type RuinsMirrorOrientation, type RuinsMirrorPuzzleConfig } from '../../../config/ruinsMirror';
 import { traceRuinsMirrorBeam, type RuinsMirrorBeamSegment } from '../../../utils/ruinsMirrorBeam';
 
 const GAME_WIDTH = 768;
@@ -24,7 +24,7 @@ class PuzzleBoard {
   readonly cellSize: number;
 
   constructor(private readonly scene: Phaser.Scene, readonly config: RuinsMirrorPuzzleConfig) {
-    const boardSize = config.grid.columns === 5 ? 690 : 672;
+    const boardSize = config.grid.columns === 7 ? 686 : config.grid.columns === 5 ? 690 : 672;
     this.cellSize = boardSize / config.grid.columns;
     this.originX = (GAME_WIDTH - boardSize) / 2;
     this.originY = 70 + (680 - boardSize) / 2;
@@ -52,6 +52,14 @@ class PuzzleBoard {
       graphics.fillStyle(0x2c3431, 1).fillRoundedRect(x - radius, y - radius, radius * 2, radius * 2, 14);
       graphics.lineStyle(5, 0x99a092, 1).strokeRoundedRect(x - radius, y - radius, radius * 2, radius * 2, 14);
       graphics.lineStyle(4, 0x56625b, 1).beginPath().moveTo(x - radius * 0.55, y - radius * 0.6).lineTo(x + radius * 0.5, y + radius * 0.55).strokePath();
+    });
+    if (this.config.mode === 'fixed') this.config.splitters?.forEach(splitter => {
+      const { x, y } = this.cellCenter(splitter);
+      const radius = this.cellSize * 0.31;
+      graphics.fillStyle(0x503f72, 1).fillCircle(x, y, radius);
+      graphics.lineStyle(5, 0xd8c8ff, 1).strokeCircle(x, y, radius);
+      graphics.lineStyle(4, 0xffffff, 0.9).beginPath().moveTo(x - radius * 0.5, y).lineTo(x, y)
+        .lineTo(x + radius * 0.45, y - radius * 0.45).moveTo(x, y).lineTo(x + radius * 0.45, y + radius * 0.45).strokePath();
     });
   }
 
@@ -90,7 +98,7 @@ class MirrorSystem {
       const center = this.board.cellCenter(mirror);
       const size = this.board.cellSize * (this.config.grid.columns === 5 ? 0.84 : 0.74);
       const hitArea = this.scene.add.rectangle(center.x, center.y, this.board.cellSize * 0.94, this.board.cellSize * 0.94, 0xffffff, 0.001).setDepth(20);
-      const group = this.createMirrorVisual(center.x, center.y, size, mirror.initial);
+      const group = this.createMirrorVisual(center.x, center.y, size, mirror.initial, mirror.rotatable);
       group.setAngle(mirror.initial === 'slash' ? -45 : 45);
       if (!mirror.rotatable) return;
       hitArea.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
@@ -145,10 +153,13 @@ class MirrorSystem {
     this.onRotate();
   }
 
-  private createMirrorVisual(x: number, y: number, size: number, orientation: RuinsMirrorOrientation) {
-    const frame = this.scene.add.circle(0, 0, size * 0.49, 0x5a4634, 1).setStrokeStyle(5, 0xe9c46a);
-    const glass = this.scene.add.rectangle(0, 0, size * 0.78, 15, 0xe7fbff, 1).setStrokeStyle(4, 0x77cbd8);
-    return this.scene.add.container(x, y, [frame, glass]).setAngle(orientation === 'slash' ? -45 : 45).setDepth(10);
+  private createMirrorVisual(x: number, y: number, size: number, orientation: RuinsMirrorOrientation, rotatable = true) {
+    const frame = this.scene.add.circle(0, 0, size * 0.49, rotatable ? 0x5a4634 : 0x303b47, 1)
+      .setStrokeStyle(rotatable ? 5 : 8, rotatable ? 0xe9c46a : 0xa8b5c4);
+    const glass = this.scene.add.rectangle(0, 0, size * 0.78, 15, 0xe7fbff, 1).setStrokeStyle(4, rotatable ? 0x77cbd8 : 0x708090);
+    const objects: Phaser.GameObjects.GameObject[] = [frame, glass];
+    if (!rotatable) objects.push(this.scene.add.circle(0, -size * 0.3, size * 0.12, 0x29333d).setStrokeStyle(3, 0xd8e1e8));
+    return this.scene.add.container(x, y, objects).setAngle(orientation === 'slash' ? -45 : 45).setDepth(10);
   }
 
   private notifyInventory() {
@@ -171,26 +182,28 @@ class MirrorSystem {
 }
 
 class TargetSystem {
-  private active = false;
-  private ring?: Phaser.GameObjects.Arc;
-  private core?: Phaser.GameObjects.Arc;
+  private readonly visuals = new Map<string, { ring: Phaser.GameObjects.Arc; core: Phaser.GameObjects.Arc }>();
 
   constructor(private readonly scene: Phaser.Scene, private readonly board: PuzzleBoard, private readonly config: RuinsMirrorPuzzleConfig) {}
 
   create() {
-    const { x, y } = this.board.cellCenter(this.config.target);
+    getRuinsMirrorTargets(this.config).forEach(target => {
+    const { x, y } = this.board.cellCenter(target);
     const sizeScale = this.config.grid.columns === 5 ? 1.12 : 1;
-    this.ring = this.scene.add.circle(x, y, this.board.cellSize * 0.32 * sizeScale, 0x273b35, 1).setStrokeStyle(7, 0xa9c98f).setDepth(10);
-    this.core = this.scene.add.circle(x, y, this.board.cellSize * 0.13 * sizeScale, 0x687568, 1).setDepth(11);
+    const ring = this.scene.add.circle(x, y, this.board.cellSize * 0.32 * sizeScale, 0x273b35, 1).setStrokeStyle(7, 0xa9c98f).setDepth(10);
+    const core = this.scene.add.circle(x, y, this.board.cellSize * 0.13 * sizeScale, 0x687568, 1).setDepth(11);
     this.scene.add.text(x, y + this.board.cellSize * 0.31, '제단', { fontFamily: 'sans-serif', fontSize: `${Math.max(20, this.board.cellSize * 0.15)}px`, color: '#fff4cc', fontStyle: 'bold' }).setOrigin(0.5, 0).setDepth(12);
+    this.visuals.set(`${target.column},${target.row}`, { ring, core });
+    });
   }
 
-  setActive(active: boolean) {
-    if (this.active === active) return false;
-    this.active = active;
-    this.ring?.setFillStyle(active ? 0x6b5a19 : 0x273b35).setStrokeStyle(7, active ? 0xffe66d : 0x86a873);
-    this.core?.setFillStyle(active ? 0xfff2a8 : 0x687568);
-    return active;
+  setActive(reachedTargets: ReadonlySet<string>) {
+    this.visuals.forEach((visual, key) => {
+      const active = reachedTargets.has(key);
+      visual.ring.setFillStyle(active ? 0x6b5a19 : 0x273b35).setStrokeStyle(7, active ? 0xffe66d : 0x86a873);
+      visual.core.setFillStyle(active ? 0xfff2a8 : 0x687568);
+    });
+    return reachedTargets.size === this.visuals.size;
   }
 }
 
@@ -285,7 +298,7 @@ export function createRuinsMirrorGame(parent: HTMLElement, stageNumber: 1 | 2, c
       this.drawSegments(result.segments);
       this.beamGraphics.lineStyle(5, 0xfff3a3, 1);
       this.drawSegments(result.segments);
-      if (this.targetSystem.setActive(result.reachedTarget)) {
+      if (this.targetSystem.setActive(result.reachedTargets)) {
         this.missionLocked = true;
         this.cameras.main.flash(120, 255, 238, 150, false);
         this.showMissionClear();

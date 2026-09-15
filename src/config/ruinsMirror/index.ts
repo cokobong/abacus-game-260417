@@ -8,5 +8,6 @@ export type {
   RuinsMirrorOrientation,
   RuinsMirrorPlacementPuzzleConfig,
   RuinsMirrorPuzzleConfig,
+  RuinsMirrorSplitterDefinition,
 } from './types';
-export { getRuinsMirrorObstacles, getRuinsMirrorSource } from './types';
+export { getRuinsMirrorObstacles, getRuinsMirrorSource, getRuinsMirrorTargets } from './types';

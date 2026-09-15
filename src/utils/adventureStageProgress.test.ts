@@ -32,7 +32,8 @@ test('첫 클리어만 다음 Stage를 해금하고 방문 전 NEW, 재선택과
   assert.equal(getAdventureStageState(second.progress, 'lavaValley', 3), 'new');
   assert.equal(canPlayAdventureStage(second.progress, 'lavaValley', 3), true);
   assert.equal(completeAdventureStage({}, 'lavaValley', 2).unlockedStage, null);
-  assert.equal(canPlayAdventureStage({}, 'deepSeaCanyon', 1), false);
+  assert.equal(canPlayAdventureStage({}, 'deepSeaCanyon', 1), true);
+  assert.equal(canPlayAdventureStage({}, 'deepSeaCanyon', 2), false);
 });
 
 test('Stage 3 발판 패턴은 초중후반과 최대 4층 경로, 이동·붕괴 동작을 포함한다', () => {

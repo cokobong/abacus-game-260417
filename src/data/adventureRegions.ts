@@ -35,7 +35,8 @@ export const ADVENTURE_REGIONS: Record<AdventureRegionId, AdventureRegion> = {
   },
   deepSeaCanyon: {
     id: 'deepSeaCanyon', name: '심해협곡', description: '깊은 바닷속 미스터리를 탐험해요!', status: ADVENTURE_REGION_STATUS.deepSeaCanyon,
-    position: { left: 25, top: 72 }, poster: adventureMapAssets.regionPanels.deepSeaCanyon, unavailableLabel: '잠김',
+    position: { left: 25, top: 72 }, poster: adventureMapAssets.regionPanels.deepSeaCanyon,
+    gameId: 'deep-sea-explorer', entryCost: MINIGAME_ENTRY_COST['deep-sea-explorer'],
   },
   iceContinent: {
     id: 'iceContinent', name: '얼음대륙', description: '차가운 얼음세계를 누비며 비밀을 찾아요!', status: ADVENTURE_REGION_STATUS.iceContinent,

@@ -1,7 +1,8 @@
 import type { OwnedDinosaur } from '../../types/game';
 import { LavaPathPrototype } from './LavaPathPrototype';
 import { SkyIslandPrototype } from './SkyIslandPrototype';
-import { RuinsMirrorGameHost } from './RuinsMirrorGameHost';
+import { RuinsSokobanGameHost } from './RuinsSokobanGameHost';
+import { DeepSeaGameHost } from './DeepSeaGameHost';
 import type { MinigameRunRewards } from '../../config/minigameConfig';
 import type { AdventureStageNumber } from '../../config/adventureStageCatalog';
 
@@ -29,7 +30,11 @@ export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runI
   }
 
   if (gameId === 'number-ruins' && (stageNumber === 1 || stageNumber === 2)) {
-    return <RuinsMirrorGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
+    return <RuinsSokobanGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
+  }
+
+  if (gameId === 'deep-sea-explorer' && (stageNumber === 1 || stageNumber === 2)) {
+    return <DeepSeaGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
   }
 
   return (
