@@ -3,16 +3,26 @@ export type SokobanPoint = { column: number; row: number };
 export type SokobanCompletion = 'reachExit' | 'boxesOnGoals';
 export type SokobanHighlight = 'player' | 'directions' | 'boxes' | 'goals' | 'deadlocks' | 'undo' | 'reset';
 
+export interface SokobanTutorialConfig {
+  introText: string;
+  highlightCells?: readonly SokobanPoint[];
+  highlightObjects?: readonly SokobanHighlight[];
+  suggestedDirection?: SokobanDirection;
+  dangerCells?: readonly SokobanPoint[];
+  hintSteps: readonly string[];
+}
+
 export interface SokobanPuzzleConfig {
   id: string;
   stage: 1 | 2;
-  mission: 1 | 2 | 3 | 4 | 5;
+  mission: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   title: string;
   instruction: string;
   board: readonly string[];
   completion: SokobanCompletion;
   highlights: readonly SokobanHighlight[];
   showDeadlockHint: boolean;
+  tutorial?: SokobanTutorialConfig;
   expectedMinPushes?: number;
   expectedMinMoves?: number;
   maxEasyPushes?: number;

@@ -1,6 +1,7 @@
 export type DeepSeaDirection = 'up' | 'down' | 'left' | 'right';
 export type DeepSeaTilePoint = { column: number; row: number };
 export type DeepSeaDiscoveryKind = 'coral' | 'statue' | 'chest';
+export type DeepSeaPickupKind = 'coin' | 'smallChest' | 'repair' | 'sonar';
 
 export interface DeepSeaDiscoveryConfig extends DeepSeaTilePoint {
   id: DeepSeaDiscoveryKind;
@@ -13,6 +14,19 @@ export interface DeepSeaPatrolConfig {
   kind?: 'shark' | 'octopus';
   speedTilesPerSecond: number;
   points: readonly DeepSeaTilePoint[];
+  behavior?: 'patrol' | 'chase' | 'ambush';
+  detectionRadiusTiles?: number;
+  activeSpeedMultiplier?: number;
+  leashRadiusTiles?: number;
+}
+
+export interface DeepSeaPickupConfig extends DeepSeaTilePoint {
+  id: string;
+  kind: DeepSeaPickupKind;
+  label: string;
+  rewardCoins?: number;
+  healthRestore?: number;
+  sonarRestore?: number;
 }
 
 export interface DeepSeaMapConfig {
@@ -31,6 +45,7 @@ export interface DeepSeaMapConfig {
   walls: ReadonlySet<string>;
   discoveries: readonly DeepSeaDiscoveryConfig[];
   patrols: readonly DeepSeaPatrolConfig[];
+  pickups?: readonly DeepSeaPickupConfig[];
 }
 
 export const deepSeaTileKey = ({ column, row }: DeepSeaTilePoint) => `${column},${row}`;

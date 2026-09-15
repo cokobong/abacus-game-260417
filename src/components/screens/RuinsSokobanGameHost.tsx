@@ -27,7 +27,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
   const blockedShownRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [mission, setMission] = useState<SokobanPuzzleConfig>(EMPTY_MISSION);
-  const [missionTotal, setMissionTotal] = useState(stageNumber === 1 ? 5 : 3);
+  const [missionTotal, setMissionTotal] = useState(stageNumber === 1 ? 7 : 3);
   const [tutorialOpen, setTutorialOpen] = useState(true);
   const [moves, setMoves] = useState(0);
   const [pushes, setPushes] = useState(0);
@@ -36,6 +36,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
   const [stageComplete, setStageComplete] = useState(false);
   const [blockedNotice, setBlockedNotice] = useState(false);
   const [blockedProminent, setBlockedProminent] = useState(false);
+  const [hintStep, setHintStep] = useState(0);
   finishRef.current = onFinishRun;
 
   useEffect(() => {
@@ -53,7 +54,8 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
           setPushes(0);
           setCanUndo(false);
           setFeedback(config.instruction);
-          setTutorialOpen(true);
+          setHintStep(0);
+          setTutorialOpen(config.stage === 1);
           setLoading(false);
         },
         onStateChange: (nextMoves, nextPushes, nextCanUndo) => {
@@ -73,7 +75,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
         onDeadlock: () => {
           const prominent = stageNumber === 1 && !blockedShownRef.current;
           blockedShownRef.current = true;
-          setFeedback(stageNumber === 1 ? '이 구석에서는 상자를 꺼낼 수 없어요. 되돌리기를 눌러요!' : '상자가 구석에 갇혔어요.');
+          setFeedback(stageNumber === 1 ? '구석에 들어가면 꺼내기 어려워요. 한 수 뒤로 돌아가요!' : '상자가 구석에 갇혔어요.');
           setBlockedNotice(true);
           setBlockedProminent(prominent);
           if (blockedTimerRef.current !== null) window.clearTimeout(blockedTimerRef.current);
@@ -110,6 +112,12 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
     setBlockedNotice(false);
     controllerRef.current?.reset();
   };
+  const showHint = () => {
+    const hints = mission.tutorial?.hintSteps ?? [];
+    if (hints.length === 0) return;
+    setFeedback(hints[hintStep % hints.length]);
+    setHintStep(step => (step + 1) % hints.length);
+  };
 
   return (
     <section className="ruins-sokoban-shell" aria-label="오래된 유적지 상자 밀기 퍼즐">
@@ -121,8 +129,9 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
           <small>이동 {moves} · 밀기 {pushes}</small>
         </div>
         <div className="ruins-sokoban-tools">
-          <button type="button" onClick={() => controllerRef.current?.undo()} disabled={!canUndo || tutorialOpen || stageComplete}><Undo2 aria-hidden="true" /> Undo</button>
-          <button type="button" onClick={reset} disabled={tutorialOpen || stageComplete}><RotateCcw aria-hidden="true" /> Reset</button>
+          <button className={stageNumber === 1 && blockedNotice ? 'is-highlighted' : undefined} type="button" onClick={() => controllerRef.current?.undo()} disabled={!canUndo || tutorialOpen || stageComplete}><Undo2 aria-hidden="true" /> 한 수 뒤로</button>
+          <button type="button" onClick={reset} disabled={tutorialOpen || stageComplete}><RotateCcw aria-hidden="true" /> 처음부터</button>
+          <button type="button" onClick={showHint} disabled={tutorialOpen || stageComplete || !mission.tutorial?.hintSteps.length}>힌트</button>
         </div>
       </header>
 
@@ -139,7 +148,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
         </button>
       )}
 
-      <nav className="ruins-sokoban-dpad" aria-label="탐험가 방향 조작">
+      <nav className={`ruins-sokoban-dpad${stageNumber === 1 && mission.tutorial?.suggestedDirection ? ` has-suggestion suggest-${mission.tutorial.suggestedDirection}` : ''}`} aria-label="탐험가 방향 조작">
         <button className="is-up" type="button" aria-label="위로 이동" onClick={() => move('up')}>▲</button>
         <button className="is-left" type="button" aria-label="왼쪽으로 이동" onClick={() => move('left')}>◀</button>
         <i aria-hidden="true">✦</i>
@@ -157,9 +166,9 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
             <div>
               <small>MISSION {mission.mission}</small>
               <h2 id="sokoban-tutorial-title">{mission.title}</h2>
-              <p>{mission.instruction}</p>
+              <p>{mission.tutorial?.introText ?? mission.instruction}</p>
             </div>
-            <button type="button" onClick={closeTutorial}>해보기</button>
+            <button type="button" onClick={closeTutorial}>확인</button>
           </section>
         </div>
       )}

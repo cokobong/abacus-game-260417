@@ -15,15 +15,14 @@ test('movement, wall collision, push, box collision and undo snapshots are deter
 });
 
 test('failed box pushes are distinguished from ordinary wall bumps for blocked feedback', () => {
-  const puzzle = parseSokobanPuzzle(RUINS_SOKOBAN_STAGE_1[2]);
+  const puzzle = parseSokobanPuzzle(RUINS_SOKOBAN_STAGE_1[1]);
   const initial = createSokobanState(puzzle);
-  const firstPush = moveSokoban(puzzle, initial, 'right');
-  const blockedPush = moveSokoban(puzzle, firstPush.state, 'right');
+  const firstPush = moveSokoban(puzzle, initial, 'down');
+  const blockedPush = moveSokoban(puzzle, firstPush.state, 'down');
   assert.equal(blockedPush.moved, false);
   assert.equal(blockedPush.blockedBy, 'wall');
   assert.equal(blockedPush.attemptedPush, true);
-  const walkedUp = moveSokoban(puzzle, initial, 'up');
-  assert.equal(moveSokoban(puzzle, walkedUp.state, 'up').attemptedPush, false);
+  assert.equal(moveSokoban(puzzle, initial, 'up').attemptedPush, false);
 });
 
 test('all Stage 1 and Stage 2 puzzle configs are solvable at their verified costs', t => {
@@ -55,4 +54,22 @@ test('tutorial deadlock missions mark non-goal corners', () => {
   for (const config of RUINS_SOKOBAN_STAGE_1.filter(item => item.showDeadlockHint)) {
     assert.ok(getStaticDeadlockKeys(parseSokobanPuzzle(config)).size > 0, `${config.id} deadlock hints`);
   }
+});
+
+test('Stage 1 teaches seven focused movement patterns and every mission provides hints', () => {
+  assert.equal(RUINS_SOKOBAN_STAGE_1.length, 7);
+  assert.deepEqual(RUINS_SOKOBAN_STAGE_1.map(config => config.mission), [1, 2, 3, 4, 5, 6, 7]);
+  for (const config of RUINS_SOKOBAN_STAGE_1) {
+    assert.ok(config.tutorial?.introText, `${config.id} intro`);
+    assert.ok(config.tutorial?.hintSteps.length, `${config.id} hints`);
+  }
+});
+
+test('Stage 2 puzzle boards stay unchanged and hints are progressive', () => {
+  assert.deepEqual(RUINS_SOKOBAN_STAGE_2.map(config => config.board), [
+    ['######', '# .. #', '# #$ #', '# $  #', '#  @E#', '######'],
+    ['#######', '# . . #', '#  #  #', '# $$  #', '#  #$ #', '# @ .E#', '#######'],
+    ['#######', '# .####', '# .   #', '# .$$ #', '#  $  #', '#  @ E#', '#######'],
+  ]);
+  assert.ok(RUINS_SOKOBAN_STAGE_2.every(config => config.tutorial?.hintSteps.length === 3));
 });

@@ -31,6 +31,8 @@ export function DeepSeaGameHost({ stageNumber, runId, onExit, onFinishRun, onRet
   const [outcome, setOutcome] = useState<'playing' | 'clear' | 'failure'>('playing');
   const [feedback, setFeedback] = useState(stageNumber === 1 ? '26×26 심해 지도를 탐험해 보세요.' : '36×36 깊은 물길을 소나와 함께 탐험해 보세요.');
   const [sonarUses, setSonarUses] = useState(stageNumber === 2 ? 3 : 0);
+  const [rewardCoins, setRewardCoins] = useState(0);
+  const [bonusPickups, setBonusPickups] = useState(0);
   finishRef.current = onFinishRun;
 
   useEffect(() => {
@@ -43,7 +45,14 @@ export function DeepSeaGameHost({ stageNumber, runId, onExit, onFinishRun, onRet
         onDiscovery: (id, label, rewardCoins) => {
           setDiscoveries(current => current.includes(id) ? current : [...current, id]);
           rewardCoinsRef.current += rewardCoins;
+          setRewardCoins(rewardCoinsRef.current);
           setFeedback(rewardCoins > 0 ? `${label} 열기! 코인 +${rewardCoins}` : `${label} 발견!`);
+        },
+        onPickup: (kind, label, pickedCoins) => {
+          rewardCoinsRef.current += pickedCoins;
+          setRewardCoins(rewardCoinsRef.current);
+          setBonusPickups(count => count + 1);
+          setFeedback(kind === 'repair' ? `${label}! 하트를 회복했어요.` : kind === 'sonar' ? `${label}! 소나를 충전했어요.` : `${label}! 코인 +${pickedCoins}`);
         },
         onHealthChange: setHealth,
         onExitUnlocked: () => {
@@ -89,7 +98,7 @@ export function DeepSeaGameHost({ stageNumber, runId, onExit, onFinishRun, onRet
         <div className="deep-sea-status">
           <strong>STAGE {stageNumber} · {stageNumber === 1 ? '바다 입구' : '깊은 물길'}</strong>
           <span aria-label={`하트 ${health}개`}>{'♥'.repeat(health)}{'♡'.repeat(3 - health)}</span>
-          <b>상자 코인 {rewardCoinsRef.current}</b>
+          <b>코인 {rewardCoins} · 보너스 {bonusPickups}</b>
         </div>
         <div className="deep-sea-actions">
           <div className={exitUnlocked ? 'deep-sea-exit is-open' : 'deep-sea-exit'}>
@@ -104,7 +113,7 @@ export function DeepSeaGameHost({ stageNumber, runId, onExit, onFinishRun, onRet
       </header>
 
       <aside className="deep-sea-objectives" aria-label="탐사 목표">
-        <strong>탐사 목표 {discoveries.length}/3 · 2개 완료 시 출구 개방</strong>
+        <strong>탐사 목표 {discoveries.length}/3 · {stageNumber === 2 ? '모두 찾으면' : '2개 완료 시'} 출구 개방</strong>
         <div>{OBJECTIVES.map(item => <span key={item.id} className={discoveries.includes(item.id) ? 'is-done' : ''}>{discoveries.includes(item.id) ? '✓' : '□'} {item.label}</span>)}</div>
       </aside>
 
@@ -125,7 +134,7 @@ export function DeepSeaGameHost({ stageNumber, runId, onExit, onFinishRun, onRet
           <section className="deep-sea-result" role="dialog" aria-modal="true">
             <span>{outcome === 'clear' ? `STAGE ${stageNumber} CLEAR` : 'EXPLORATION ENDED'}</span>
             <h2>{outcome === 'clear' ? '심해 탐사를 완료했어요!' : '잠수정의 하트가 모두 사라졌어요'}</h2>
-            <p>발견 {discoveries.length}/3 · 상자 코인 {rewardCoinsRef.current}</p>
+            <p>발견 {discoveries.length}/3 · 코인 {rewardCoins} · 보너스 {bonusPickups}</p>
             <div>
               <button type="button" onClick={() => onRetry(outcome === 'failure')}><RotateCcw aria-hidden="true" /> 다시 탐험</button>
               <button type="button" onClick={onExit}>지도로</button>

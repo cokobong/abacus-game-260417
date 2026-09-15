@@ -53,7 +53,7 @@ export const DEEP_SEA_STAGE_2_MAP: DeepSeaMapConfig = {
   sonarUses: 3,
   playerStart: { column: 4, row: 31 },
   exit: { column: 32, row: 31 },
-  requiredDiscoveries: 2,
+  requiredDiscoveries: 3,
   walls: createStageTwoWalls(),
   discoveries: [
     { id: 'coral', label: '산호 군락', column: 4, row: 4 },
@@ -61,7 +61,21 @@ export const DEEP_SEA_STAGE_2_MAP: DeepSeaMapConfig = {
     { id: 'chest', label: '희귀 보물상자', column: 31, row: 5, rewardCoins: 15 },
   ],
   patrols: [
-    { id: 'stage2-shark', kind: 'shark', speedTilesPerSecond: 0.9, points: [{ column: 27, row: 20 }, { column: 32, row: 20 }, { column: 32, row: 15 }, { column: 27, row: 15 }] },
-    { id: 'stage2-octopus', kind: 'octopus', speedTilesPerSecond: 0.55, points: [{ column: 15, row: 20 }, { column: 20, row: 20 }, { column: 20, row: 14 }, { column: 15, row: 14 }] },
+    { id: 'stage2-shark', kind: 'shark', behavior: 'chase', detectionRadiusTiles: 4, activeSpeedMultiplier: 1.35, speedTilesPerSecond: 0.72, points: [{ column: 27, row: 20 }, { column: 32, row: 20 }, { column: 32, row: 15 }, { column: 27, row: 15 }] },
+    { id: 'stage2-octopus', kind: 'octopus', behavior: 'ambush', detectionRadiusTiles: 3.2, activeSpeedMultiplier: 1.15, leashRadiusTiles: 2.2, speedTilesPerSecond: 0.5, points: [{ column: 15, row: 20 }] },
+  ],
+  pickups: [
+    { id: 'coin-1', kind: 'coin', label: '반짝 코인', column: 6, row: 29, rewardCoins: 1 },
+    { id: 'coin-2', kind: 'coin', label: '반짝 코인', column: 6, row: 21, rewardCoins: 1 },
+    { id: 'coin-3', kind: 'coin', label: '반짝 코인', column: 9, row: 17, rewardCoins: 1 },
+    { id: 'coin-4', kind: 'coin', label: '반짝 코인', column: 16, row: 12, rewardCoins: 1 },
+    { id: 'coin-5', kind: 'coin', label: '반짝 코인', column: 21, row: 18, rewardCoins: 1 },
+    { id: 'coin-6', kind: 'coin', label: '반짝 코인', column: 26, row: 18, rewardCoins: 1 },
+    { id: 'coin-7', kind: 'coin', label: '반짝 코인', column: 30, row: 22, rewardCoins: 1 },
+    { id: 'coin-8', kind: 'coin', label: '반짝 코인', column: 26, row: 29, rewardCoins: 1 },
+    { id: 'small-chest-1', kind: 'smallChest', label: '작은 보물상자', column: 8, row: 7, rewardCoins: 5 },
+    { id: 'small-chest-2', kind: 'smallChest', label: '작은 보물상자', column: 27, row: 7, rewardCoins: 5 },
+    { id: 'repair-kit', kind: 'repair', label: '수리 방울', column: 14, row: 15, healthRestore: 1 },
+    { id: 'sonar-charge', kind: 'sonar', label: '소나 충전', column: 20, row: 28, sonarRestore: 1 },
   ],
 };

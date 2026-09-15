@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEEP_SEA_STAGE_1_MAP, DEEP_SEA_STAGE_2_MAP, deepSeaTileKey, type DeepSeaDirection, type DeepSeaDiscoveryKind, type DeepSeaMapConfig, type DeepSeaPatrolConfig, type DeepSeaTilePoint } from '../../../config/deepSea';
+import { DEEP_SEA_STAGE_1_MAP, DEEP_SEA_STAGE_2_MAP, deepSeaTileKey, type DeepSeaDirection, type DeepSeaDiscoveryKind, type DeepSeaMapConfig, type DeepSeaPatrolConfig, type DeepSeaPickupKind, type DeepSeaTilePoint } from '../../../config/deepSea';
 
 const GAME_WIDTH = 768;
 const GAME_HEIGHT = 900;
@@ -8,6 +8,7 @@ const INVINCIBLE_MS = 1300;
 
 export interface DeepSeaGameCallbacks {
   onDiscovery: (id: DeepSeaDiscoveryKind, label: string, rewardCoins: number) => void;
+  onPickup: (kind: DeepSeaPickupKind, label: string, rewardCoins: number) => void;
   onHealthChange: (health: number) => void;
   onExitUnlocked: () => void;
   onStageClear: () => void;
@@ -39,7 +40,9 @@ class DeepSeaScene extends Phaser.Scene {
   private invincibleUntil = 0;
   private finished = false;
   private exitVisual?: Phaser.GameObjects.Arc;
-  private hazards: Array<{ visual: Phaser.GameObjects.Container; config: DeepSeaPatrolConfig; targetIndex: number }> = [];
+  private hazards: Array<{ visual: Phaser.GameObjects.Container; config: DeepSeaPatrolConfig; targetIndex: number; home: Phaser.Math.Vector2; active: boolean }> = [];
+  private collectedPickups = new Set<string>();
+  private pickupVisuals = new Map<string, Phaser.GameObjects.Container>();
   private fog?: Phaser.GameObjects.Graphics;
   private sonarUses: number;
   private sonarActive = false;
@@ -54,6 +57,7 @@ class DeepSeaScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#031923');
     this.drawWorld();
     this.createDiscoveries();
+    this.createPickups();
     this.createExit();
     this.createHazards();
     this.createPlayer();
@@ -111,19 +115,21 @@ class DeepSeaScene extends Phaser.Scene {
         const x = column * size;
         const y = row * size;
         if (wall) {
-          graphics.fillStyle((row + column) % 3 === 0 ? 0x173744 : 0x12303b, 1).fillRect(x, y, size, size);
-          graphics.lineStyle(2, 0x285666, 0.9).strokeRect(x + 2, y + 2, size - 4, size - 4);
-          graphics.fillStyle(0x244b55, 0.7).fillCircle(x + size * 0.3, y + size * 0.35, size * 0.13);
+          const wallColor = this.mapConfig.stage === 2 ? ((row + column) % 3 === 0 ? 0x071923 : 0x091e29) : ((row + column) % 3 === 0 ? 0x173744 : 0x12303b);
+          graphics.fillStyle(wallColor, 1).fillRect(x, y, size, size);
+          graphics.lineStyle(3, this.mapConfig.stage === 2 ? 0x183c49 : 0x285666, 1).strokeRect(x + 2, y + 2, size - 4, size - 4);
+          if ((row * 3 + column) % 4 === 0) graphics.fillStyle(this.mapConfig.stage === 2 ? 0x102f3b : 0x244b55, 0.8).fillCircle(x + size * 0.3, y + size * 0.35, size * 0.13);
         } else {
           let floorColor = (row + column) % 2 === 0 ? 0x0b2b37 : 0x0d303d;
           if (this.mapConfig.stage === 2) {
-            if (column <= 10 && row <= 10) floorColor = (row + column) % 2 ? 0x163845 : 0x193f48; // 산호 구역
-            else if (column >= 25 && row <= 11) floorColor = (row + column) % 2 ? 0x263746 : 0x2c4050; // 보물 구역
-            else if (column >= 25 && row <= 23) floorColor = (row + column) % 2 ? 0x291f3e : 0x302447; // 위험 생물 구역
-            else if (column >= 12 && column <= 23 && row >= 12 && row <= 23) floorColor = (row + column) % 2 ? 0x24383b : 0x293f40; // 유적 구역
+            floorColor = (row + column) % 2 ? 0x245463 : 0x285d6b;
+            if (column <= 10 && row <= 10) floorColor = (row + column) % 2 ? 0x315f64 : 0x356970; // 산호 구역
+            else if (column >= 25 && row <= 11) floorColor = (row + column) % 2 ? 0x3b5666 : 0x405e70; // 보물 구역
+            else if (column >= 25 && row <= 23) floorColor = (row + column) % 2 ? 0x443b62 : 0x4b426b; // 위험 생물 구역
+            else if (column >= 12 && column <= 23 && row >= 12 && row <= 23) floorColor = (row + column) % 2 ? 0x385a59 : 0x3e6260; // 유적 구역
           }
           graphics.fillStyle(floorColor, 1).fillRect(x, y, size, size);
-          graphics.lineStyle(1, 0x164653, 0.45).strokeRect(x, y, size, size);
+          graphics.lineStyle(this.mapConfig.stage === 2 ? 2 : 1, this.mapConfig.stage === 2 ? 0x4f7d88 : 0x164653, this.mapConfig.stage === 2 ? 0.7 : 0.45).strokeRect(x + 1, y + 1, size - 2, size - 2);
         }
       }
     }
@@ -157,6 +163,7 @@ class DeepSeaScene extends Phaser.Scene {
       this.playerTile = this.moveTarget;
       this.moveTarget = null;
       this.checkDiscoveries();
+      this.checkPickups();
       this.checkExit();
       this.renderFog();
       return;
@@ -191,12 +198,64 @@ class DeepSeaScene extends Phaser.Scene {
       if (distance > 1) continue;
       this.discovered.add(item.id);
       this.callbacks.onDiscovery(item.id, item.label, item.rewardCoins ?? 0);
+      this.showPickupBurst(item);
       if (!this.exitUnlocked && this.discovered.size >= this.mapConfig.requiredDiscoveries) {
         this.exitUnlocked = true;
         this.exitVisual?.setFillStyle(0x2c9f7b, 0.9).setStrokeStyle(8, 0x8effcf);
+        if (this.exitVisual) this.tweens.add({ targets: this.exitVisual, scale: 1.16, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.InOut' });
         this.callbacks.onExitUnlocked();
       }
     }
+  }
+
+  private createPickups() {
+    this.mapConfig.pickups?.forEach(item => {
+      const { x, y } = this.center(item);
+      const objects: Phaser.GameObjects.GameObject[] = [];
+      if (item.kind === 'coin') {
+        objects.push(this.add.circle(0, 0, 13, 0xffd85a).setStrokeStyle(4, 0xfff3a0));
+        objects.push(this.add.text(0, 0, '★', { color: '#9b6415', fontSize: '14px', fontStyle: 'bold' }).setOrigin(0.5));
+      } else if (item.kind === 'smallChest') {
+        objects.push(this.add.rectangle(0, 2, 38, 29, 0xa96c23).setStrokeStyle(4, 0xffcf5a));
+        objects.push(this.add.rectangle(0, -7, 38, 6, 0xffcf5a));
+      } else if (item.kind === 'repair') {
+        objects.push(this.add.circle(0, 0, 17, 0x65dfbd).setStrokeStyle(4, 0xc8fff0));
+        objects.push(this.add.text(0, 0, '+', { color: '#164b43', fontSize: '22px', fontStyle: 'bold' }).setOrigin(0.5));
+      } else {
+        objects.push(this.add.circle(0, 0, 17, 0x65cbea).setStrokeStyle(4, 0xd3f7ff));
+        objects.push(this.add.text(0, 0, '◉', { color: '#174b68', fontSize: '19px', fontStyle: 'bold' }).setOrigin(0.5));
+      }
+      const visual = this.add.container(x, y, objects).setDepth(11);
+      this.pickupVisuals.set(item.id, visual);
+    });
+  }
+
+  private checkPickups() {
+    for (const item of this.mapConfig.pickups ?? []) {
+      if (this.collectedPickups.has(item.id) || item.column !== this.playerTile.column || item.row !== this.playerTile.row) continue;
+      this.collectedPickups.add(item.id);
+      const visual = this.pickupVisuals.get(item.id);
+      if (visual) {
+        visual.destroy(true);
+        this.pickupVisuals.delete(item.id);
+      }
+      if (item.healthRestore) {
+        this.health = Math.min(3, this.health + item.healthRestore);
+        this.callbacks.onHealthChange(this.health);
+      }
+      if (item.sonarRestore) {
+        this.sonarUses = Math.min(this.mapConfig.sonarUses, this.sonarUses + item.sonarRestore);
+        this.callbacks.onSonarUsesChange(this.sonarUses);
+      }
+      this.callbacks.onPickup(item.kind, item.label, item.rewardCoins ?? 0);
+      this.showPickupBurst(item);
+    }
+  }
+
+  private showPickupBurst(point: DeepSeaTilePoint) {
+    const { x, y } = this.center(point);
+    const burst = this.add.circle(x, y, 12, 0xffef9c, 0.18).setStrokeStyle(4, 0xffef9c, 0.9).setDepth(30);
+    this.tweens.add({ targets: burst, scale: 2.8, alpha: 0, duration: 360, onComplete: () => burst.destroy() });
   }
 
   private createExit() {
@@ -241,7 +300,7 @@ class DeepSeaScene extends Phaser.Scene {
       const tail = config.kind === 'octopus'
         ? this.add.star(0, 18, 5, 10, 22, 0x74449f)
         : this.add.triangle(-33, 0, 0, -13, 0, 13, 17, 0, 0xb84747);
-      return { visual: this.add.container(start.x, start.y, [body, tail]).setDepth(15), config, targetIndex: 1 };
+      return { visual: this.add.container(start.x, start.y, [body, tail]).setDepth(15), config, targetIndex: config.points.length > 1 ? 1 : 0, home: new Phaser.Math.Vector2(start.x, start.y), active: false };
     });
   }
 
@@ -251,18 +310,39 @@ class DeepSeaScene extends Phaser.Scene {
     for (const hazard of this.hazards) {
       const visual = hazard.visual;
       if (!cameraView.contains(visual.x, visual.y)) continue;
-      const target = this.center(hazard.config.points[hazard.targetIndex]);
+      const playerDistance = Phaser.Math.Distance.Between(this.player.x, this.player.y, visual.x, visual.y);
+      const detectionRadius = (hazard.config.detectionRadiusTiles ?? 0) * this.mapConfig.tileSize;
+      hazard.active = detectionRadius > 0 && playerDistance <= detectionRadius;
+      let target = this.center(hazard.config.points[hazard.targetIndex]);
+      let speedMultiplier = 1;
+      if (hazard.config.behavior === 'chase' && hazard.active) {
+        target = { x: this.player.x, y: this.player.y };
+        speedMultiplier = hazard.config.activeSpeedMultiplier ?? 1.25;
+      } else if (hazard.config.behavior === 'ambush') {
+        const leash = (hazard.config.leashRadiusTiles ?? 2) * this.mapConfig.tileSize;
+        const distanceFromHome = Phaser.Math.Distance.Between(visual.x, visual.y, hazard.home.x, hazard.home.y);
+        if (hazard.active && distanceFromHome < leash) {
+          target = { x: this.player.x, y: this.player.y };
+          speedMultiplier = hazard.config.activeSpeedMultiplier ?? 1.1;
+        } else {
+          target = { x: hazard.home.x, y: hazard.home.y };
+        }
+      }
       const distance = Phaser.Math.Distance.Between(visual.x, visual.y, target.x, target.y);
-      const movement = hazard.config.speedTilesPerSecond * this.mapConfig.tileSize * delta / 1000;
+      const movement = hazard.config.speedTilesPerSecond * speedMultiplier * this.mapConfig.tileSize * delta / 1000;
       if (distance <= movement) {
         visual.setPosition(target.x, target.y);
-        hazard.targetIndex = (hazard.targetIndex + 1) % hazard.config.points.length;
+        if (!hazard.active && hazard.config.points.length > 1) hazard.targetIndex = (hazard.targetIndex + 1) % hazard.config.points.length;
       } else {
-        visual.x += Math.sign(target.x - visual.x) * movement;
-        visual.y += Math.sign(target.y - visual.y) * movement;
-        visual.setScale(target.x >= visual.x ? 1 : -1, 1);
+        const angle = Phaser.Math.Angle.Between(visual.x, visual.y, target.x, target.y);
+        visual.x += Math.cos(angle) * movement;
+        visual.y += Math.sin(angle) * movement;
       }
-      if (time < this.invincibleUntil || Phaser.Math.Distance.Between(this.player.x, this.player.y, visual.x, visual.y) > 43) continue;
+      const facing = target.x >= visual.x ? 1 : -1;
+      const idleMotion = hazard.config.kind === 'octopus' ? 1 + Math.sin(time * 0.008) * 0.08 : 1 + Math.sin(time * 0.012) * 0.035;
+      visual.setScale(facing * idleMotion, idleMotion).setAngle(hazard.config.kind === 'octopus' ? Math.sin(time * 0.006) * 5 : Math.sin(time * 0.01) * 3);
+      visual.setAlpha(hazard.active ? 1 : 0.88);
+      if (time < this.invincibleUntil || playerDistance > 43) continue;
       this.invincibleUntil = time + INVINCIBLE_MS;
       this.health -= 1;
       this.callbacks.onHealthChange(this.health);

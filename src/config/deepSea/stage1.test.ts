@@ -40,9 +40,16 @@ test('deep sea Stage 2 map is a connected 36x36 exploration mockup', () => {
   assert.equal(map.visionRadiusTiles, 4.5);
   assert.equal(map.sonarUses, 3);
   assert.equal(map.patrols.length, 2);
+  assert.equal(map.requiredDiscoveries, 3);
+  assert.equal(map.patrols.find(enemy => enemy.kind === 'shark')?.behavior, 'chase');
+  assert.equal(map.patrols.find(enemy => enemy.kind === 'octopus')?.behavior, 'ambush');
+  assert.equal(map.pickups?.filter(item => item.kind === 'coin').length, 8);
+  assert.equal(map.pickups?.filter(item => item.kind === 'smallChest').length, 2);
+  assert.deepEqual(new Set(map.pickups?.filter(item => item.kind === 'repair' || item.kind === 'sonar').map(item => item.kind)), new Set(['repair', 'sonar']));
   const reachable = reachableFrom(map, map.playerStart);
   assert.ok(reachable.has(deepSeaTileKey(map.exit)), 'exit reachable');
   map.discoveries.forEach(item => assert.ok(reachable.has(deepSeaTileKey(item)), `${item.id} reachable`));
   map.patrols.flatMap(patrol => patrol.points).forEach(point => assert.ok(reachable.has(deepSeaTileKey(point)), 'patrol point reachable'));
+  map.pickups?.forEach(item => assert.ok(reachable.has(deepSeaTileKey(item)), `${item.id} reachable`));
   assert.ok(reachable.size >= 500, 'larger map has enough connected explorable floor');
 });

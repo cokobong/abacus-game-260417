@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ruinsSokobanAssets } from '../../../assets/adventure/ruins';
 import { getRuinsSokobanMissions, parseSokobanPuzzle, sokobanKey, type SokobanDirection, type SokobanParsedPuzzle, type SokobanPuzzleConfig } from '../../../config/ruinsSokoban';
 import { createSokobanState, getStaticDeadlockKeys, isMissionComplete, moveSokoban, type SokobanState } from '../../../utils/ruinsSokobanRules';
+import { SokobanInputGate } from './sokobanInputGate';
 
 const GAME_WIDTH = 768;
 const GAME_HEIGHT = 720;
@@ -49,9 +50,7 @@ class RuinsSokobanScene extends Phaser.Scene {
   private boxes: Phaser.GameObjects.Image[] = [];
   private goals = new Map<string, Phaser.GameObjects.Image>();
   private exitDoor?: Phaser.GameObjects.Image;
-  private enabled = false;
-  private locked = false;
-  private animating = false;
+  private readonly inputGate = new SokobanInputGate();
   private deadlocks = new Set<string>();
   private playerStateTimer?: Phaser.Time.TimerEvent;
 
@@ -75,12 +74,26 @@ class RuinsSokobanScene extends Phaser.Scene {
   }
 
   create() {
+    this.loadMission();
+    this.input.keyboard?.on('keydown-UP', () => this.move('up'));
+    this.input.keyboard?.on('keydown-DOWN', () => this.move('down'));
+    this.input.keyboard?.on('keydown-LEFT', () => this.move('left'));
+    this.input.keyboard?.on('keydown-RIGHT', () => this.move('right'));
+  }
+
+  private loadMission() {
+    this.tweens.killAll();
+    this.playerStateTimer?.remove(false);
+    this.playerStateTimer = undefined;
+    this.children.removeAll(true);
+    this.player = undefined;
+    this.boxes = [];
+    this.goals.clear();
+    this.exitDoor = undefined;
     this.puzzle = parseSokobanPuzzle(this.manager.current);
     this.state = createSokobanState(this.puzzle);
     this.history = [];
-    this.enabled = false;
-    this.locked = false;
-    this.animating = false;
+    this.inputGate.resetForMission();
     this.deadlocks = getStaticDeadlockKeys(this.puzzle);
     this.cameras.main.setBackgroundColor('#172018');
     this.drawBoard();
@@ -90,14 +103,11 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.createPlayer();
     this.callbacks.onMissionChange(this.manager.current, this.manager.missions.length);
     this.notifyState();
-    this.input.keyboard?.on('keydown-UP', () => this.move('up'));
-    this.input.keyboard?.on('keydown-DOWN', () => this.move('down'));
-    this.input.keyboard?.on('keydown-LEFT', () => this.move('left'));
-    this.input.keyboard?.on('keydown-RIGHT', () => this.move('right'));
+    if (this.manager.current.stage === 2) this.inputGate.setEnabled(true);
   }
 
   move(direction: SokobanDirection) {
-    if (!this.enabled || this.locked || this.animating) return;
+    if (!this.inputGate.canMove()) return;
     const result = moveSokoban(this.puzzle, this.state, direction);
     if (!result.moved) {
       this.cameras.main.shake(55, 0.002);
@@ -111,9 +121,9 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.showPlayerState(result.pushed ? 'push' : 'idle', direction);
     this.history.push(this.state);
     this.state = result.state;
-    this.animating = true;
+    this.inputGate.startMovement();
     this.renderState(true);
-    this.time.delayedCall(110, () => { this.animating = false; });
+    this.time.delayedCall(110, () => this.inputGate.finishMovement());
     if (result.pushed && this.state.boxes.some(box => this.deadlocks.has(sokobanKey(box)))) {
       this.showBlocked(direction);
       this.callbacks.onDeadlock();
@@ -122,25 +132,25 @@ class RuinsSokobanScene extends Phaser.Scene {
   }
 
   undo() {
-    if (!this.enabled || this.locked || this.animating || this.history.length === 0) return;
+    if (!this.inputGate.canMove() || this.history.length === 0) return;
     this.state = this.history.pop()!;
     this.showPlayerState('idle');
     this.renderState(false);
   }
 
   resetMission() {
-    if (this.locked) return;
+    if (this.inputGate.isCompletionLocked()) return;
     this.tweens.killTweensOf([this.player, ...this.boxes]);
     this.state = createSokobanState(this.puzzle);
     this.history = [];
-    this.animating = false;
+    this.inputGate.finishMovement();
     this.exitDoor?.setAlpha(0.62).setTint(0x777777);
     this.showPlayerState('idle');
     this.renderState(false);
   }
 
   setEnabled(enabled: boolean) {
-    this.enabled = enabled;
+    this.inputGate.setEnabled(enabled);
   }
 
   private drawBoard() {
@@ -171,6 +181,20 @@ class RuinsSokobanScene extends Phaser.Scene {
         frame.fillStyle(0xa73932, 0.42).fillTriangle(x - 22, y + 18, x + 22, y + 18, x, y - 22);
         frame.lineStyle(4, 0xffb0a6, 0.9).strokeCircle(x, y, this.cellSize * 0.32);
       });
+    }
+    this.manager.current.tutorial?.highlightCells?.forEach((point, index) => {
+      const { x, y } = this.center(point);
+      frame.lineStyle(4, 0x73e6d0, 0.9 - index * 0.12).strokeCircle(x, y, this.cellSize * 0.22);
+    });
+    this.manager.current.tutorial?.dangerCells?.forEach(point => {
+      const { x, y } = this.center(point);
+      frame.lineStyle(5, 0xe45b50, 0.9).strokeRoundedRect(x - this.cellSize * 0.38, y - this.cellSize * 0.38, this.cellSize * 0.76, this.cellSize * 0.76, 10);
+    });
+    const suggestedDirection = this.manager.current.tutorial?.suggestedDirection;
+    if (suggestedDirection) {
+      const step = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[suggestedDirection];
+      const { x, y } = this.center(this.state.player);
+      this.add.text(x + step.x * this.cellSize * 0.58, y + step.y * this.cellSize * 0.58, { up: '▲', down: '▼', left: '◀', right: '▶' }[suggestedDirection], { color: '#8fffd6', fontSize: `${Math.round(this.cellSize * 0.3)}px`, fontStyle: 'bold' }).setOrigin(0.5).setDepth(20);
     }
   }
 
@@ -286,14 +310,14 @@ class RuinsSokobanScene extends Phaser.Scene {
 
   private checkComplete() {
     if (!isMissionComplete(this.puzzle, this.state)) return;
-    this.locked = true;
+    this.inputGate.lockForCompletion();
     this.exitDoor?.setTint(0xffe69a).setAlpha(1);
     if (this.exitDoor) {
       this.tweens.add({ targets: this.exitDoor, alpha: 0.55, duration: 180, yoyo: true, repeat: 1 });
     }
     this.cameras.main.flash(180, 255, 226, 130, false);
     this.time.delayedCall(850, () => {
-      if (this.manager.advance()) this.scene.restart();
+      if (this.manager.advance()) this.loadMission();
       else this.callbacks.onStageComplete();
     });
   }
