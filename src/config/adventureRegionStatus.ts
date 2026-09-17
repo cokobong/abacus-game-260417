@@ -5,5 +5,5 @@ export const ADVENTURE_REGION_STATUS: Record<AdventureRegionId, AdventureRegionS
   skyIsland: 'open',
   ancientRuins: 'open',
   deepSeaCanyon: 'open',
-  iceContinent: 'locked',
+  iceContinent: 'open',
 };

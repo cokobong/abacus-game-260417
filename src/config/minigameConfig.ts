@@ -4,13 +4,14 @@ import type { RelicChestOutcome } from './worldMapRelicConfig';
 import type { AdventureStageNumber } from './adventureStageCatalog';
 import { getAdventureRunCost, settleAdventureRunCoins } from './adventureMinigameEconomy';
 
-export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-ruins' | 'deep-sea-explorer';
+export type MinigameId = 'lava-stepping-stones' | 'sky-number-clouds' | 'number-ruins' | 'deep-sea-explorer' | 'ice-operation-arcade';
 
 export const MINIGAME_ENTRY_COST: Partial<Record<MinigameId, number>> = {
   'lava-stepping-stones': 150,
   'sky-number-clouds': 150,
   'number-ruins': 0,
   'deep-sea-explorer': 0,
+  'ice-operation-arcade': 0,
 };
 
 export const LAVA_VALLEY_ENTRY_COST = MINIGAME_ENTRY_COST['lava-stepping-stones']!;
@@ -97,9 +98,9 @@ export interface MinigameEconomyState {
 }
 
 export function chargeMinigameEntry(coins: number, gameId: MinigameId, stage: AdventureStageNumber = 1, retryAfterFailure = false) {
-  const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : gameId === 'deep-sea-explorer' ? 'deepSeaCanyon' : 'ancientRuins';
+  const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : gameId === 'deep-sea-explorer' ? 'deepSeaCanyon' : gameId === 'ice-operation-arcade' ? 'iceContinent' : 'ancientRuins';
   const configuredCost = getAdventureRunCost(regionId, stage, retryAfterFailure);
-  const cost = gameId === 'number-ruins' || gameId === 'deep-sea-explorer' ? MINIGAME_ENTRY_COST[gameId] : configuredCost;
+  const cost = gameId === 'number-ruins' || gameId === 'deep-sea-explorer' || gameId === 'ice-operation-arcade' ? MINIGAME_ENTRY_COST[gameId] : configuredCost;
   if (cost === undefined || coins < cost) return null;
   return coins - cost;
 }

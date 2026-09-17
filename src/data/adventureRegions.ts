@@ -39,8 +39,9 @@ export const ADVENTURE_REGIONS: Record<AdventureRegionId, AdventureRegion> = {
     gameId: 'deep-sea-explorer', entryCost: MINIGAME_ENTRY_COST['deep-sea-explorer'],
   },
   iceContinent: {
-    id: 'iceContinent', name: '얼음대륙', description: '차가운 얼음세계를 누비며 비밀을 찾아요!', status: ADVENTURE_REGION_STATUS.iceContinent,
-    position: { left: 76, top: 73 }, poster: adventureMapAssets.regionPanels.iceContinent, unavailableLabel: '잠김',
+    id: 'iceContinent', name: '얼음대륙', description: '빙하 기지의 고장을 고쳐 생산을 이어가요!', status: ADVENTURE_REGION_STATUS.iceContinent,
+    position: { left: 76, top: 73 }, poster: adventureMapAssets.regionPanels.iceContinent,
+    gameId: 'ice-operation-arcade', entryCost: MINIGAME_ENTRY_COST['ice-operation-arcade'],
   },
 };
 

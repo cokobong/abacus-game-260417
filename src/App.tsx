@@ -2030,7 +2030,9 @@ export default function App() {
     const stage = getAdventureStage(regionId, run.stageNumber);
     const rewards = normalizeLavaValleyRewards(rawRewards, stage.itemPool);
     const current = gameStateRef.current;
-    const applied = regionId === 'deepSeaCanyon'
+    const applied = regionId === 'iceContinent'
+      ? { state: { coins: current.player.coins, inventory: current.inventory }, rewards: { coins: 0, rareFragments: 0, shopItems: [] } as MinigameRunRewards }
+      : regionId === 'deepSeaCanyon'
       ? applyDeepSeaPrototypeRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, run.stageNumber)
       : applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber, regionId === 'skyIsland' ? 'skyIsland' : 'lavaValley');
     let adjustedRewards = applied.rewards;

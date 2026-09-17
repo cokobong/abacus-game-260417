@@ -4,6 +4,7 @@ import { SkyIslandPrototype } from './SkyIslandPrototype';
 import { RuinsSokobanGameHost } from './RuinsSokobanGameHost';
 import { DeepSeaGameHost } from './DeepSeaGameHost';
 import { DeepSeaArcadeHost } from './DeepSeaArcadeHost';
+import { IceContinentGameHost } from './IceContinentGameHost';
 import type { MinigameRunRewards } from '../../config/minigameConfig';
 import type { AdventureStageNumber } from '../../config/adventureStageCatalog';
 
@@ -42,6 +43,10 @@ export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runI
 
   if (gameId === 'deep-sea-explorer' && stageNumber === 1) {
     return <DeepSeaGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
+  }
+
+  if (gameId === 'ice-operation-arcade' && stageNumber === 1) {
+    return <IceContinentGameHost runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
   }
 
   return (
