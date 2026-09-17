@@ -186,6 +186,21 @@
         6
       ]
     ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": false,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        5,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "left push required",
@@ -417,6 +432,35 @@
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        4,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 1,
+      "deadAfterOnePush": 3
+    },
+    "fakeSuccessFirstPushes": [
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": true,
     "mandatoryPatternCertificates": [
       "lower box before upper box"
@@ -669,6 +713,21 @@
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        3,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 2
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "left box before center box"
@@ -687,7 +746,7 @@
         4
       ],
       [
-        6,
+        5,
         5
       ]
     ],
@@ -701,23 +760,23 @@
         3
       ]
     ],
-    "minPush": 5,
-    "minMove": 17,
-    "movesAtMinPush": 17,
-    "solutionPath": "RLDDRRUURULDDDRUU",
-    "pushPath": "RULUU",
+    "minPush": 6,
+    "minMove": 19,
+    "movesAtMinPush": 19,
+    "solutionPath": "DDRRUURULULLDDRRDRU",
+    "pushPath": "UULRRU",
     "pushEvents": [
       {
         "from": [
-          4,
-          4
+          5,
+          5
         ],
         "to": [
           5,
           4
         ],
-        "direction": "R",
-        "away": true,
+        "direction": "U",
+        "away": false,
         "offGoal": false
       },
       {
@@ -743,19 +802,32 @@
           3
         ],
         "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
         "away": false,
         "offGoal": false
       },
       {
         "from": [
-          6,
-          5
+          5,
+          4
         ],
         "to": [
           6,
           4
         ],
-        "direction": "U",
+        "direction": "R",
         "away": false,
         "offGoal": false
       },
@@ -786,7 +858,7 @@
           4
         ],
         "solvable": true,
-        "remainingMinPush": 4
+        "remainingMinPush": 5
       },
       {
         "box": [
@@ -799,31 +871,31 @@
           4
         ],
         "solvable": true,
-        "remainingMinPush": 4
+        "remainingMinPush": 5
       },
       {
         "box": [
-          6,
+          5,
           5
         ],
         "direction": "U",
         "destination": [
-          6,
+          5,
           4
         ],
         "solvable": true,
-        "remainingMinPush": 4
+        "remainingMinPush": 5
       }
     ],
     "trappedFirstPushes": [
       {
         "box": [
-          6,
+          5,
           5
         ],
         "direction": "D",
         "destination": [
-          6,
+          5,
           6
         ],
         "solvable": false,
@@ -848,6 +920,16 @@
         6
       ]
     ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "away push required"
@@ -888,11 +970,11 @@
         5
       ]
     ],
-    "minPush": 8,
-    "minMove": 16,
-    "movesAtMinPush": 16,
-    "solutionPath": "RRRUURUULLLDDRRU",
-    "pushPath": "UULLLDDU",
+    "minPush": 10,
+    "minMove": 30,
+    "movesAtMinPush": 30,
+    "solutionPath": "URURRRDLULLDDRURUURULLLDDRDRUU",
+    "pushPath": "LULLLDDRUU",
     "pushEvents": [
       {
         "from": [
@@ -900,21 +982,21 @@
           5
         ],
         "to": [
-          6,
-          4
+          5,
+          5
         ],
-        "direction": "U",
-        "away": true,
+        "direction": "L",
+        "away": false,
         "offGoal": false
       },
       {
         "from": [
-          6,
-          4
+          5,
+          5
         ],
         "to": [
-          6,
-          3
+          5,
+          4
         ],
         "direction": "U",
         "away": true,
@@ -930,7 +1012,7 @@
           2
         ],
         "direction": "L",
-        "away": false,
+        "away": true,
         "offGoal": true
       },
       {
@@ -943,7 +1025,7 @@
           2
         ],
         "direction": "L",
-        "away": false,
+        "away": true,
         "offGoal": false
       },
       {
@@ -987,6 +1069,32 @@
       },
       {
         "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
           6,
           3
         ],
@@ -999,7 +1107,7 @@
         "offGoal": false
       }
     ],
-    "alternativeFirstPushCount": 3,
+    "alternativeFirstPushCount": 2,
     "viableFirstPushes": [
       {
         "box": [
@@ -1012,7 +1120,7 @@
           2
         ],
         "solvable": true,
-        "remainingMinPush": 7
+        "remainingMinPush": 9
       },
       {
         "box": [
@@ -1025,20 +1133,7 @@
           4
         ],
         "solvable": true,
-        "remainingMinPush": 7
-      },
-      {
-        "box": [
-          6,
-          5
-        ],
-        "direction": "U",
-        "destination": [
-          6,
-          4
-        ],
-        "solvable": true,
-        "remainingMinPush": 7
+        "remainingMinPush": 9
       },
       {
         "box": [
@@ -1086,19 +1181,6 @@
           6,
           5
         ],
-        "direction": "D",
-        "destination": [
-          6,
-          6
-        ],
-        "solvable": false,
-        "remainingMinPush": null
-      },
-      {
-        "box": [
-          6,
-          5
-        ],
         "direction": "R",
         "destination": [
           7,
@@ -1122,10 +1204,29 @@
         6
       ],
       [
+        5,
+        6
+      ],
+      [
         7,
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        5,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 3
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "goal exit required"
@@ -1144,8 +1245,8 @@
         4
       ],
       [
-        4,
-        4
+        3,
+        5
       ]
     ],
     "goalCells": [
@@ -1158,12 +1259,51 @@
         2
       ]
     ],
-    "minPush": 6,
-    "minMove": 15,
-    "movesAtMinPush": 17,
-    "solutionPath": "LUUUDRLDDRRUUURUL",
-    "pushPath": "UURUUL",
+    "minPush": 8,
+    "minMove": 25,
+    "movesAtMinPush": 25,
+    "solutionPath": "LLUURRLLDDRUUUDDDRRUUURUL",
+    "pushPath": "RRUUUUUL",
     "pushEvents": [
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          5
+        ],
+        "to": [
+          3,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
       {
         "from": [
           3,
@@ -1188,19 +1328,6 @@
         ],
         "direction": "U",
         "away": false,
-        "offGoal": false
-      },
-      {
-        "from": [
-          4,
-          4
-        ],
-        "to": [
-          5,
-          4
-        ],
-        "direction": "R",
-        "away": true,
         "offGoal": false
       },
       {
@@ -1243,36 +1370,37 @@
         "offGoal": false
       }
     ],
-    "alternativeFirstPushCount": 1,
+    "alternativeFirstPushCount": 0,
     "viableFirstPushes": [
       {
         "box": [
           3,
           4
         ],
-        "direction": "U",
+        "direction": "R",
         "destination": [
-          3,
-          3
-        ],
-        "solvable": true,
-        "remainingMinPush": 5
-      },
-      {
-        "box": [
-          3,
+          4,
           4
-        ],
-        "direction": "D",
-        "destination": [
-          3,
-          5
         ],
         "solvable": true,
         "remainingMinPush": 7
       }
     ],
-    "trappedFirstPushes": [],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
     "staticDeadlockCorners": [
       [
         2,
@@ -1283,6 +1411,14 @@
         2
       ],
       [
+        7,
+        4
+      ],
+      [
+        6,
+        5
+      ],
+      [
         2,
         6
       ],
@@ -1291,6 +1427,16 @@
         6
       ]
     ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 1,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "left box before right box"
@@ -1313,8 +1459,8 @@
         4
       ],
       [
-        6,
-        4
+        5,
+        5
       ]
     ],
     "goalCells": [
@@ -1331,11 +1477,11 @@
         2
       ]
     ],
-    "minPush": 9,
+    "minPush": 11,
     "minMove": 25,
     "movesAtMinPush": 25,
-    "solutionPath": "UUDDRRRRUURULDDDLLURRDRUU",
-    "pushPath": "UUUULRRUU",
+    "solutionPath": "UUDDRRURLDRRUURULDDDDRUUU",
+    "pushPath": "UURRRUULUUU",
     "pushEvents": [
       {
         "from": [
@@ -1360,6 +1506,45 @@
           2
         ],
         "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          7,
+          5
+        ],
+        "direction": "R",
         "away": false,
         "offGoal": false
       },
@@ -1399,32 +1584,19 @@
           2
         ],
         "direction": "L",
-        "away": true,
-        "offGoal": false
-      },
-      {
-        "from": [
-          5,
-          4
-        ],
-        "to": [
-          6,
-          4
-        ],
-        "direction": "R",
         "away": false,
         "offGoal": false
       },
       {
         "from": [
-          6,
-          4
+          7,
+          5
         ],
         "to": [
           7,
           4
         ],
-        "direction": "R",
+        "direction": "U",
         "away": false,
         "offGoal": false
       },
@@ -1468,27 +1640,27 @@
           3
         ],
         "solvable": true,
-        "remainingMinPush": 8
+        "remainingMinPush": 10
       },
       {
         "box": [
-          6,
+          5,
           4
         ],
-        "direction": "U",
+        "direction": "R",
         "destination": [
           6,
-          3
+          4
         ],
         "solvable": true,
-        "remainingMinPush": 8
+        "remainingMinPush": 10
       },
       {
         "box": [
-          6,
-          4
+          5,
+          5
         ],
-        "direction": "D",
+        "direction": "R",
         "destination": [
           6,
           5
@@ -1497,7 +1669,34 @@
         "remainingMinPush": 10
       }
     ],
-    "trappedFirstPushes": [],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          5,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
     "staticDeadlockCorners": [
       [
         4,
@@ -1508,14 +1707,33 @@
         6
       ],
       [
+        4,
+        6
+      ],
+      [
         7,
         6
       ]
     ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 2
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "left box assigned to left goal",
-      "right box before center box"
+      "away push required"
     ]
   },
   {
@@ -1554,10 +1772,10 @@
       ]
     ],
     "minPush": 9,
-    "minMove": 19,
-    "movesAtMinPush": 19,
-    "solutionPath": "DLUURUULLLRDDLDRURU",
-    "pushPath": "UULLLDDRU",
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "DLUURUULLLRDDRUDDDLLUR",
+    "pushPath": "UULLLDDUR",
     "pushEvents": [
       {
         "from": [
@@ -1652,19 +1870,6 @@
       },
       {
         "from": [
-          5,
-          5
-        ],
-        "to": [
-          6,
-          5
-        ],
-        "direction": "R",
-        "away": false,
-        "offGoal": false
-      },
-      {
-        "from": [
           6,
           3
         ],
@@ -1673,6 +1878,19 @@
           2
         ],
         "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "R",
         "away": false,
         "offGoal": false
       }
@@ -1804,9 +2022,25 @@
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        5,
+        5
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 4
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
-      "goal exit required"
+      "goal exit required",
+      "away push required"
     ]
   },
   {
@@ -1844,11 +2078,11 @@
         5
       ]
     ],
-    "minPush": 9,
-    "minMove": 18,
-    "movesAtMinPush": 18,
-    "solutionPath": "RULLLLRDRDRUDRDLLL",
-    "pushPath": "LLLLRULLL",
+    "minPush": 11,
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "RULLLLRRDDRRDDLULLRRUU",
+    "pushPath": "LLLLDDULLUU",
     "pushEvents": [
       {
         "from": [
@@ -1908,36 +2142,36 @@
           3
         ],
         "to": [
-          7,
-          3
+          6,
+          4
         ],
-        "direction": "R",
-        "away": false,
+        "direction": "D",
+        "away": true,
         "offGoal": false
       },
       {
         "from": [
-          7,
-          3
-        ],
-        "to": [
-          7,
-          2
-        ],
-        "direction": "U",
-        "away": false,
-        "offGoal": false
-      },
-      {
-        "from": [
-          7,
-          5
+          6,
+          4
         ],
         "to": [
           6,
           5
         ],
-        "direction": "L",
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "U",
         "away": false,
         "offGoal": false
       },
@@ -1966,9 +2200,35 @@
         "direction": "L",
         "away": false,
         "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
       }
     ],
-    "alternativeFirstPushCount": 4,
+    "alternativeFirstPushCount": 3,
     "viableFirstPushes": [
       {
         "box": [
@@ -1981,7 +2241,7 @@
           2
         ],
         "solvable": true,
-        "remainingMinPush": 8
+        "remainingMinPush": 10
       },
       {
         "box": [
@@ -1995,19 +2255,6 @@
         ],
         "solvable": true,
         "remainingMinPush": 10
-      },
-      {
-        "box": [
-          6,
-          3
-        ],
-        "direction": "R",
-        "destination": [
-          7,
-          3
-        ],
-        "solvable": true,
-        "remainingMinPush": 8
       },
       {
         "box": [
@@ -2033,7 +2280,7 @@
           5
         ],
         "solvable": true,
-        "remainingMinPush": 8
+        "remainingMinPush": 12
       }
     ],
     "trappedFirstPushes": [
@@ -2059,19 +2306,6 @@
         "destination": [
           6,
           2
-        ],
-        "solvable": false,
-        "remainingMinPush": null
-      },
-      {
-        "box": [
-          6,
-          3
-        ],
-        "direction": "L",
-        "destination": [
-          5,
-          3
         ],
         "solvable": false,
         "remainingMinPush": null
@@ -2113,10 +2347,6 @@
         2
       ],
       [
-        5,
-        3
-      ],
-      [
         4,
         4
       ],
@@ -2129,6 +2359,25 @@
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        5
+      ],
+      [
+        7,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 4
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "away push required",
@@ -2178,12 +2427,25 @@
         5
       ]
     ],
-    "minPush": 10,
+    "minPush": 12,
     "minMove": 28,
-    "movesAtMinPush": 30,
-    "solutionPath": "UULLDLLDRRRDRUUDRRDLURUULLDDRU",
-    "pushPath": "LLRRRUULLU",
+    "movesAtMinPush": 28,
+    "solutionPath": "RRULULLLDLLDRRRRURULDRRDDLUU",
+    "pushPath": "LLLRRRRULLUU",
     "pushEvents": [
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
       {
         "from": [
           5,
@@ -2255,10 +2517,10 @@
           4
         ],
         "to": [
-          6,
-          3
+          7,
+          4
         ],
-        "direction": "U",
+        "direction": "R",
         "away": false,
         "offGoal": false
       },
@@ -2272,6 +2534,19 @@
           2
         ],
         "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
         "away": false,
         "offGoal": false
       },
@@ -2290,14 +2565,14 @@
       },
       {
         "from": [
-          6,
-          2
+          7,
+          4
         ],
         "to": [
-          5,
-          2
+          7,
+          3
         ],
-        "direction": "L",
+        "direction": "U",
         "away": false,
         "offGoal": false
       },
@@ -2315,7 +2590,7 @@
         "offGoal": false
       }
     ],
-    "alternativeFirstPushCount": 7,
+    "alternativeFirstPushCount": 6,
     "viableFirstPushes": [
       {
         "box": [
@@ -2328,7 +2603,7 @@
           2
         ],
         "solvable": true,
-        "remainingMinPush": 9
+        "remainingMinPush": 11
       },
       {
         "box": [
@@ -2341,20 +2616,7 @@
           2
         ],
         "solvable": true,
-        "remainingMinPush": 9
-      },
-      {
-        "box": [
-          7,
-          3
-        ],
-        "direction": "U",
-        "destination": [
-          7,
-          2
-        ],
-        "solvable": true,
-        "remainingMinPush": 11
+        "remainingMinPush": 13
       },
       {
         "box": [
@@ -2393,7 +2655,7 @@
           4
         ],
         "solvable": true,
-        "remainingMinPush": 9
+        "remainingMinPush": 11
       },
       {
         "box": [
@@ -2419,10 +2681,23 @@
           5
         ],
         "solvable": true,
-        "remainingMinPush": 9
+        "remainingMinPush": 11
       }
     ],
     "trappedFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
       {
         "box": [
           7,
@@ -2483,7 +2758,7 @@
       ],
       [
         8,
-        2
+        3
       ],
       [
         2,
@@ -2494,6 +2769,39 @@
         6
       ]
     ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        3
+      ],
+      [
+        7,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 7,
+      "deadAfterOnePush": 5
+    },
+    "fakeSuccessFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
     "allOptimalPushEventsRequired": null,
     "mandatoryPatternCertificates": [
       "away push required",

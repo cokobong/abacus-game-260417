@@ -1,7 +1,7 @@
 // Documentation-time solver. Reads puzzle candidates; does not connect to the game.
 import fs from 'node:fs';
 
-export function solve({ id, board }, { metric = 'push', forbidAway = false, forbidGoalExit = false, forbidDirections = '', orderConstraint = null, forbiddenAssignment = null, forbiddenPush = null } = {}) {
+export function solve({ id, board }, { metric = 'push', forbidAway = false, forbidGoalExit = false, forbidDirections = '', orderConstraint = null, forbiddenAssignment = null, forbiddenPush = null, forbiddenDestination = null } = {}) {
   const height = board.length;
   const width = board[0]?.length ?? 0;
   if (!width || board.some(row => row.length !== width)) throw new Error(`${id}: ragged board`);
@@ -87,6 +87,7 @@ export function solve({ id, board }, { metric = 'push', forbidAway = false, forb
         if (forbiddenPush && next % width + 1 === forbiddenPush.from[0] && Math.floor(next / width) + 1 === forbiddenPush.from[1] && letter === forbiddenPush.direction) continue;
         const destination = next + delta;
         if (destination < 0 || destination >= width * height || walls.has(destination) || state.boxes.includes(destination) || (Math.abs(delta) === 1 && Math.floor(destination / width) !== Math.floor(next / width))) continue;
+        if (forbiddenDestination && destination % width + 1 === forbiddenDestination[0] && Math.floor(destination / width) + 1 === forbiddenDestination[1]) continue;
         if (forbidGoalExit && goals.has(next) && !goals.has(destination)) continue;
         nextBoxes = state.boxes.map(box => box === next ? destination : box);
         if (!labeled) nextBoxes.sort((a, b) => a - b);

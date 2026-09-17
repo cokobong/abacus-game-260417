@@ -2433,8 +2433,9 @@ summary:focus-visible {
 .deep-sea-objectives span.is-done { color: #123b31; background: #8ff0c4; }
 .deep-sea-canvas { position: relative; min-height: 0; overflow: hidden; background: #031923; }
 .deep-sea-canvas canvas { display: block; margin: auto; touch-action: none; }
+.deep-sea-arcade-map { position: absolute; z-index: 10; top: 7.5rem; right: .7rem; width: 5.4rem; height: 5.4rem; padding: .25rem; border: 2px solid #68a6b4; border-radius: .5rem; background: rgb(2 20 28 / 88%); pointer-events: none; }
 .deep-sea-feedback { z-index: 11; min-height: 2rem; display: grid; place-items: center; padding: .3rem .75rem; text-align: center; color: #dffaff; background: #082d38; font-size: .8rem; font-weight: 900; }
-.deep-sea-dpad { z-index: 13; display: grid; grid-template-columns: repeat(3,4rem); grid-template-rows: repeat(2,3.65rem); justify-content: center; gap: .28rem; padding: .4rem max(.75rem,env(safe-area-inset-right)) calc(.45rem + env(safe-area-inset-bottom)) max(.75rem,env(safe-area-inset-left)); background: #061f29; }
+.deep-sea-dpad { z-index: 13; display: grid; grid-template-columns: repeat(3,4rem); grid-template-rows: repeat(2,3.65rem); justify-content: center; gap: .28rem; padding: .4rem max(.75rem,env(safe-area-inset-right)) calc(.45rem + env(safe-area-inset-bottom)) max(.75rem,env(safe-area-inset-left)); background: #061f29; touch-action: none; }
 .deep-sea-dpad button { border: 3px solid #55a9ba; border-radius: 1rem; color: #eaffff; background: #0d5263; box-shadow: inset 0 -4px 0 rgb(2 30 39 / 45%); font-size: 1.35rem; font-weight: 1000; touch-action: none; }
 .deep-sea-dpad button:active { transform: translateY(2px); background: #167387; }
 .deep-sea-dpad .is-up { grid-column: 2; grid-row: 1; }

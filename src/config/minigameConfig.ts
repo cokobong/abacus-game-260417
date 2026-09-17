@@ -97,11 +97,20 @@ export interface MinigameEconomyState {
 }
 
 export function chargeMinigameEntry(coins: number, gameId: MinigameId, stage: AdventureStageNumber = 1, retryAfterFailure = false) {
-  const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : 'ancientRuins';
+  const regionId = gameId === 'lava-stepping-stones' ? 'lavaValley' : gameId === 'sky-number-clouds' ? 'skyIsland' : gameId === 'deep-sea-explorer' ? 'deepSeaCanyon' : 'ancientRuins';
   const configuredCost = getAdventureRunCost(regionId, stage, retryAfterFailure);
-  const cost = gameId === 'number-ruins' ? MINIGAME_ENTRY_COST[gameId] : configuredCost;
+  const cost = gameId === 'number-ruins' || gameId === 'deep-sea-explorer' ? MINIGAME_ENTRY_COST[gameId] : configuredCost;
   if (cost === undefined || coins < cost) return null;
   return coins - cost;
+}
+
+// The arcade prototype has no item/relic drops or entry fee. Keep its settlement separate from lava rewards.
+export function applyDeepSeaPrototypeRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, stage: AdventureStageNumber) {
+  const runCoins = Math.max(0, Math.floor(rawRewards.coins));
+  const cap = stage === 2 ? 45 : 30;
+  const coins = Math.min(cap, getAdjustedMinigameCoins(runCoins, multiplier));
+  const rewards: MinigameRunRewards = { coins, runCoins, rareFragments: 0, shopItems: [] };
+  return { state: { ...state, coins: state.coins + coins }, rewards };
 }
 
 export function shouldCommitLavaValleyRewards(reason: LavaValleyEndReason) {

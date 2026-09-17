@@ -60,7 +60,7 @@ import { addTrainingSessionRecord, normalizeTrainingHistory } from './utils/trai
 import { applyDinosaurExp, clampHappiness, clampStamina, getAdjustedStaminaRecovery, getExpToNextLevel, getGrowthStageForLevel, getMaxStaminaForLevel, getStaminaRecoveryMultiplier } from './utils/dinosaurGrowth';
 import { canDinosaurEat, getIncompatibleFoodMessage } from './utils/dinosaurDiet';
 import { defaultGrowthSpeedMultiplier, growthConfig, type GrowthSpeedMultiplier } from './config/growthConfig';
-import { applyLavaValleyRewards, chargeMinigameEntry, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID, MINIGAME_ENTRY_COST, normalizeLavaValleyRewards, type MinigameId, type MinigameRunRewards } from './config/minigameConfig';
+import { applyDeepSeaPrototypeRewards, applyLavaValleyRewards, chargeMinigameEntry, LAVA_VALLEY_RARE_FRAGMENT_ITEM_ID, MINIGAME_ENTRY_COST, normalizeLavaValleyRewards, type MinigameId, type MinigameRunRewards } from './config/minigameConfig';
 import { getAdventureRunCost } from './config/adventureMinigameEconomy';
 import { trainingUiAssets } from './assets/ui/training';
 import { bottomNavAssets } from './assets/ui/bottom-nav';
@@ -2030,7 +2030,9 @@ export default function App() {
     const stage = getAdventureStage(regionId, run.stageNumber);
     const rewards = normalizeLavaValleyRewards(rawRewards, stage.itemPool);
     const current = gameStateRef.current;
-    const applied = applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber, regionId === 'skyIsland' ? 'skyIsland' : 'lavaValley');
+    const applied = regionId === 'deepSeaCanyon'
+      ? applyDeepSeaPrototypeRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, run.stageNumber)
+      : applyLavaValleyRewards({ coins: current.player.coins, inventory: current.inventory }, rewards, current.coinRewardMultiplier, stage.itemPool, run.stageNumber, regionId === 'skyIsland' ? 'skyIsland' : 'lavaValley');
     let adjustedRewards = applied.rewards;
     if (committedAdventureRunIdsRef.current.has(runId)) return adjustedRewards;
     committedAdventureRunIdsRef.current.add(runId);

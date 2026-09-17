@@ -12,8 +12,8 @@ const proofs = {
   '2-4': [{ name: 'away push required', options: { forbidAway: true } }],
   '2-5': [{ name: 'goal exit required', options: { forbidGoalExit: true } }],
   '2-6': [{ name: 'left box before right box', options: { orderConstraint: { blockedBoxIndex: 0, prerequisiteBoxIndex: 1 } } }],
-  '2-7': [{ name: 'left box assigned to left goal', options: { forbiddenAssignment: { boxIndex: 0, goalIndex: 0 } } }, { name: 'right box before center box', options: { orderConstraint: { blockedBoxIndex: 2, prerequisiteBoxIndex: 1 } } }],
-  '2-8': [{ name: 'goal exit required', options: { forbidGoalExit: true } }],
+  '2-7': [{ name: 'left box assigned to left goal', options: { forbiddenAssignment: { boxIndex: 0, goalIndex: 0 } } }, { name: 'away push required', options: { forbidAway: true } }],
+  '2-8': [{ name: 'goal exit required', options: { forbidGoalExit: true } }, { name: 'away push required', options: { forbidAway: true } }],
   '2-9': [{ name: 'away push required', options: { forbidAway: true } }, { name: 'goal exit required', options: { forbidGoalExit: true } }],
   '2-10': [{ name: 'away push required', options: { forbidAway: true } }, { name: 'goal exit required', options: { forbidGoalExit: true } }],
   '3-1': [{ name: 'away push required', options: { forbidAway: true } }, { name: 'goal exit required', options: { forbidGoalExit: true } }],
@@ -39,6 +39,33 @@ for (const puzzle of candidates) {
   if (!push.solvable) throw new Error(`${shortId}: unsolvable`);
   const move = solve(puzzle, { metric: 'move' });
   const alternatives = analyze(puzzle);
+  const goalKey = point => point.join(',');
+  const goalCells = new Set(puzzle.board.flatMap((row, y) => [...row].flatMap((cell, x) => '.+*'.includes(cell) ? [`${x + 1},${y + 1}`] : [])));
+  const newlyOccupiedGoals = new Set();
+  const newlyPlacedGoalExits = [];
+  const temporaryCells = new Set();
+  const labeledBoxes = puzzle.board.flatMap((row, y) => [...row].flatMap((cell, x) => '$*'.includes(cell) ? [`${x + 1},${y + 1}`] : []));
+  const labeledEvents = [];
+  for (const event of push.pushEvents) {
+    const boxIndex = labeledBoxes.indexOf(goalKey(event.from));
+    if (boxIndex < 0) throw new Error(`${shortId}: solution event cannot be assigned to a box`);
+    labeledBoxes[boxIndex] = goalKey(event.to);
+    labeledEvents.push({ boxIndex, event });
+    if (newlyOccupiedGoals.has(goalKey(event.from)) && event.offGoal) newlyPlacedGoalExits.push(event.from);
+    if (goalCells.has(goalKey(event.to))) newlyOccupiedGoals.add(goalKey(event.to));
+  }
+  for (const [index, { boxIndex, event }] of labeledEvents.entries()) {
+    if (goalCells.has(goalKey(event.to))) continue;
+    const nextSameIndex = labeledEvents.findIndex((later, laterIndex) => laterIndex > index && later.boxIndex === boxIndex);
+    if (nextSameIndex > index + 1 && labeledEvents.slice(index + 1, nextSameIndex).some(later => later.boxIndex !== boxIndex)) temporaryCells.add(goalKey(event.to));
+  }
+  const mandatoryTemporaryCells = [];
+  if (shortId.startsWith('2-') && Number(shortId.split('-')[1]) >= 4) {
+    for (const cell of temporaryCells) {
+      const point = cell.split(',').map(Number);
+      if (!solve(puzzle, { forbiddenDestination: point }).solvable) mandatoryTemporaryCells.push(point);
+    }
+  }
   const allOptimalPushEventsRequired = shortId === '2-2'
     ? push.pushEvents.every(event => !solve(puzzle, { forbiddenPush: { from: event.from, direction: event.direction } }).solvable)
     : null;
@@ -64,6 +91,15 @@ for (const puzzle of candidates) {
     viableFirstPushes: alternatives.viableFirstPushes,
     trappedFirstPushes: alternatives.trappedFirstPushes,
     staticDeadlockCorners: alternatives.staticCorners,
+    ...(shortId.startsWith('2-') ? {
+      goalExitRequired: !solve(puzzle, { forbidGoalExit: true }).solvable,
+      distanceIncreasingPushRequired: !solve(puzzle, { forbidAway: true }).solvable,
+      newlyPlacedGoalExitsInMinPushSolution: newlyPlacedGoalExits,
+      mandatoryTemporaryCells,
+      firstPushOutcomeCounts: { solvable: alternatives.viableFirstPushes.length, deadAfterOnePush: alternatives.trappedFirstPushes.length },
+      fakeSuccessFirstPushes: alternatives.trappedFirstPushes.filter(first => goalCells.has(goalKey(first.destination))),
+      shortestProvablyWrongFirstChoicePushCount: alternatives.trappedFirstPushes.length ? 1 : null,
+    } : {}),
     allOptimalPushEventsRequired,
     mandatoryPatternCertificates: certificates,
   });
