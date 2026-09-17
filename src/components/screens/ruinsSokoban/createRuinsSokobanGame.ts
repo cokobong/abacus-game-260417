@@ -8,6 +8,7 @@ const GAME_WIDTH = 768;
 const GAME_HEIGHT = 720;
 
 export interface RuinsSokobanCallbacks {
+  onMissionComplete?: (missionId: string) => void;
   onMissionChange: (config: SokobanPuzzleConfig, total: number) => void;
   onStateChange: (moves: number, pushes: number, canUndo: boolean) => void;
   onDeadlock: () => void;
@@ -27,8 +28,9 @@ class MissionManager {
   private index = 0;
   readonly missions;
 
-  constructor(stage: 1 | 2) {
+  constructor(stage: 1 | 2, startIndex = 0) {
     this.missions = getRuinsSokobanMissions(stage);
+    this.index = Math.max(0, Math.min(startIndex, this.missions.length - 1));
   }
 
   get current() { return this.missions[this.index] }
@@ -53,6 +55,8 @@ class RuinsSokobanScene extends Phaser.Scene {
   private readonly inputGate = new SokobanInputGate();
   private deadlocks = new Set<string>();
   private playerStateTimer?: Phaser.Time.TimerEvent;
+  private movementTimer?: Phaser.Time.TimerEvent;
+  private completionTimer?: Phaser.Time.TimerEvent;
 
   constructor(private readonly manager: MissionManager, private readonly callbacks: RuinsSokobanCallbacks) {
     super('RuinsSokoban');
@@ -84,6 +88,8 @@ class RuinsSokobanScene extends Phaser.Scene {
   private loadMission() {
     this.tweens.killAll();
     this.playerStateTimer?.remove(false);
+    this.movementTimer?.remove(false);
+    this.completionTimer?.remove(false);
     this.playerStateTimer = undefined;
     this.children.removeAll(true);
     this.player = undefined;
@@ -123,7 +129,7 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.state = result.state;
     this.inputGate.startMovement();
     this.renderState(true);
-    this.time.delayedCall(110, () => this.inputGate.finishMovement());
+    this.movementTimer = this.time.delayedCall(110, () => this.inputGate.finishMovement());
     if (result.pushed && this.state.boxes.some(box => this.deadlocks.has(sokobanKey(box)))) {
       this.showBlocked(direction);
       this.callbacks.onDeadlock();
@@ -141,6 +147,8 @@ class RuinsSokobanScene extends Phaser.Scene {
   resetMission() {
     if (this.inputGate.isCompletionLocked()) return;
     this.tweens.killTweensOf([this.player, ...this.boxes]);
+    this.movementTimer?.remove(false);
+    this.inputGate.finishMovement();
     this.state = createSokobanState(this.puzzle);
     this.history = [];
     this.inputGate.finishMovement();
@@ -316,15 +324,16 @@ class RuinsSokobanScene extends Phaser.Scene {
       this.tweens.add({ targets: this.exitDoor, alpha: 0.55, duration: 180, yoyo: true, repeat: 1 });
     }
     this.cameras.main.flash(180, 255, 226, 130, false);
-    this.time.delayedCall(850, () => {
+    this.callbacks.onMissionComplete?.(this.manager.current.id);
+    this.completionTimer = this.time.delayedCall(850, () => {
       if (this.manager.advance()) this.loadMission();
       else this.callbacks.onStageComplete();
     });
   }
 }
 
-export function createRuinsSokobanGame(parent: HTMLElement, stage: 1 | 2, callbacks: RuinsSokobanCallbacks): RuinsSokobanController {
-  const manager = new MissionManager(stage);
+export function createRuinsSokobanGame(parent: HTMLElement, stage: 1 | 2, callbacks: RuinsSokobanCallbacks, startIndex = 0): RuinsSokobanController {
+  const manager = new MissionManager(stage, startIndex);
   let scene: RuinsSokobanScene | undefined;
   class ActiveScene extends RuinsSokobanScene {
     constructor() {

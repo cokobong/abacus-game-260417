@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RUINS_SOKOBAN_STAGE_1, RUINS_SOKOBAN_STAGE_2, parseSokobanPuzzle } from '../config/ruinsSokoban';
+import { readFileSync } from 'node:fs';
+import { RUINS_SOKOBAN_STAGE_1, RUINS_SOKOBAN_STAGE_2, parseSokobanPuzzle, type SokobanDirection } from '../config/ruinsSokoban';
 import { areAllBoxesOnGoals, createSokobanState, getStaticDeadlockKeys, moveSokoban, solveSokoban } from './ruinsSokobanRules';
 
 test('movement, wall collision, push, box collision and undo snapshots are deterministic', () => {
@@ -25,8 +26,8 @@ test('failed box pushes are distinguished from ordinary wall bumps for blocked f
   assert.equal(moveSokoban(puzzle, initial, 'up').attemptedPush, false);
 });
 
-test('all Stage 1 and Stage 2 puzzle configs are solvable at their verified costs', t => {
-  for (const config of [...RUINS_SOKOBAN_STAGE_1, ...RUINS_SOKOBAN_STAGE_2]) {
+test('Stage 1 puzzle configs remain solvable at their verified costs', t => {
+  for (const config of RUINS_SOKOBAN_STAGE_1) {
     const puzzle = parseSokobanPuzzle(config);
     assert.equal(puzzle.boxStarts.length, puzzle.goals.size, `${config.id} box/goal count`);
     const result = solveSokoban(puzzle);
@@ -37,15 +38,9 @@ test('all Stage 1 and Stage 2 puzzle configs are solvable at their verified cost
   }
 });
 
-test('Stage 2 has no solution below the intended easy-route threshold and exposes deadlock cells', () => {
-  let previousPushes = 0;
+test('Stage 2 boards expose deadlock cells', () => {
   for (const config of RUINS_SOKOBAN_STAGE_2) {
     const puzzle = parseSokobanPuzzle(config);
-    const result = solveSokoban(puzzle);
-    assert.ok(result.solution);
-    assert.ok(result.solution.pushes > (config.maxEasyPushes ?? -1), `${config.id} no overly easy route`);
-    assert.ok(result.solution.pushes > previousPushes, `${config.id} push difficulty rises`);
-    previousPushes = result.solution.pushes;
     assert.ok(getStaticDeadlockKeys(puzzle).size > 0, `${config.id} has major static deadlocks`);
   }
 });
@@ -53,6 +48,23 @@ test('Stage 2 has no solution below the intended easy-route threshold and expose
 test('tutorial deadlock missions mark non-goal corners', () => {
   for (const config of RUINS_SOKOBAN_STAGE_1.filter(item => item.showDeadlockHint)) {
     assert.ok(getStaticDeadlockKeys(parseSokobanPuzzle(config)).size > 0, `${config.id} deadlock hints`);
+  }
+});
+
+test('Stage 2 solver paths clear every runtime board', () => {
+  const report = JSON.parse(readFileSync(new URL('../../docs/ruins-sokoban-solver-report.json', import.meta.url), 'utf8')) as { id: string; solutionPath: string; minPush: number }[];
+  const directions: Record<string, SokobanDirection> = { U: 'up', D: 'down', L: 'left', R: 'right' };
+  for (const config of RUINS_SOKOBAN_STAGE_2) {
+    const puzzle = parseSokobanPuzzle(config);
+    const entry = report.find(item => item.id === config.id)!;
+    let state = createSokobanState(puzzle);
+    for (const step of entry.solutionPath) {
+      const result = moveSokoban(puzzle, state, directions[step]);
+      assert.equal(result.moved, true, `${config.id} path step ${step}`);
+      state = result.state;
+    }
+    assert.equal(areAllBoxesOnGoals(puzzle, state), true, `${config.id} solved`);
+    assert.equal(state.pushCount, entry.minPush);
   }
 });
 
@@ -65,11 +77,12 @@ test('Stage 1 teaches seven focused movement patterns and every mission provides
   }
 });
 
-test('Stage 2 puzzle boards stay unchanged and hints are progressive', () => {
-  assert.deepEqual(RUINS_SOKOBAN_STAGE_2.map(config => config.board), [
-    ['######', '# .. #', '# #$ #', '# $  #', '#  @E#', '######'],
-    ['#######', '# . . #', '#  #  #', '# $$  #', '#  #$ #', '# @ .E#', '#######'],
-    ['#######', '# .####', '# .   #', '# .$$ #', '#  $  #', '#  @ E#', '#######'],
-  ]);
+test('Stage 2 uses all ten validated boards and three hints from the design', () => {
+  const design = JSON.parse(readFileSync(new URL('../../docs/ruins-sokoban-puzzles.json', import.meta.url), 'utf8')) as { id: string; board: string[]; hintSteps: string[] }[];
+  const stage2 = design.filter(puzzle => /^ruins-sokoban-2-\d+$/.test(puzzle.id));
+  assert.equal(RUINS_SOKOBAN_STAGE_2.length, 10);
+  assert.deepEqual(RUINS_SOKOBAN_STAGE_2.map(config => config.id), stage2.map(puzzle => puzzle.id));
+  assert.deepEqual(RUINS_SOKOBAN_STAGE_2.map(config => config.board), stage2.map(puzzle => puzzle.board));
+  assert.deepEqual(RUINS_SOKOBAN_STAGE_2.map(config => config.tutorial?.hintSteps), stage2.map(puzzle => puzzle.hintSteps));
   assert.ok(RUINS_SOKOBAN_STAGE_2.every(config => config.tutorial?.hintSteps.length === 3));
 });

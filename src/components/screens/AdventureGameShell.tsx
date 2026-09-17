@@ -15,12 +15,14 @@ export interface AdventureGameShellProps {
   runId: string;
   onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards;
   onRetry: (retryAfterFailure?: boolean) => void;
+  ruinsClearedMissionIds?: readonly string[];
+  onRuinsMissionComplete?: (missionId: string) => void;
   relicPartCount?: number;
   fossilFragmentIds?: number[];
   externalMainModalOpen?: boolean;
 }
 
-export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, relicPartCount, fossilFragmentIds, externalMainModalOpen }: AdventureGameShellProps) {
+export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runId, onFinishRun, onRetry, ruinsClearedMissionIds = [], onRuinsMissionComplete = () => {}, relicPartCount, fossilFragmentIds, externalMainModalOpen }: AdventureGameShellProps) {
   if (gameId === 'lava-stepping-stones') {
     return <LavaPathPrototype stageNumber={stageNumber} dinosaur={dinosaur} onExit={onExit} runId={runId} onFinishRun={onFinishRun} onRetry={onRetry} relicPartCount={relicPartCount} fossilFragmentIds={fossilFragmentIds} externalMainModalOpen={externalMainModalOpen} />;
   }
@@ -30,7 +32,7 @@ export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runI
   }
 
   if (gameId === 'number-ruins' && (stageNumber === 1 || stageNumber === 2)) {
-    return <RuinsSokobanGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
+    return <RuinsSokobanGameHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} clearedMissionIds={ruinsClearedMissionIds} onMissionComplete={onRuinsMissionComplete} />;
   }
 
   if (gameId === 'deep-sea-explorer' && (stageNumber === 1 || stageNumber === 2)) {

@@ -15,7 +15,7 @@ export interface SokobanTutorialConfig {
 export interface SokobanPuzzleConfig {
   id: string;
   stage: 1 | 2;
-  mission: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  mission: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   title: string;
   instruction: string;
   board: readonly string[];

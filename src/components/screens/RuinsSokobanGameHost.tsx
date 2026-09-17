@@ -4,6 +4,8 @@ import { ruinsSokobanAssets } from '../../assets/adventure/ruins';
 import type { MinigameRunRewards } from '../../config/minigameConfig';
 import type { SokobanDirection, SokobanPuzzleConfig } from '../../config/ruinsSokoban';
 import type { RuinsSokobanController } from './ruinsSokoban/createRuinsSokobanGame';
+import { firstUnclearedRuinsMission } from '../../utils/ruinsSokobanProgress';
+import { saveRuinsSokobanDebugStat, type RuinsSokobanDebugStat } from '../../utils/ruinsSokobanDebugStats';
 
 interface RuinsSokobanGameHostProps {
   stageNumber: 1 | 2;
@@ -11,6 +13,8 @@ interface RuinsSokobanGameHostProps {
   onExit: () => void;
   onFinishRun: (runId: string, rewards: MinigameRunRewards) => MinigameRunRewards;
   onRetry: (retryAfterFailure?: boolean) => void;
+  clearedMissionIds: readonly string[];
+  onMissionComplete: (missionId: string) => void;
 }
 
 const EMPTY_MISSION: SokobanPuzzleConfig = {
@@ -18,16 +22,20 @@ const EMPTY_MISSION: SokobanPuzzleConfig = {
   board: [], completion: 'reachExit', highlights: [], showDeadlockHint: false,
 };
 
-export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, onRetry }: RuinsSokobanGameHostProps) {
+export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, onRetry, clearedMissionIds, onMissionComplete }: RuinsSokobanGameHostProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<RuinsSokobanController | null>(null);
   const finishRef = useRef(onFinishRun);
+  const missionCompleteRef = useRef(onMissionComplete);
+  const clearedRef = useRef(clearedMissionIds);
+  const statRef = useRef<RuinsSokobanDebugStat | null>(null);
+  const startedAtRef = useRef(0);
   const committedRef = useRef(false);
   const blockedTimerRef = useRef<number | null>(null);
   const blockedShownRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [mission, setMission] = useState<SokobanPuzzleConfig>(EMPTY_MISSION);
-  const [missionTotal, setMissionTotal] = useState(stageNumber === 1 ? 7 : 3);
+  const [missionTotal, setMissionTotal] = useState(stageNumber === 1 ? 7 : 10);
   const [tutorialOpen, setTutorialOpen] = useState(true);
   const [moves, setMoves] = useState(0);
   const [pushes, setPushes] = useState(0);
@@ -38,15 +46,35 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
   const [blockedProminent, setBlockedProminent] = useState(false);
   const [hintStep, setHintStep] = useState(0);
   finishRef.current = onFinishRun;
+  missionCompleteRef.current = onMissionComplete;
+  clearedRef.current = clearedMissionIds;
+  const saveStat = () => {
+    if (!statRef.current) return;
+    statRef.current.elapsedSeconds = Math.floor((Date.now() - startedAtRef.current) / 1000);
+    saveRuinsSokobanDebugStat(statRef.current);
+  };
 
   useEffect(() => {
     let cancelled = false;
     const parent = parentRef.current;
     if (!parent) return;
+    const statsInterval = stageNumber === 2 ? window.setInterval(saveStat, 1000) : null;
     void import('./ruinsSokoban/createRuinsSokobanGame').then(({ createRuinsSokobanGame }) => {
       if (cancelled) return;
+      const startIndex = stageNumber === 2 ? firstUnclearedRuinsMission(clearedRef.current) : 0;
       controllerRef.current = createRuinsSokobanGame(parent, stageNumber, {
+        onMissionComplete: id => {
+          if (stageNumber !== 2) return;
+          if (statRef.current?.missionId === id) { statRef.current.cleared = true; saveStat(); }
+          missionCompleteRef.current(id);
+        },
         onMissionChange: (config, total) => {
+          if (stageNumber === 2) {
+            saveStat();
+            statRef.current = { missionId: config.id, elapsedSeconds: 0, undoCount: 0, resetCount: 0, hintLevel: 0, cleared: false };
+            startedAtRef.current = Date.now();
+            saveStat();
+          }
           blockedShownRef.current = false;
           setMission(config);
           setMissionTotal(total);
@@ -88,7 +116,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
           }
           setStageComplete(true);
         },
-      });
+      }, startIndex < 0 ? 0 : startIndex);
     }).catch(error => {
       console.error('[Ruins Sokoban] Phaser load failed', error);
       setLoading(false);
@@ -96,7 +124,9 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
     });
     return () => {
       cancelled = true;
+      if (statsInterval !== null) window.clearInterval(statsInterval);
       controllerRef.current?.destroy();
+      saveStat();
       controllerRef.current = null;
       if (blockedTimerRef.current !== null) window.clearTimeout(blockedTimerRef.current);
     };
@@ -108,6 +138,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
   };
   const move = (direction: SokobanDirection) => controllerRef.current?.move(direction);
   const reset = () => {
+    if (stageNumber === 2 && statRef.current) { statRef.current.resetCount += 1; saveStat(); }
     setFeedback('처음 상태로 돌아갔어요.');
     setBlockedNotice(false);
     controllerRef.current?.reset();
@@ -115,8 +146,9 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
   const showHint = () => {
     const hints = mission.tutorial?.hintSteps ?? [];
     if (hints.length === 0) return;
+    if (stageNumber === 2 && statRef.current) { statRef.current.hintLevel = Math.max(statRef.current.hintLevel, Math.min(hintStep + 1, hints.length)); saveStat(); }
     setFeedback(hints[hintStep % hints.length]);
-    setHintStep(step => (step + 1) % hints.length);
+    setHintStep(step => Math.min(step + 1, hints.length - 1));
   };
 
   return (
@@ -129,7 +161,7 @@ export function RuinsSokobanGameHost({ stageNumber, runId, onExit, onFinishRun, 
           <small>이동 {moves} · 밀기 {pushes}</small>
         </div>
         <div className="ruins-sokoban-tools">
-          <button className={stageNumber === 1 && blockedNotice ? 'is-highlighted' : undefined} type="button" onClick={() => controllerRef.current?.undo()} disabled={!canUndo || tutorialOpen || stageComplete}><Undo2 aria-hidden="true" /> 한 수 뒤로</button>
+          <button className={stageNumber === 1 && blockedNotice ? 'is-highlighted' : undefined} type="button" onClick={() => { if (stageNumber === 2 && statRef.current) { statRef.current.undoCount += 1; saveStat(); } controllerRef.current?.undo(); }} disabled={!canUndo || tutorialOpen || stageComplete}><Undo2 aria-hidden="true" /> 한 수 뒤로</button>
           <button type="button" onClick={reset} disabled={tutorialOpen || stageComplete}><RotateCcw aria-hidden="true" /> 처음부터</button>
           <button type="button" onClick={showHint} disabled={tutorialOpen || stageComplete || !mission.tutorial?.hintSteps.length}>힌트</button>
         </div>
