@@ -1,0 +1,4475 @@
+[
+  {
+    "id": "ruins-sokoban-2-1",
+    "size": "8x7",
+    "playerStart": [
+      7,
+      5
+    ],
+    "boxStarts": [
+      [
+        6,
+        2
+      ],
+      [
+        6,
+        4
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        5,
+        2
+      ]
+    ],
+    "minPush": 6,
+    "minMove": 16,
+    "movesAtMinPush": 18,
+    "solutionPath": "UUULLLDLDDRRRUURUL",
+    "pushPath": "LLLUUL",
+    "pushEvents": [
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": true
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 2,
+    "viableFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 5
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 5
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 7
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": false,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        5,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "left push required",
+      "up push required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-2",
+    "size": "8x7",
+    "playerStart": [
+      3,
+      5
+    ],
+    "boxStarts": [
+      [
+        3,
+        2
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        4,
+        2
+      ],
+      [
+        6,
+        2
+      ]
+    ],
+    "minPush": 8,
+    "minMove": 31,
+    "movesAtMinPush": 31,
+    "solutionPath": "RUUURRDRDDLLULULLURRRLDDRDDLUUU",
+    "pushPath": "LLRRRUUU",
+    "pushEvents": [
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          5,
+          5
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          4,
+          5
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": true
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          5
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          4,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          3
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 0,
+    "viableFirstPushes": [
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 7
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        4,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 1,
+      "deadAfterOnePush": 3
+    },
+    "fakeSuccessFirstPushes": [
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": true,
+    "mandatoryPatternCertificates": [
+      "lower box before upper box"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-3",
+    "size": "8x7",
+    "playerStart": [
+      3,
+      6
+    ],
+    "boxStarts": [
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        6,
+        4
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        6,
+        3
+      ]
+    ],
+    "minPush": 8,
+    "minMove": 23,
+    "movesAtMinPush": 23,
+    "solutionPath": "UUULURRLDDDDRRRUULLDLUU",
+    "pushPath": "UURRULUU",
+    "pushEvents": [
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          3,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          3
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          3,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          3
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 3,
+    "viableFirstPushes": [
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          3,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 7
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          3,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 7
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [
+      [
+        3,
+        2
+      ]
+    ],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 2
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "left box before center box"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-4",
+    "size": "7x7",
+    "playerStart": [
+      3,
+      4
+    ],
+    "boxStarts": [
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        4,
+        3
+      ],
+      [
+        6,
+        3
+      ]
+    ],
+    "minPush": 6,
+    "minMove": 19,
+    "movesAtMinPush": 19,
+    "solutionPath": "DDRRUURULULLDDRRDRU",
+    "pushPath": "UULRRU",
+    "pushEvents": [
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          5,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          3
+        ],
+        "to": [
+          4,
+          3
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 2,
+    "viableFirstPushes": [
+      {
+        "box": [
+          4,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          3,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 5
+      },
+      {
+        "box": [
+          4,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          5,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 5
+      },
+      {
+        "box": [
+          5,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          5,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 5
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          5,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          5,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        6,
+        6
+      ]
+    ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-5",
+    "size": "8x7",
+    "playerStart": [
+      3,
+      6
+    ],
+    "boxStarts": [
+      [
+        6,
+        2
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "minPush": 10,
+    "minMove": 30,
+    "movesAtMinPush": 30,
+    "solutionPath": "URURRRDLULLDDRURUURULLLDDRDRUU",
+    "pushPath": "LULLLDDRUU",
+    "pushEvents": [
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          5,
+          5
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "U",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          3
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          4,
+          5
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 2,
+    "viableFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          4,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          4,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        5,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 3
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "goal exit required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-6",
+    "size": "8x7",
+    "playerStart": [
+      4,
+      6
+    ],
+    "boxStarts": [
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        4,
+        2
+      ]
+    ],
+    "minPush": 8,
+    "minMove": 25,
+    "movesAtMinPush": 25,
+    "solutionPath": "LLUURRLLDDRUUUDDDRRUUURUL",
+    "pushPath": "RRUUUUUL",
+    "pushEvents": [
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          5
+        ],
+        "to": [
+          3,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          3,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          3
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          5,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          3
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 0,
+    "viableFirstPushes": [
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 7
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        6,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [],
+    "firstPushOutcomeCounts": {
+      "solvable": 1,
+      "deadAfterOnePush": 1
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "left box before right box"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-7",
+    "size": "8x7",
+    "playerStart": [
+      2,
+      5
+    ],
+    "boxStarts": [
+      [
+        2,
+        4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        2,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        2
+      ]
+    ],
+    "minPush": 11,
+    "minMove": 25,
+    "movesAtMinPush": 25,
+    "solutionPath": "UUDDRRURLDRRUURULDDDDRUUU",
+    "pushPath": "UURRRUULUUU",
+    "pushEvents": [
+      {
+        "from": [
+          2,
+          4
+        ],
+        "to": [
+          2,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          2,
+          3
+        ],
+        "to": [
+          2,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 2,
+    "viableFirstPushes": [
+      {
+        "box": [
+          2,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          2,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          6,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          5,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          5,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        4,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": false,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 3,
+      "deadAfterOnePush": 2
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "left box assigned to left goal",
+      "away push required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-8",
+    "size": "8x7",
+    "playerStart": [
+      7,
+      5
+    ],
+    "boxStarts": [
+      [
+        6,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "minPush": 9,
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "DLUURUULLLRDDRUDDDLLUR",
+    "pushPath": "UULLLDDUR",
+    "pushEvents": [
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "U",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          3
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          5,
+          5
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 3,
+    "viableFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 8
+      },
+      {
+        "box": [
+          5,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          5,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 8
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 8
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 8
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          6,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          5,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          5,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        5,
+        5
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 4
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "goal exit required",
+      "away push required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-9",
+    "size": "9x7",
+    "playerStart": [
+      7,
+      3
+    ],
+    "boxStarts": [
+      [
+        7,
+        2
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        7,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "minPush": 11,
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "RULLLLRRDDRRDDLULLRRUU",
+    "pushPath": "LLLLDDULLUU",
+    "pushEvents": [
+      {
+        "from": [
+          7,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "D",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          5,
+          5
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          4,
+          5
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 3,
+    "viableFirstPushes": [
+      {
+        "box": [
+          7,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          6,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          7,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        5
+      ],
+      [
+        7,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 4,
+      "deadAfterOnePush": 4
+    },
+    "fakeSuccessFirstPushes": [],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required",
+      "goal exit required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-10",
+    "size": "9x7",
+    "playerStart": [
+      6,
+      4
+    ],
+    "boxStarts": [
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        7,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "minPush": 12,
+    "minMove": 28,
+    "movesAtMinPush": 28,
+    "solutionPath": "RRULULLLDLLDRRRRURULDRRDDLUU",
+    "pushPath": "LLLRRRRULLUU",
+    "pushEvents": [
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": true
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 6,
+    "viableFirstPushes": [
+      {
+        "box": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          5,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          6,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 13
+      },
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          3
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        8,
+        3
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "goalExitRequired": true,
+    "distanceIncreasingPushRequired": true,
+    "newlyPlacedGoalExitsInMinPushSolution": [],
+    "mandatoryTemporaryCells": [
+      [
+        6,
+        3
+      ],
+      [
+        7,
+        4
+      ]
+    ],
+    "firstPushOutcomeCounts": {
+      "solvable": 7,
+      "deadAfterOnePush": 5
+    },
+    "fakeSuccessFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "shortestProvablyWrongFirstChoicePushCount": 1,
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required",
+      "goal exit required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-1",
+    "size": "9x7",
+    "playerStart": [
+      4,
+      6
+    ],
+    "boxStarts": [
+      [
+        7,
+        3
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        7,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "minPush": 11,
+    "minMove": 32,
+    "movesAtMinPush": 32,
+    "solutionPath": "LLURDRRURURURULLLLRRDDDDRUUURULL",
+    "pushPath": "RULLLLUUULL",
+    "pushEvents": [
+      {
+        "from": [
+          3,
+          5
+        ],
+        "to": [
+          4,
+          5
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": true
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 5,
+    "viableFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          7,
+          3
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          3
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          3,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          3,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required",
+      "goal exit required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-2",
+    "size": "8x7",
+    "playerStart": [
+      3,
+      2
+    ],
+    "boxStarts": [
+      [
+        6,
+        3
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "minPush": 10,
+    "minMove": 28,
+    "movesAtMinPush": 28,
+    "solutionPath": "RDDRRURULLLDDLLDRDRRRUUURULL",
+    "pushPath": "ULLLRUUULL",
+    "pushEvents": [
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          5
+        ],
+        "to": [
+          4,
+          5
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 5,
+    "viableFirstPushes": [
+      {
+        "box": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          6,
+          3
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 11
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          3,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 9
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          3,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          6,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          7,
+          5
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-3",
+    "size": "8x7",
+    "playerStart": [
+      2,
+      5
+    ],
+    "boxStarts": [
+      [
+        2,
+        4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        2,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "minPush": 11,
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "UUDDRRURDRUURULDDDDLLL",
+    "pushPath": "UURRDUULLLL",
+    "pushEvents": [
+      {
+        "from": [
+          2,
+          4
+        ],
+        "to": [
+          2,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          2,
+          3
+        ],
+        "to": [
+          2,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          5
+        ],
+        "to": [
+          5,
+          5
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          5
+        ],
+        "to": [
+          5,
+          6
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          3
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          6
+        ],
+        "to": [
+          4,
+          6
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          6
+        ],
+        "to": [
+          3,
+          6
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          6
+        ],
+        "to": [
+          2,
+          6
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 2,
+    "viableFirstPushes": [
+      {
+        "box": [
+          2,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          2,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          4,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          3,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          4,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          4,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        4,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        7,
+        6
+      ]
+    ],
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "left box assigned to left goal",
+      "lower box before upper right box"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-4",
+    "size": "9x7",
+    "playerStart": [
+      2,
+      4
+    ],
+    "boxStarts": [
+      [
+        3,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        7,
+        5
+      ]
+    ],
+    "goalCells": [
+      [
+        3,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        8,
+        3
+      ]
+    ],
+    "minPush": 11,
+    "minMove": 22,
+    "movesAtMinPush": 22,
+    "solutionPath": "RRRRURRULLDDDRDRUUDLUU",
+    "pushPath": "RRRRLLRUUUU",
+    "pushEvents": [
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          4,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          5,
+          4
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          6,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          7,
+          4
+        ],
+        "direction": "R",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": true
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          5
+        ],
+        "to": [
+          8,
+          5
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          8,
+          5
+        ],
+        "to": [
+          8,
+          4
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          8,
+          4
+        ],
+        "to": [
+          8,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          4
+        ],
+        "to": [
+          7,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          7,
+          3
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 5,
+    "viableFirstPushes": [
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          7,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          2
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "R",
+        "destination": [
+          4,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "U",
+        "destination": [
+          7,
+          4
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "L",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 10
+      }
+    ],
+    "trappedFirstPushes": [
+      {
+        "box": [
+          3,
+          2
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          2
+        ],
+        "direction": "R",
+        "destination": [
+          8,
+          2
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "destination": [
+          2,
+          4
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      },
+      {
+        "box": [
+          7,
+          5
+        ],
+        "direction": "D",
+        "destination": [
+          7,
+          6
+        ],
+        "solvable": false,
+        "remainingMinPush": null
+      }
+    ],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required",
+      "goal exit required"
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-5",
+    "size": "9x7",
+    "playerStart": [
+      3,
+      6
+    ],
+    "boxStarts": [
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        6,
+        4
+      ]
+    ],
+    "goalCells": [
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        7,
+        5
+      ]
+    ],
+    "minPush": 13,
+    "minMove": 27,
+    "movesAtMinPush": 27,
+    "solutionPath": "UUULURRRRDDRDDLLURLUUDLLDLU",
+    "pushPath": "UURRRRDRUULLU",
+    "pushEvents": [
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          3,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          3
+        ],
+        "to": [
+          3,
+          2
+        ],
+        "direction": "U",
+        "away": true,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          2
+        ],
+        "to": [
+          4,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          2
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          2
+        ],
+        "to": [
+          6,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": true
+      },
+      {
+        "from": [
+          6,
+          2
+        ],
+        "to": [
+          7,
+          2
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          4
+        ],
+        "to": [
+          6,
+          5
+        ],
+        "direction": "D",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          6,
+          5
+        ],
+        "to": [
+          7,
+          5
+        ],
+        "direction": "R",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          4
+        ],
+        "to": [
+          5,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          5,
+          3
+        ],
+        "to": [
+          5,
+          2
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          4,
+          4
+        ],
+        "to": [
+          3,
+          4
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          3,
+          4
+        ],
+        "to": [
+          2,
+          4
+        ],
+        "direction": "L",
+        "away": false,
+        "offGoal": false
+      },
+      {
+        "from": [
+          2,
+          4
+        ],
+        "to": [
+          2,
+          3
+        ],
+        "direction": "U",
+        "away": false,
+        "offGoal": false
+      }
+    ],
+    "alternativeFirstPushCount": 5,
+    "viableFirstPushes": [
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          3,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          3,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          3,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          5,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          5,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          5,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 14
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "U",
+        "destination": [
+          6,
+          3
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      },
+      {
+        "box": [
+          6,
+          4
+        ],
+        "direction": "D",
+        "destination": [
+          6,
+          5
+        ],
+        "solvable": true,
+        "remainingMinPush": 12
+      }
+    ],
+    "trappedFirstPushes": [],
+    "staticDeadlockCorners": [
+      [
+        2,
+        2
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "allOptimalPushEventsRequired": null,
+    "mandatoryPatternCertificates": [
+      "away push required",
+      "left box before adjacent box"
+    ]
+  }
+]

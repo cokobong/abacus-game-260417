@@ -18,3 +18,8 @@ View your app in AI Studio: https://ai.studio/apps/f9149b6f-1e1b-4eae-a247-7470f
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+4. Open the local app:
+   `http://localhost:3000`
+
+The dev server is fixed to port `3000`. If that port is already in use, Vite will fail instead of switching to another port; stop the existing port `3000` process and run `npm run dev` again.

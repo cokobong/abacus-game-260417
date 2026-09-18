@@ -229,3 +229,9 @@
 - 저장 데이터가 없으면 기본 상태로 시작한다.
 - 저장 데이터가 깨졌거나 읽을 수 없으면 기본값으로 복구한다.
 - 블루투스 주판은 자동 복원을 보장하지 않고, 사용자가 설정탭에서 연결 상태를 확인한다.
+## Local Dev Port Policy
+
+- Run the local dev server with `npm run dev`.
+- Open the app at `http://localhost:3000`.
+- Port `3000` is the only supported local dev server port for this project.
+- Vite must not auto-fallback to another port; if port `3000` is busy, stop the existing process and run `npm run dev` again.
