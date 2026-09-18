@@ -2058,6 +2058,11 @@ export default function App() {
         adjustedRewards = { ...adjustedRewards, relicOutcome: relicResolution.outcome };
       }
     }
+    if (regionId === 'deepSeaCanyon' && run.stageNumber === 3) {
+      const relicResolution = resolveRegionFinalChest('deepSeaCanyon', regionRelicProgress.deepSeaCanyon);
+      regionRelicProgress = { ...regionRelicProgress, deepSeaCanyon: relicResolution.progress };
+      adjustedRewards = { ...adjustedRewards, relicOutcome: relicResolution.outcome };
+    }
 
     const nextState = {
       ...current,

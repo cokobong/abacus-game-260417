@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ARCADE_STAGE_2 as board, arcadeIsFloor, arcadeKey, arcadeNeighbors, arcadeNextStep, type ArcadePoint } from './arcadeStage2';
+import { ARCADE_STAGE_2 as board, ARCADE_STAGE_2_TUNING, arcadeIsFloor, arcadeKey, arcadeNeighbors, arcadeNextStep, validateArcadeBoard, type ArcadePoint } from './arcadeStage2';
 
 test('Stage 2 arcade board keeps objectives, exit, pickups and enemies reachable', () => {
   assert.equal(board.columns, 22);
@@ -31,4 +31,9 @@ test('enemy shortest-path step never crosses a wall', () => {
     }
     assert.equal(arcadeKey(current), arcadeKey(board.playerStart));
   }
+});
+
+test('Stage 2 spawn slots are separate, reachable and safely spaced', () => {
+  assert.deepEqual(validateArcadeBoard(board, ARCADE_STAGE_2_TUNING.enemySpawnDistance, ARCADE_STAGE_2_TUNING.treasureMinDistance), []);
+  assert.ok(validateArcadeBoard({ ...board, coins: [...board.coins, board.exit] }).some(issue => issue.includes('overlaps exit')));
 });

@@ -2420,9 +2420,14 @@ summary:focus-visible {
 .deep-sea-status strong,.deep-sea-status span,.deep-sea-status b { display: block; }
 .deep-sea-status strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8eeaff; font-size: clamp(.72rem,2.2vw,.95rem); }
 .deep-sea-status span { color: #ff7b91; font-size: clamp(1.05rem,3.5vw,1.45rem); letter-spacing: .08em; line-height: 1.1; }
+.deep-sea-condition.is-normal { color: #b3f8e7; }
+.deep-sea-condition.is-damaged { color: #ffd28b; }
+.deep-sea-condition.is-critical { color: #ff8291; }
+.deep-sea-condition em { color: #8eeeff; font-style: normal; }
+.deep-sea-condition em.is-ending { color: #ffe091; }
 .deep-sea-status b { color: #ffe47a; font-size: .72rem; }
 .deep-sea-exit { border: 2px solid #607782; border-radius: .8rem; padding: .55rem .25rem; text-align: center; color: #a7bbc2; background: #182e36; font-size: .76rem; font-weight: 1000; }
-.deep-sea-exit.is-open { border-color: #7fffc4; color: #caffea; background: #12745d; }
+.deep-sea-exit.is-open { border-color: #7fffc4; color: #caffea; background: #12745d; box-shadow: 0 0 12px #7fffc488; }
 .deep-sea-actions { display: grid; gap: .22rem; }
 .deep-sea-actions > button { min-height: 2rem; border: 2px solid #8eeaff; border-radius: .65rem; color: #07303d; background: #8eeaff; font-size: .7rem; font-weight: 1000; touch-action: manipulation; }
 .deep-sea-actions > button:disabled { opacity: .42; }
@@ -2431,11 +2436,17 @@ summary:focus-visible {
 .deep-sea-objectives > div { display: flex; justify-content: center; gap: .4rem; }
 .deep-sea-objectives span { border-radius: 999px; padding: .25rem .48rem; color: #bdd3d9; background: #12323b; font-weight: 800; }
 .deep-sea-objectives span.is-done { color: #123b31; background: #8ff0c4; }
-.deep-sea-canvas { position: relative; min-height: 0; overflow: hidden; background: #031923; }
+.deep-sea-arcade { --deep-sea-keypad-bottom-offset: 0px; --deep-sea-minimap-inset: .7rem; --deep-sea-minimap-padding: .25rem; }
+.deep-sea-arcade.is-stage-2 { --deep-sea-keypad-bottom-offset: 20px; }
+.deep-sea-viewport { position: relative; min-height: 0; overflow: hidden; }
+.deep-sea-canvas { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; background: #031923; }
 .deep-sea-canvas canvas { display: block; margin: auto; touch-action: none; }
-.deep-sea-arcade-map { position: absolute; z-index: 10; top: 7.5rem; right: .7rem; width: 5.4rem; height: 5.4rem; padding: .25rem; border: 2px solid #68a6b4; border-radius: .5rem; background: rgb(2 20 28 / 88%); pointer-events: none; }
+.deep-sea-arcade-map { position: absolute; z-index: 10; top: var(--deep-sea-minimap-inset); right: var(--deep-sea-minimap-inset); box-sizing: border-box; width: 6.3rem; height: 6.3rem; padding: var(--deep-sea-minimap-padding); border: 2px solid #68a6b4; border-radius: .5rem; background: rgb(2 20 28 / 88%); pointer-events: none; }
 .deep-sea-feedback { z-index: 11; min-height: 2rem; display: grid; place-items: center; padding: .3rem .75rem; text-align: center; color: #dffaff; background: #082d38; font-size: .8rem; font-weight: 900; }
-.deep-sea-dpad { z-index: 13; display: grid; grid-template-columns: repeat(3,4rem); grid-template-rows: repeat(2,3.65rem); justify-content: center; gap: .28rem; padding: .4rem max(.75rem,env(safe-area-inset-right)) calc(.45rem + env(safe-area-inset-bottom)) max(.75rem,env(safe-area-inset-left)); background: #061f29; touch-action: none; }
+.deep-sea-tutorial { position: absolute; z-index: 40; left: 50%; top: 23%; transform: translateX(-50%); width: min(88%, 23rem); padding: .85rem 1rem; border: 2px solid #89e4e8; border-radius: 1rem; background: #073642; color: #f0ffff; text-align: center; box-shadow: 0 .6rem 1.5rem #001923aa; }
+.deep-sea-tutorial p { margin: 0 0 .6rem; font-weight: 800; }
+.deep-sea-tutorial button { padding: .45rem 1.2rem; border-radius: .65rem; background: #8eeadd; color: #07313b; font-weight: 900; }
+.deep-sea-dpad { z-index: 13; display: grid; grid-template-columns: repeat(3,4rem); grid-template-rows: repeat(2,3.65rem); justify-content: center; gap: .28rem; padding: .4rem max(.75rem,env(safe-area-inset-right)) calc(.45rem + env(safe-area-inset-bottom) + var(--deep-sea-keypad-bottom-offset)) max(.75rem,env(safe-area-inset-left)); background: #061f29; touch-action: none; }
 .deep-sea-dpad button { border: 3px solid #55a9ba; border-radius: 1rem; color: #eaffff; background: #0d5263; box-shadow: inset 0 -4px 0 rgb(2 30 39 / 45%); font-size: 1.35rem; font-weight: 1000; touch-action: none; }
 .deep-sea-dpad button:active { transform: translateY(2px); background: #167387; }
 .deep-sea-dpad .is-up { grid-column: 2; grid-row: 1; }
@@ -2475,6 +2486,35 @@ summary:focus-visible {
 .deep-sea-result div { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1.2rem; }
 .deep-sea-result button { display: flex; min-height: 3.35rem; align-items: center; justify-content: center; gap: .3rem; border-radius: 1rem; padding: .5rem; color: #fff; background: #0c7588; font-weight: 1000; touch-action: manipulation; }
 .deep-sea-result button:last-child { background: #355b66; }
+.deep-sea-arcade .deep-sea-condition { min-height: 2.2rem; padding: .45rem 1rem .25rem; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; font-size: clamp(.82rem,2.7vw,1.1rem); }
+.deep-sea-arcade .deep-sea-condition em { display: inline-block; padding: .2rem .75rem; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; font-size: .72rem; }
+.deep-sea-hud-counts { display: flex; justify-content: center; gap: .3rem; }
+.deep-sea-arcade .deep-sea-hud-counts b { min-width: 4.8rem; min-height: 1.55rem; display: grid; place-items: center; padding: .2rem .55rem; color: #e8ffff; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; font-size: .72rem; }
+.deep-sea-arcade .deep-sea-objectives { background-position: center; background-repeat: no-repeat; background-size: 100% 100%; color: #123f4c; }
+.deep-sea-arcade .deep-sea-objectives strong { color: #174956; }
+.deep-sea-arcade .deep-sea-tutorial { min-height: 9rem; display: grid; align-content: center; padding: 1.7rem 2rem; border: 0; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; color: #174453; }
+.deep-sea-arcade .deep-sea-result { padding: 2.4rem 2rem; border: 0; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; color: #e6fbff; }
+.deep-sea-arcade .deep-sea-hud { min-height: 5.2rem; grid-template-columns: minmax(5rem,.7fr) minmax(0,3fr) minmax(5.3rem,.8fr); }
+.deep-sea-arcade .deep-sea-status { display: grid; grid-template-rows: auto minmax(3.4rem,auto); align-items: center; }
+.deep-sea-arcade .deep-sea-status-main { display: flex; align-items: center; justify-content: center; gap: .35rem; min-height: 3.4rem; }
+.deep-sea-arcade .deep-sea-condition { flex: 1; min-width: 0; min-height: 3.4rem; display: grid; place-items: center; padding: .6rem .8rem; font-size: clamp(.82rem,2.5vw,1.05rem); white-space: nowrap; }
+.deep-sea-arcade .deep-sea-hud-counts { flex: 1.3; align-items: center; min-width: 0; gap: .2rem; }
+.deep-sea-arcade .deep-sea-hud-counts b,.deep-sea-arcade .deep-sea-hud-counts em { flex: 1; min-width: 0; min-height: 3.4rem; display: grid; place-items: center; padding: .4rem .45rem; color: #e8ffff; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; font-size: clamp(.72rem,2vw,.88rem); font-style: normal; white-space: nowrap; }
+.deep-sea-arcade .deep-sea-hud-counts em.is-ending { color: #ffe091; }
+.deep-sea-arcade .deep-sea-objectives { min-height: 4.4rem; padding: .25rem .45rem .4rem; background: #082d38; }
+.deep-sea-arcade .deep-sea-objectives strong { display: grid; width: min(88%,42rem); min-height: 4rem; place-items: center; margin: 0 auto; padding: .65rem 2rem; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; font-size: clamp(.85rem,2.3vw,1.05rem); line-height: 1.2; }
+.deep-sea-arcade .deep-sea-objectives > div { min-height: 3rem; flex-wrap: wrap; align-items: center; gap: .55rem; padding-top: .2rem; }
+.deep-sea-arcade .deep-sea-objectives .deep-sea-treasure-pill { display: flex; min-width: 0; min-height: 2.8rem; align-items: center; gap: .25rem; padding: .25rem .65rem; color: #e6faff; background: #15495a; font-size: clamp(.72rem,1.9vw,.86rem); white-space: nowrap; }
+.deep-sea-arcade .deep-sea-objectives .deep-sea-treasure-pill.is-done { color: #133c32; background: #8ff0c4; }
+.deep-sea-arcade .deep-sea-treasure-pill img { width: 2rem; height: 2rem; object-fit: contain; flex: none; }
+.deep-sea-arcade .deep-sea-treasure-pill i { font-style: normal; }
+.deep-sea-arcade .deep-sea-objectives .deep-sea-treasure-name { overflow: hidden; padding: 0; background: none; text-overflow: ellipsis; }
+.deep-sea-tutorial-backdrop { position: absolute; inset: 0; z-index: 39; background: rgb(0 15 25 / 48%); }
+.deep-sea-arcade .deep-sea-tutorial { top: 50%; width: min(78%,34rem); min-height: 17rem; transform: translate(-50%,-50%); padding: 3.2rem 3rem 2.4rem; font-size: clamp(1rem,2.5vw,1.2rem); }
+.deep-sea-arcade .deep-sea-tutorial p { line-height: 1.4; }
+.deep-sea-arcade .deep-sea-tutorial button { min-height: 3rem; font-size: 1rem; }
+.deep-sea-arcade .deep-sea-result { width: min(76%,36rem); min-height: 25rem; max-height: calc(100% - 2rem); overflow-y: auto; padding: 3rem 3rem 2.5rem; }
+.deep-sea-arcade .deep-sea-result p { line-height: 1.35; }
 
 @media (orientation: landscape) and (max-height: 760px) {
   .ruins-mirror-hud { padding-top: .35rem; padding-bottom: .35rem; }

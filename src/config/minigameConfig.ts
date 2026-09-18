@@ -108,7 +108,7 @@ export function chargeMinigameEntry(coins: number, gameId: MinigameId, stage: Ad
 // The arcade prototype has no item/relic drops or entry fee. Keep its settlement separate from lava rewards.
 export function applyDeepSeaPrototypeRewards(state: MinigameEconomyState, rawRewards: MinigameRunRewards, multiplier: CoinRewardMultiplier, stage: AdventureStageNumber) {
   const runCoins = Math.max(0, Math.floor(rawRewards.coins));
-  const cap = stage === 2 ? 45 : 30;
+  const cap = stage === 3 ? 60 : stage === 2 ? 45 : 30;
   const coins = Math.min(cap, getAdjustedMinigameCoins(runCoins, multiplier));
   const rewards: MinigameRunRewards = { coins, runCoins, rareFragments: 0, shopItems: [] };
   return { state: { ...state, coins: state.coins + coins }, rewards };

@@ -1,6 +1,7 @@
 import type { DinosaurHabitatId } from '../data/dinosaurSpecies';
 import type { AdventureRegionId } from '../data/adventureRegions';
 import { getMissingRelicParts, hasAllRelicParts, REGION_RELIC_PART_GOAL, REGION_RELICS } from './regionalRelicConfig';
+import { rollDeepSeaRelicPart } from './deepSea/arcadeRelicRoll';
 
 export const WORLD_GATE_REQUIRED_RELICS = 5;
 export type RegionRelicProgress = {
@@ -79,19 +80,23 @@ export function resolveLavaFinalChest(progress: RegionRelicProgress, random: () 
 export function resolveRegionFinalChest(regionId: AdventureRegionId, progress: RegionRelicProgress, random: () => number = Math.random) {
   const missingParts = getMissingRelicParts(regionId, progress.ownedPartIds);
   const eligible = missingParts.length > 0;
+  const deepSeaRoll = regionId === 'deepSeaCanyon'
+    ? rollDeepSeaRelicPart(missingParts.map(part => part.id), progress.consecutiveMisses, random)
+    : null;
   const dropRate = progress.consecutiveMisses >= LAVA_FINAL_CHEST_CONFIG.relicPityThreshold
     ? 1
     : progress.consecutiveMisses >= LAVA_FINAL_CHEST_CONFIG.relicPityBoostAfterMisses
       ? LAVA_FINAL_CHEST_CONFIG.relicPityBoostRate
       : LAVA_FINAL_CHEST_CONFIG.relicDropRate;
-  const acquired = eligible && random() < dropRate;
-  const acquiredPart = acquired ? missingParts[Math.min(missingParts.length - 1, Math.floor(random() * missingParts.length))] : undefined;
+  const acquired = deepSeaRoll ? Boolean(deepSeaRoll.partId) : eligible && random() < dropRate;
+  const acquiredPart = deepSeaRoll ? missingParts.find(part => part.id === deepSeaRoll.partId)
+    : acquired ? missingParts[Math.min(missingParts.length - 1, Math.floor(random() * missingParts.length))] : undefined;
   const ownedPartIds = acquiredPart ? [...progress.ownedPartIds, acquiredPart.id] : progress.ownedPartIds;
   const completed = progress.completed;
   const nextProgress: RegionRelicProgress = {
     ownedPartIds,
     completed,
-    consecutiveMisses: eligible ? acquired ? 0 : progress.consecutiveMisses + 1 : progress.consecutiveMisses,
+    consecutiveMisses: deepSeaRoll ? deepSeaRoll.consecutiveMisses : eligible ? acquired ? 0 : progress.consecutiveMisses + 1 : progress.consecutiveMisses,
     stage3FirstCleared: true,
     chestOpenedCount: progress.chestOpenedCount + 1,
     fossilFragmentIds: progress.fossilFragmentIds,
