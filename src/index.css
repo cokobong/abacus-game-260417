@@ -2478,6 +2478,8 @@ summary:focus-visible {
 .ice-operation__hud strong,.ice-operation__hud b { display: block; line-height: 1.25; }
 .ice-operation__hud strong { font-size: .82rem; }.ice-operation__hud b { font-size: 1.1rem; }
 .ice-operation__hud span { border-radius: .7rem; padding: .35rem .2rem; background: #d5eef4; font-size: .75rem; font-weight: 900; }
+.ice-operation__hud span.is-danger { color: #fff; background: #c83f4f; animation: ice-danger-pulse .65s ease-in-out infinite alternate; }
+@keyframes ice-danger-pulse { to { transform: scale(1.06); box-shadow: 0 0 0 .25rem rgba(255, 99, 99, .2); } }
 .ice-operation__canvas { min-height: 0; overflow: hidden; }.ice-operation__canvas canvas { display: block; margin: auto; touch-action: none; }
 .ice-operation__feedback { display: grid; min-height: 2.2rem; place-items: center; padding: .3rem .6rem; background: #e8f8fa; text-align: center; font-size: .85rem; font-weight: 900; }
 .ice-operation__direction { position: absolute; z-index: 11; top: 4.1rem; left: 50%; transform: translateX(-50%); min-width: 13rem; padding: .35rem .65rem; border: 2px solid #ffe7a9; border-radius: .7rem; background: #bf493b; color: white; text-align: center; font-size: .9rem; font-weight: 1000; pointer-events: none; }
@@ -2494,6 +2496,19 @@ summary:focus-visible {
 .ice-operation__result { width: min(92%,27rem); padding: 1.5rem; border: 4px solid #70bdd1; border-radius: 1.5rem; background: #e8fbff; color: #14435a; }
 .ice-operation__result h2 { font-size: 1.8rem; }.ice-operation__result p { margin: .6rem 0 1.2rem; }.ice-operation__result div { display: flex; gap: .5rem; justify-content: center; }
 .ice-operation__result button { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .2rem; padding: .3rem .7rem; border-radius: .75rem; background: #247a9e; color: white; font-weight: 900; }.ice-operation__result button:last-child { background: #638393; }.ice-operation__result svg { width: 1rem; }
+.ice-operation__mission-tabs { display: flex; gap: .25rem; padding: .25rem .5rem; overflow-x: auto; background: #0f4059; }
+.ice-operation__mission-tabs button { flex: 1; min-width: 7rem; padding: .35rem .45rem; border-radius: .55rem; background: #286983; color: #dff8ff; font-size: .7rem; font-weight: 900; white-space: nowrap; }
+.ice-operation__mission-tabs button[aria-current="page"] { background: #f0b34f; color: #17364a; }
+.ice-operation__tools { display: flex; gap: .35rem; }
+.ice-operation__tools button { display: flex; width: clamp(4.3rem,15vw,5.3rem); height: clamp(4.5rem,15vw,5.3rem); flex-direction: column; align-items: center; justify-content: center; border-color: #9bcbd8; background: #466b7c; font-size: 1.5rem; }
+.ice-operation__tools button.is-selected { border-color: #fff1ac; background: #e9a447; color: #16364a; box-shadow: 0 0 0 2px #fff; }
+.ice-operation__tools small { font-size: .62rem; font-weight: 900; }
+.ice-operation__tools button.is-tutorial-highlight { animation: ice-tool-pulse .8s ease-in-out infinite alternate; border-color: #fff06d; box-shadow: 0 0 0 4px rgb(255 240 109 / 45%); }
+.ice-operation__tutorial-dim { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1rem; background: rgb(4 24 39 / 72%); }
+.ice-operation__tutorial-popup { width: min(82%,31rem); padding: 1.4rem 1.25rem; border: 5px solid #bceffa; border-radius: 1.7rem; background: #eefcff; color: #153c53; text-align: center; box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 35%); }
+.ice-operation__tutorial-icon { font-size: 3rem; line-height: 1; }.ice-operation__tutorial-popup h2 { margin: .55rem 0; font-size: clamp(1.7rem,6vw,2.35rem); font-weight: 1000; }.ice-operation__tutorial-popup p { margin: 0 auto 1.1rem; white-space: pre-line; font-size: clamp(1.05rem,3.7vw,1.35rem); font-weight: 800; line-height: 1.45; }
+.ice-operation__tutorial-popup button { min-width: 10rem; min-height: 3.5rem; padding: .6rem 1.2rem; border-radius: 1rem; background: #e99d3f; color: #17384b; font-size: 1.2rem; font-weight: 1000; box-shadow: inset 0 -4px 0 rgb(118 70 19 / 25%); }
+@keyframes ice-tool-pulse { to { transform: scale(1.08); filter: brightness(1.15); } }
 .deep-sea-result div { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1.2rem; }
 .deep-sea-result button { display: flex; min-height: 3.35rem; align-items: center; justify-content: center; gap: .3rem; border-radius: 1rem; padding: .5rem; color: #fff; background: #0c7588; font-weight: 1000; touch-action: manipulation; }
 .deep-sea-result button:last-child { background: #355b66; }

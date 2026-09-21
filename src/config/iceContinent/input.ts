@@ -3,7 +3,7 @@ export type IceInputSource = 'keyboard' | 'touch' | 'gamepad';
 
 export const ICE_KEYBOARD_ACTIONS: Readonly<Record<string, IceAction>> = {
   KeyW: 'up', KeyA: 'left', KeyS: 'down', KeyD: 'right',
-  KeyK: 'actionA', KeyL: 'actionB',
+  KeyK: 'actionA', KeyL: 'actionB', Space: 'actionA',
 };
 
 // Inputs from a future touch or gamepad adapter use the same actions. Only the keyboard

@@ -6,13 +6,17 @@ import { getAdventureStage, getRegionForGame } from '../adventureStageCatalog';
 import { canPlayAdventureStage, normalizeAdventureStageProgress } from '../../utils/adventureStageProgress';
 import { chargeMinigameEntry } from '../minigameConfig';
 
-test('only ice Stage 1 is playable and its prototype entry is free', () => {
+test('ice Stage 1 and implemented Stage 2 follow sequential progression and stay free', () => {
   const progress = normalizeAdventureStageProgress({});
   assert.equal(getRegionForGame('ice-operation-arcade'), 'iceContinent');
   assert.equal(getAdventureStage('iceContinent', 1).implemented, true);
   assert.equal(canPlayAdventureStage(progress, 'iceContinent', 1), true);
+  assert.equal(getAdventureStage('iceContinent', 2).implemented, true);
   assert.equal(canPlayAdventureStage(progress, 'iceContinent', 2), false);
   assert.equal(canPlayAdventureStage(progress, 'iceContinent', 3), false);
+  const stageOneComplete = normalizeAdventureStageProgress({ iceContinent: { completedStages: [1], visitedStages: [1] } });
+  assert.equal(canPlayAdventureStage(stageOneComplete, 'iceContinent', 2), true);
+  assert.equal(canPlayAdventureStage(stageOneComplete, 'iceContinent', 3), false);
   assert.equal(chargeMinigameEntry(10, 'ice-operation-arcade', 1), 10);
 });
 

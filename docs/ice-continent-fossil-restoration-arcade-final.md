@@ -1,5 +1,7 @@
 # 얼음대륙 화석 복원 아케이드 최종 기획
 
+> Stage 2 운영 아케이드의 최신 구현 기준은 `ice-continent-stage2-operations-arcade.md`를 따른다.
+
 > **얼음대륙 구현의 최우선 기준 문서.** 기존 기획 문서는 보존한다. 얼음대륙에 관한 기존 운영형 아케이드 문서, 공통 Stage·유물 문서와 충돌하면 이 문서를 우선한다. 공통 시스템의 다른 지역 규칙은 변경하지 않는다. 이 문서는 구현 전 설계이며, 아래 데이터 구조는 제안이다.
 
 ## 1. 게임의 목표와 차별점
@@ -55,16 +57,18 @@
 
 ## 6. Stage 구성과 시간
 
-진행 순서는 **Stage 1 → 2-1 → 2-2 → 2-3 → 2-4 → 3-1 → 3-2 → 3-3 → 3-4 → 3-5**다. Stage 1은 공장 원리를 익히는 입문, Stage 2의 네 미션은 **작은 화석 표본을 하나씩 실제로 복원하는 실전 발굴 챕터**, Stage 3의 다섯 미션은 대형 공룡 전체 골격 복원과 고유 유물 획득이다. 이것은 기존 공통 1·2·3단계 목록과 다른 얼음대륙 전용 미션 단위다. 클리어 기록과 재도전은 각 미션 ID별로 보존한다.
+최종 캠페인은 **Stage 1 입문 3미션 + Stage 2 소형 화석 4미션 + Stage 3 전체 골격 15미션 = 총 22미션**이다. 별도 무한 모드나 복원 작업실 모드는 만들지 않는다. 이것은 기존 공통 1·2·3단계 목록 안에 보이는 얼음대륙 전용 하위 미션이며, 클리어·방문·최초 보상 상태는 `1-1`부터 `3-15`까지의 미션 ID별로 보존한다.
 
 | 미션 | 목표와 새 요소 | 목표 플레이 시간 | 동시 문제 상한 |
 | --- | --- | --- | --- |
-| 1 | 좌우·사다리 이동, 생산 흐름, 기본 공구, 간단한 방해자 소개. 실패는 쉽게 발생하지 않음 | 약 90~120초 | 1 |
+| 1-1~1-3 | 이동 → 생산라인 관찰 → 기본 공구·수리 종합 | 각 1~2분 | 1 |
 | 2-1 | 티라노사우루스 발톱 화석. 단일 문제, 공구 3종 판단, 가장 작은 단일 표본 | 약 2~3분 | 1 |
 | 2-2 | 트리케라톱스 작은 뿔 화석. 펭귄 등장, 설비 문제와 생물 방해 구분 | 약 2~3분 | 간헐적으로 2 |
 | 2-3 | 스피노사우루스 척추 돌기 화석. 영향도가 다른 두 문제의 우선순위 판단 | 약 2~3분 | 2 |
 | 2-4 | 작은 공룡 발 화석 세트. 공구 3종·펭귄·생산 체인·여러 부품 조립·시간 압박 | 약 2~3분 | 2 |
-| 3-1~3-5 | 각기 다른 공룡의 완전한 골격 복원 | 각 300초 | Phase별 설정 |
+| 3-1~3-15 | 공룡 5종 × 머리/몸통/다리·꼬리 계열 3미션. 세 번째마다 전체 골격 결합 | 초반 3~4분, 중반 4~5분, 후반 4~6분 | 1~3 |
+
+Stage 1의 세 미션은 이동, 생산 흐름, 기본 수리를 순차 학습한다. Stage 2의 네 미션은 실제 운영과 표본 수집을 담당한다. Stage 3는 흐름 관찰 → 병목 식별 → 작업 순서 → 유지보수 → 우선순위·멀티태스킹으로 판단 능력을 확장한다. 이 운영 학습은 다음 프로젝트인 마트 경영 시뮬레이션의 흐름·병목·우선순위 판단으로 이어지는 bridge다.
 
 ### Stage 2: 소형 화석 표본 복원
 
@@ -83,19 +87,19 @@ Stage 2는 Stage 3로 빨리 통과하기 위한 형식적 튜토리얼이 아�
 
 ### Stage 3: 대형 골격 복원
 
-Stage 3 한 판은 Phase 1(약 첫 60초, 문제 적음) → Phase 2(운영, 평균 동시 문제 1~2개) → Phase 3(혼란, 동시 최대 2~3개와 방해자 조합) → Phase 4(마지막 부품 장착과 시간 압박)로 진행한다. 각 Phase의 경계는 플레이테스트로 조정 가능한 설정값이다. 이상적인 무실수 완료 목표는 약 230~250초로, 50~70초의 이동·실수·방해 여유를 둔다. 핵심 설비를 오래 방치하면 300초를 넘기도록 한다.
+Stage 3는 5종 공룡을 각 3미션에 걸쳐 복원한다. 첫 미션은 해당 공룡의 운영 테마를 소개하고, 둘째는 변형·심화하며, 셋째는 종합 운영 뒤 전체 골격을 결합한다. 초반은 3~4분, 중반은 4~5분, 후반은 4~6분을 목표로 하며 실패 후 재도전 가능한 아케이드 길이를 유지한다. 한 판 안의 사건은 검증된 Event Pattern을 따르고 시간에는 작은 jitter만 허용한다. 완전 랜덤 사건 생성은 금지한다.
 
-## 7. Stage 3 화석과 확정 보상
+## 7. Stage 3 15미션과 확정 보상
 
-| 미션 | 완성 골격 | 특징 | 최초 클리어 확정 보상 ID 제안 | 플레이어에게 보이는 이름 |
+| 미션 | 공룡 | 복원 묶음 | 운영 테마 | 세 번째 미션 확정 보상 |
 | --- | --- | --- | --- | --- |
-| 3-1 | Tyrannosaurus | 기본 종합 운영 | `ice_tyranno_skull` | 티라노 얼음 두개골 |
-| 3-2 | Triceratops | 큰 두개골과 뿔 | `ice_tricera_horn` | 트리케라 얼음 뿔 |
-| 3-3 | Spinosaurus | 긴 척추와 돛 | `ice_spino_spine` | 스피노 얼음 척추뼈 |
-| 3-4 | Mosasaurus | 긴 몸통과 큰 턱 | `ice_mosa_jaw` | 모사 얼음 턱뼈 |
-| 3-5 | Pteranodon | 긴 날개뼈 | `ice_ptera_wing` | 프테라 얼음 날개뼈 |
+| 3-1~3-3 | Tyrannosaurus | 머리 → 몸통 → 다리·꼬리 | 기본 운영, 이동, backlog | `eternal_ice_crystal` |
+| 3-4~3-6 | Triceratops | 머리·뿔 → 몸통 → 다리·꼬리 | 무거운 공정과 병목 | `glacier_crown_frame` |
+| 3-7~3-9 | Spinosaurus | 머리 → 몸통·신경가시 → 다리·꼬리 | 순서와 shared machine | `mammoth_medal` |
+| 3-10~3-12 | Mosasaurus | 머리 → 몸통 → 지느러미·꼬리 | 결빙과 예방 유지보수 | `snowflake_crown_ornament` |
+| 3-13~3-15 | Pteranodon | 머리·부리 → 몸통·날개 → 날개·다리 | 고속 생산과 종합 운영 | `frost_core` |
 
-각 미션 최초 클리어 시 해당 보상을 **확정·한 번만** 지급한다. 이후 재플레이는 가능하나 유물을 다시 주지 않는다. 사건 위치·시점, 펭귄 위치, 고장 조합, 사건 패턴을 미리 검증된 후보 안에서 일부 바꾼다. 완전 무작위 생성은 하지 않는다. 예시 패턴은 `전원 문제 → 펭귄 등장`, `컨베이어 막힘 → 해빙기 동결`, `화석 절도 → 발전기 이상`이다. 각 패턴은 접근 가능성, 해결 가능성, 동시 발생 상한, 남은 시간 대비 공정성을 사전 검증한다.
+각 공룡의 첫째·둘째 미션은 골격 진행만 저장하고, 셋째 미션인 **3-3·3-6·3-9·3-12·3-15** 최초 클리어 시 전체 골격 연출 뒤 위 유물 부품을 확정·한 번만 지급한다. 이후 재플레이는 가능하나 유물을 다시 주지 않는다. 이 ID는 현재 `regionalRelicConfig.ts`의 `frost_crystal_crown` 다섯 부품을 그대로 사용한다. 공통 확률 상자와 pity 경로는 호출하지 않는다.
 
 5종을 모두 얻으면 **빙결 화석 제단**의 5개 슬롯에 각각 장착한다. 중앙 얼음 활성화, 공룡 문양·화석 실루엣 점등, 균열과 빛 효과 후 `빙결 화석 제단 복원 완료`를 보여준다. 서로 다른 화석을 한 물건으로 합치는 연출은 쓰지 않는다. 공통 `relicPart`의 ID 집합·복원 상태·저장·유물 보관 UI는 활용할 수 있으나 보상 선택은 미션 ID에 의해 결정되며 확률·중복 추첨은 사용하지 않는다.
 
@@ -103,7 +107,7 @@ Stage 3 한 판은 Phase 1(약 첫 60초, 문제 적음) → Phase 2(운영, 평
 
 얼음대륙은 독립 게임이 아니라 주산 훈련 뒤 얻은 자원과 기회로 들어가는 모험 콘텐츠다. **주산은 모험을 열어주는 자원이고, 모험은 그 자원을 소비하면서 충분히 오래 즐길 수 있어야 한다.** 주산 훈련은 접근 자원·코인·해금과 연결할 수 있으나, 미니게임 클리어는 실제 운영 실력으로 결정한다. 주산을 많이 했다고 자동 클리어하거나, 게임이 어렵다는 이유로 주산을 과도하게 반복하게 하지 않는다. 학습 게이트와 게임 난이도는 별개 조절축이며 구체적인 해금 조건은 추후 정한다.
 
-한두 판에 콘텐츠가 소진되지 않도록 Stage 2의 네 표본 복원을 충분한 플레이 경험으로 만든다. 쉬운 통과 의례나 강제 반복 노가다 대신, 변화하는 생산물·방해 대응·수집의 재미가 체류시간을 만든다. Stage 2는 각각 약 2~3분, Stage 3는 다섯 미션 각각 약 5분을 기준으로 한다. 어려움은 불공정한 랜덤이나 무작정 늘린 시간에서 오지 않고 생산 영향 파악, 이동 동선, 공구 선택, 우선순위 숙련에서 온다. 첫 클리어 이후 재플레이는 검증된 사건 패턴의 변형으로 신선함을 제공한다.
+한두 판에 콘텐츠가 소진되지 않도록 Stage 2의 네 표본과 Stage 3의 15미션을 충분한 플레이 경험으로 만든다. 쉬운 통과 의례나 강제 반복 노가다 대신, 변화하는 생산물·방해 대응·수집의 재미가 체류시간을 만든다. Stage 2는 각각 약 2~4분, Stage 3는 진행도에 따라 약 3~6분이다. 어려움은 불공정한 랜덤이나 무작정 늘린 시간에서 오지 않고 생산 영향 파악, 이동 동선, 병목, 작업 순서, 공유 설비, 공구 선택, 우선순위 숙련에서 온다.
 
 ## 9. 밸런스 설정 원칙
 
@@ -116,7 +120,7 @@ Stage 3 한 판은 Phase 1(약 첫 60초, 문제 적음) → Phase 2(운영, 평
 | 방해·동선 | `interferenceFrequency`, `interferenceDuration`, `travelDistance` 또는 `mapScale`, `eventPatternPool` | 펭귄 등 방해 빈도·지속, 이동 부담, 검증된 사건 조합 |
 | 학습·접근 | `tutorialAssistLevel`, `unlockRequirement`, `entryCost` | 도움말 강도, 진입 조건, 자원 소비. 게임 내부 난이도와 분리 |
 
-기존 초안의 `eventFrequency`·`eventImpact`·`eventDuration`·`stageTimeLimit`은 각각 사건 빈도·영향·지속·제한시간과 같은 개념이며, 구현 시 프로젝트 명명법에 맞춰 하나의 이름으로 통일한다. Stage 3의 기준값은 제한 300초·이상적 완료 230~250초이며 다른 값은 플레이테스트 후 확정한다. 사건 빈도와 거리뿐 아니라 실제 생산 중단 누적 시간도 측정해 조정한다.
+기존 초안의 `eventFrequency`·`eventImpact`·`eventDuration`·`stageTimeLimit`은 각각 사건 빈도·영향·지속·제한시간과 같은 개념이며 구현 시 하나의 이름으로 통일한다. Mission Config는 round duration, 생산·공정 속도, 사건 간격·지연·동시 상한·경고, 수리·오답 패널티, 펭귄, player speed, machine criticality, backlog, event pattern, travel distance를 모두 분리한다. 상세 타입과 15개 초안은 [`ice-continent-mission-config-spec.md`](./ice-continent-mission-config-spec.md), 미션별 설계는 [`ice-continent-stage3-mission-design.md`](./ice-continent-stage3-mission-design.md)를 따른다.
 
 ## 10. 프로토타입 우선 검증
 
@@ -132,12 +136,12 @@ HP·생명, 전투·공격, 적 처치, 점프 플랫폼, RPG 장비·캐릭터 
 
 | 항목 | 현재 상태와 재사용 가능성 | 구현 전 결정·충돌 |
 | --- | --- | --- |
-| 얼음대륙 파일 | `src/config/adventureRegionStatus.ts`에서 `iceContinent: 'locked'`. `src/config/adventureStageCatalog.ts`에는 미구현 1·2·3 세 항목만 존재한다. 별도 얼음대륙 게임 호스트·scene·config·전용 플레이 에셋은 확인되지 않았다. | 지역 해금 시점과 10개 미션의 공통 목록 노출 방식을 정해야 한다. |
-| 게임 진입 | `AdventureGameShell.tsx`는 용암·하늘·유적·심해만 분기하고 나머지는 준비 화면으로 보낸다. `getRegionForGame`에도 얼음대륙 gameId가 없다. `App.tsx`는 shell에 `stageNumber: 1\|2\|3`을 전달한다. | 얼음대륙 gameId와 미션 ID(`1`, `2-1`…`3-5`)를 별도로 연결해야 한다. 기존 숫자 3에 다섯 미션을 덮어쓰면 안 된다. |
+| 얼음대륙 파일 | `src/config/adventureRegionStatus.ts`에서 `iceContinent: 'open'`, 공통 catalog의 Stage 1만 구현 상태다. Stage 1 runtime과 별도 1차/2차 prototype 진입점이 존재한다. | 기존 코드를 보존하고 22미션용 config runtime을 별도 확장한다. 공통 Stage 세 칸을 22개 항목으로 직접 바꾸지 않는다. |
+| 게임 진입 | `ice-operation-arcade`와 Stage 1 Host 연결은 존재하며 prototype은 query entry로 분리되어 있다. 공통 shell은 `stageNumber: 1\|2\|3`을 사용한다. | 얼음대륙 내부 미션 ID(`1-1`…`3-15`)와 공통 Stage 번호를 어댑터로 연결한다. 기존 숫자 3에 15미션을 덮어쓰지 않는다. |
 | 진행 저장 | `adventureStageProgress.ts`는 지역당 1·2·3의 순차 완료·방문만 저장한다. `completeAdventureStage`도 3 이후 해금을 표현하지 못한다. | 얼음대륙 전용 미션별 최초 클리어·방문 상태가 필요하다. 기존 저장 데이터의 1·2·3과 의미를 혼동하지 않도록 버전과 마이그레이션을 정의한다. |
 | Stage 2 표본 | 현재 공통 유물 구조는 `relicPart`와 지역 완성 유물 중심이다. | 네 소형 표본은 별도 수집 ID와 전시 상태로 보존한다. `ownedPartIds`, 코인, 제단 슬롯에 넣지 않는다. |
 | 실행·보상 콜백 | `App.tsx`의 `startAdventureGame`·`finishAdventureRun`, `MinigameRunRewards`, `runId` 흐름과 `DeepSeaGameHost.tsx`의 Phaser 동적 import·취소·`destroy()` 수명주기를 참고할 수 있다. | 최초 클리어 확정 유물 지급은 중복 콜백·재도전에도 한 번만 적용되어야 한다. 현재 finish 인터페이스가 미션 ID와 고유 유물 지급을 직접 표현하지 않는다. |
-| 공통 유물 | `regionalRelicConfig.ts`에 얼음대륙 `frost_crystal_crown`과 왕관 부품 5개가 있으며 `src/assets/adventure/relics/`에도 해당 PNG, 제단 UI가 있다. `worldMapRelicConfig.ts`는 `ownedPartIds`, `completed`, `stage3FirstCleared`를 저장·정규화하고 `canRestoreRegionRelic`을 제공한다. 보관·복원 화면도 공통 구조를 사용한다. | 왕관 정의·에셋을 새 제단 및 5개 공룡 화석 보상으로 바꿔야 한다. 기존 저장의 왕관 부품·완료 상태를 어떻게 보존·전환할지 명시해야 한다. 다른 지역 유물에는 영향이 없어야 한다. |
+| 공통 유물 | `regionalRelicConfig.ts`에 얼음대륙 `frost_crystal_crown`과 왕관 부품 5개가 있으며 `src/assets/adventure/relics/`에도 해당 PNG와 제단 UI가 있다. `worldMapRelicConfig.ts`는 `ownedPartIds`, `completed`, `stage3FirstCleared`를 저장·정규화하고 `canRestoreRegionRelic`을 제공한다. | 왕관 정의·부품 ID·에셋은 그대로 재사용한다. 3-3·3-6·3-9·3-12·3-15를 다섯 부품에 고정 매핑하고, 기존 단일 `stage3FirstCleared` 대신 미션별 지급 여부를 추가한다. |
 | 기존 보상 규칙 | `resolveRegionFinalChest`는 미보유 부품을 확률·pity로 뽑는 공통 경로이고 `stage3FirstCleared`는 지역 단일 플래그다. | 얼음대륙은 이 추첨을 호출하지 않고 미션별 확정 지급 경로를 써야 한다. 단일 최초 클리어 플래그로는 다섯 보상을 구분할 수 없다. `ownedPartIds`는 활용 가능하나 새 ID가 허용 목록에 등록되어야 저장 정규화에서 사라지지 않는다. |
 | 부가 의존성 | `AdventureMapScreen.tsx`와 `worldMapRelicConfig.ts`가 지역 유물 완성도를 표시하고 `eggPurchaseState.ts`·`legendaryEggConfig.ts`는 얼음대륙 유물 수를 전설 알 조건에 활용한다. | 제단 5/5와 `completed`의 의미, 기존 완료 저장이 세계의 문·전설 알에 미치는 영향을 함께 정한다. |
 | 에셋·화면 | 현재 얼음대륙 전용 생산라인·공룡 골격·펭귄·아이 캐릭터 에셋은 확인되지 않았다. 공통 얼음 지역 카드·옛 왕관 에셋은 존재한다. `App.tsx`에는 `env(safe-area-inset-bottom)` 사용 예가 있다. | 새 시각 자산 계획이 필요하다. 기존 전역 터치 가이드는 가로 태블릿을 우선하므로 세로 게임 HUD는 별도 배치 검증이 필요하다. |
@@ -146,18 +150,18 @@ HP·생명, 전투·공격, 적 처치, 점프 플랫폼, RPG 장비·캐릭터 
 
 ## 13. 구현용 데이터 구조 초안
 
-아래는 **파일이나 타입 선언을 생성하지 않은 설계 초안**이다. 기존 공통 `AdventureStageNumber`를 곧바로 확장하기보다 얼음대륙 전용 `IceMissionId = '1' | '2-1' | ... | '3-5'`를 두고 공통 지도·진행 상태와 어댑터로 연결한다.
+아래는 설계 계약이다. 기존 공통 `AdventureStageNumber`를 곧바로 확장하기보다 얼음대륙 전용 `IceMissionId = '1-1' | ... | '3-15'`를 두고 공통 지도·진행 상태와 어댑터로 연결한다. 전체 TypeScript 초안은 [`ice-continent-mission-config-spec.md`](./ice-continent-mission-config-spec.md)를 따른다.
 
 | 제안 모델 | 주요 필드와 역할 |
 | --- | --- |
-| `IceStageConfig` | `missionId`, `kind`(tutorial/sample/restoration), `fossilId` 또는 `sampleId`, `mapId`, `availableMachines`, `issuePool`, `eventPatternPool`, `phaseConfigs`, `timeLimit`, `idealClearTime`, `productionRate`, `requiredFossilParts`, `issueFrequency`, `maxConcurrentIssues`, `issueImpact`, `issueDuration`, `machineCriticality`, `wrongToolPenalty`, `interferenceFrequency`, `interferenceDuration`, `travelDistance`/`mapScale`, `tutorialAssistLevel`, `unlockRequirement`, `entryCost`, `rewardId`. Stage 1에서는 불필요한 필드를 선택적으로 둔다. 학습 게이트와 내부 난이도 값은 별도 묶음으로 관리한다. |
+| `IceMissionConfig` | `id`, `stage`, `kind`, `dinosaur`, `fossilPartIds`, `mapTemplate`, `mapVariant`, `roundDurationSec`, `targetPlayTimeSec`, `player`, `production`, `issues`, `penguins`, `objective`, `reward`, `eventPatternIds`. 좌표는 Map Template, 난이도 수치는 Config가 소유한다. |
 | `IceMachineConfig` | `id`, `floor`, `worldPosition`, `inputStep`, `outputStep`, `upstreamIds`, `powerSourceId`, `machineCriticality`, `supportedIssueIds`, `normalThroughput`. 설비 간 정지 전파를 데이터로 표현한다. |
 | `IceProductionStep` | `id`, `inputVisual`, `outputVisual`, `machineId`, `travelPath`, `processingTime`, `bonePartId`. 월드 생산물의 상태·외형·이동을 연결한다. |
 | `IceIssueConfig` | `id`, `kind`(machine/creature/environment), `targetIds`, `requiredAction`, `eventImpact`, `eventDuration`, `wrongToolPenalty`, `interferenceDuration`, `severity`, `resolveCondition`. 펭귄 등은 공구 정답 대신 상호작용 조건을 둔다. |
 | `IceEventPattern` | `id`, `eligibleMissionIds`, `phase`, `orderedIssueIds`, `candidateLocations`, `timingWindow`, `minTravelTime`, `maxConcurrentIssues`, `validationRules`. 검증된 조합만 재플레이에서 변형한다. |
 | `IceFossilConfig` | `id`, `name`, `skeletonAsset`, `requiredBoneParts`(ID·장착 위치·순서·시각 상태), `productionRecipe`. 복원도는 필수 부품 장착 수에서 계산한다. |
 | `IceSampleConfig` | Stage 2 전용 `id`, `missionId`, `displayName`, `sampleParts`, `productionRecipe`, `displayAsset`, `displaySlot`. 단일 화석 3종과 다부품 발 화석 세트를 구분하고 유물 정의와 분리한다. |
-| `IceRelicRewardConfig` | `missionId`, `partId`, `displayName`, `image`, `grantPolicy: firstClearOnly`, `finalRelicId: ice_fossil_altar`, `altarSlot`. 미션별 확정 보상과 슬롯이 1:1 대응한다. |
+| `IceRelicRewardConfig` | `missionId`, `partId`, `grantPolicy: firstClearOnly`, `finalRelicId: frost_crystal_crown`, `altarSlot`. 기존 다섯 부품 ID와 미션별 확정 보상이 1:1 대응한다. |
 | `IceMissionProgress` | `completedMissionIds`, `visitedMissionIds`, `restoredSampleIds`, `claimedRewardIds`, `altarRestored`, `saveVersion`. 실행 중 생산 상태와 영구 보상을 분리한다. `restoredSampleIds`는 Stage 2 전시 전용이고 `ownedPartIds`와 섞지 않는다. Stage 3의 `claimedRewardIds`는 기존 `ownedPartIds`와 중복 지급 방지 규칙을 일치시킨다. |
 
-첫 구현 범위는 **60~90초 세로 화면 vertical slice**다. 1층 주 통로와 짧은 사다리, 원석→가공→골격 부품 1개 장착, 정비·해빙 문제 2종, 펭귄 1종, 터치 패드와 공구 탭, 화면 밖 경고 1개, 시간 종료와 재도전을 포함한다. 이 단계에서 공통 유물 저장 변경이나 Stage 3의 다섯 미션 전체 제작은 진행하지 않는다.
+1차·2차 vertical slice는 생산 이동, 외형 변화, 공구, 펭귄, backlog, 복원대 장착을 검증하는 참고 구현으로 보존한다. 다음 runtime 작업은 이 검증 요소를 Map Template + Mission Config 구조로 옮기는 것이며, 한 번에 Stage 3 15미션 전체나 보상 저장까지 연결하지 않는다.

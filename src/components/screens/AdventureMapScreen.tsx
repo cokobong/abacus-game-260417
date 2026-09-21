@@ -227,7 +227,8 @@ export const WORLD_GATE_RELIC_SLOT_POSITIONS: Record<AdventureRegionId, { left: 
 
 function RegionDetailModal({ region, coins, onClose, onStart, stageProgress }: { key?: string; region: AdventureRegion; coins: number; onClose: () => void; onStart: (stageNumber: AdventureStageNumber) => void; stageProgress: AdventureStageProgress }) {
   const [selectedStage, setSelectedStage] = useState<AdventureStageNumber>(1);
-  const canPlay = canPlayAdventureStage(stageProgress, region.id, selectedStage);
+  const canDevPlayIceStage2 = import.meta.env.DEV && region.id === 'iceContinent' && selectedStage === 2;
+  const canPlay = canPlayAdventureStage(stageProgress, region.id, selectedStage) || canDevPlayIceStage2;
   const entryCost = region.entryCost ?? 0;
   const isOpen = region.status === 'open' && Boolean(region.gameId);
   const canAfford = coins >= entryCost;
@@ -243,8 +244,10 @@ function RegionDetailModal({ region, coins, onClose, onStart, stageProgress }: {
           <p className="mt-1 text-sm font-bold text-amber-800">{region.description}</p>
           <div className="adventure-stage-options" role="group" aria-label={`${region.name} Stage 선택`}>
             {ADVENTURE_STAGE_CATALOG[region.id].map((stage) => {
-              const state = getAdventureStageState(stageProgress, region.id, stage.stageNumber);
-              const enabled = isOpen && canPlayAdventureStage(stageProgress, region.id, stage.stageNumber);
+              const devIceStage2 = import.meta.env.DEV && region.id === 'iceContinent' && stage.stageNumber === 2 && stage.implemented;
+              const persistedState = getAdventureStageState(stageProgress, region.id, stage.stageNumber);
+              const state = devIceStage2 && persistedState === 'locked' ? 'new' : persistedState;
+              const enabled = isOpen && (canPlayAdventureStage(stageProgress, region.id, stage.stageNumber) || devIceStage2);
               const label = state === 'locked' ? 'LOCKED · 잠김' : state === 'completed' ? '완료 · 다시 선택' : state === 'new' ? 'NEW' : '선택 가능';
               const isSelected = selectedStage === stage.stageNumber;
               const card = region.id === 'lavaValley' ? lavaValleyStageSelectAssets.cards[stage.stageNumber] : region.id === 'skyIsland' ? skyIslandAssets.stageEntries[stage.stageNumber] : null;

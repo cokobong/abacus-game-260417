@@ -42,8 +42,8 @@ export function AdventureGameShell({ gameId, stageNumber, dinosaur, onExit, runI
     return <DeepSeaArcadeHost stageNumber={stageNumber} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
   }
 
-  if (gameId === 'ice-operation-arcade' && stageNumber === 1) {
-    return <IceContinentGameHost runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
+  if (gameId === 'ice-operation-arcade' && (stageNumber === 1 || stageNumber === 2)) {
+    return <IceContinentGameHost missionId={stageNumber === 1 ? '1-1' : '2-1'} runId={runId} onExit={onExit} onFinishRun={onFinishRun} onRetry={onRetry} />;
   }
 
   return (
