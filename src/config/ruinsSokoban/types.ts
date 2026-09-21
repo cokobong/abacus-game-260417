@@ -10,12 +10,31 @@ export interface SokobanTutorialConfig {
   suggestedDirection?: SokobanDirection;
   dangerCells?: readonly SokobanPoint[];
   hintSteps: readonly string[];
+  hintMilestones?: readonly SokobanHintMilestone[];
+}
+
+export interface SokobanHintMilestone {
+  id: string;
+  boxKeys: readonly string[];
+  boxPositions: readonly string[];
+  targetBoxIndex: number;
+  direction: SokobanDirection;
+  hints: readonly [string, string, string];
+}
+
+export interface SokobanRuntimeSnapshot {
+  player: SokobanPoint;
+  boxes: readonly SokobanPoint[];
+  goalsCompleted: number;
+  moveCount: number;
+  pushCount: number;
+  deadlock: boolean;
 }
 
 export interface SokobanPuzzleConfig {
   id: string;
-  stage: 1 | 2;
-  mission: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  stage: 1 | 2 | 3;
+  mission: number;
   title: string;
   instruction: string;
   board: readonly string[];

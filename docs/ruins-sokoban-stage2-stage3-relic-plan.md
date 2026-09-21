@@ -1,6 +1,6 @@
 # 오래된 유적지 Sokoban Stage 2·3 및 유물 엔딩 조사와 설계
 
-> **최신 확정 구조:** Stage 1의 현행 7문제는 유지한다. 아이가 이미 클리어한 현행 Stage 2의 3문제는 **전부 목업 기준점으로만 보존하고 정식 설계 데이터에서 제외**한다. Stage 2는 새 훈련 퍼즐 10문제, Stage 3은 새로 검토한 유물의 방 5문제다. 각 Stage 3 미션의 최초 클리어에 서로 다른 유물 부품을 확정 지급하고 5종 수집 후 보관소에서 `ancient_sun_tablet`을 복원한다. 도전방은 별도 선택 콘텐츠로 예약한다. 정식 설계 후보는 [퍼즐 사양](ruins-sokoban-puzzle-spec.md), [신규 보드 JSON](ruins-sokoban-puzzles.json), [solver 검증 결과](ruins-sokoban-solver-report.json)에 있다. 이전 목업은 [분리된 기록](ruins-sokoban-prototype-stage2.json)에만 있다. **현행 게임 코드는 여전히 목업 3문제를 실행하며, 이번 작업에서 React/Phaser 연결을 바꾸지 않았다.**
+> **구 기획 기록:** 이 문서의 Stage 3 5문제·문제별 부품 지급안은 2026-09-20의 20문제 캠페인 설계로 대체되었다. 최신 구조는 [Stage 3 캠페인](ruins-sokoban-stage3-campaign.md), [퍼즐 JSON](ruins-sokoban-puzzles.json), [solver 보고서](ruins-sokoban-solver-report.json)를 따른다. Stage 1 7문제와 Stage 2 10문제는 유지하며, Stage 3는 3-1~3-20 순차 진행 및 3-4·3-8·3-12·3-16·3-20 확정 milestone 지급 방식이다. 아래 내용은 조사 이력 보존을 위해 삭제하지 않는다. **React/Phaser 런타임 연결은 여전히 범위 밖이다.**
 
 ## 1. 현행 Stage 구조
 

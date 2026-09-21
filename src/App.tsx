@@ -23,7 +23,7 @@ import { TrainingReport } from './components/TrainingReport';
 import { AdventureGameShell, AdventureMapScreen, DexScreen, DinosaurRoomScreen, HatcheryScreen, HomeScreen, SettingsScreen, ShopScreen, TrainingScreen } from './components/screens';
 import { getAdventureStage, getRegionForGame, type AdventureStageNumber } from './config/adventureStageCatalog';
 import { canPlayAdventureStage, completeAdventureStage, normalizeAdventureStageProgress, visitAdventureStage, type AdventureStageProgress } from './utils/adventureStageProgress';
-import { clearRuinsMission, normalizeRuinsSokobanClears } from './utils/ruinsSokobanProgress';
+import { completeRuinsMissionWithReward, normalizeRuinsSokobanClears } from './utils/ruinsSokobanProgress';
 import type { HatchResult } from './components/screens/HatcheryScreen';
 import { getEggItemConfig, getEggRequiredFragments, getFoodItemConfig, getHatchItemConfig, getItemConfig, itemConfigs, type DinosaurStatEffect } from './config/itemConfig';
 import { trainingFatigueConfig } from './config/trainingFatigueConfig';
@@ -2080,12 +2080,18 @@ export default function App() {
 
   function completeRuinsSokobanMission(missionId: string) {
     const current = gameStateRef.current;
-    const cleared = clearRuinsMission(current.ruinsSokobanClearedMissionIds, missionId);
-    if (cleared.length === current.ruinsSokobanClearedMissionIds.length) return;
-    const nextState = { ...current, ruinsSokobanClearedMissionIds: cleared };
+    const relics = normalizeRegionRelicProgress(current.regionRelicProgress);
+    const completion = completeRuinsMissionWithReward(current.ruinsSokobanClearedMissionIds, relics.ancientRuins, missionId);
+    if (!completion.newlyCleared && !completion.awardedPartId) return completion;
+    const nextState = {
+      ...current,
+      ruinsSokobanClearedMissionIds: completion.clearedMissionIds,
+      regionRelicProgress: { ...relics, ancientRuins: completion.relicProgress },
+    };
     gameStateRef.current = nextState;
     setGameState(nextState);
     saveGameState(nextState);
+    return completion;
   }
 
   function exitAdventureGame() {
@@ -2704,7 +2710,7 @@ export default function App() {
         )}
         {activeTab === 'adventure' && (
           activeAdventureRun
-            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={(retryAfterFailure) => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber, retryAfterFailure)} ruinsClearedMissionIds={gameState.ruinsSokobanClearedMissionIds} onRuinsMissionComplete={completeRuinsSokobanMission} relicPartCount={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].ownedPartIds.length} fossilFragmentIds={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].fossilFragmentIds} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
+            ? <AdventureGameShell key={activeAdventureRun.runId} gameId={activeAdventureRun.gameId} stageNumber={activeAdventureRun.stageNumber} runId={activeAdventureRun.runId} dinosaur={activeOwnedDinosaur} onExit={exitAdventureGame} onFinishRun={finishAdventureRun} onRetry={(retryAfterFailure) => startAdventureGame(activeAdventureRun.gameId, activeAdventureRun.runId, false, activeAdventureRun.stageNumber, retryAfterFailure)} ruinsClearedMissionIds={gameState.ruinsSokobanClearedMissionIds} ruinsRelicPartIds={normalizeRegionRelicProgress(gameState.regionRelicProgress).ancientRuins.ownedPartIds} onRuinsMissionComplete={completeRuinsSokobanMission} relicPartCount={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].ownedPartIds.length} fossilFragmentIds={normalizeRegionRelicProgress(gameState.regionRelicProgress)[activeAdventureRun.gameId === 'sky-number-clouds' ? 'skyIsland' : 'lavaValley'].fossilFragmentIds} externalMainModalOpen={pendingAdventureEntry?.expectedRunId === activeAdventureRun.runId || adventureEntryShortage?.expectedRunId === activeAdventureRun.runId} />
             : <div className="h-full min-h-0 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-[calc(4.75rem+env(safe-area-inset-bottom))]"><AdventureMapScreen coins={gameState.player.coins} stageProgress={gameState.adventureStageProgress} discoveredSpeciesIds={gameState.discoveredSpeciesIds} relicProgress={gameState.regionRelicProgress} onRestoreRelic={restoreRegionRelic} onStartGame={(gameId, stageNumber) => startAdventureGame(gameId, undefined, true, stageNumber)} /></div>
         )}
         {stageUnlockNotice && activeTab === 'adventure' && <div role="status" className="adventure-stage-notice"><span>{stageUnlockNotice}</span><button type="button" aria-label="Stage 해금 안내 닫기" onClick={() => setStageUnlockNotice(null)}>확인</button></div>}

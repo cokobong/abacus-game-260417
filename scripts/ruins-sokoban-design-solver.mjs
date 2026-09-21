@@ -1,7 +1,7 @@
 // Documentation-time solver. Reads puzzle candidates; does not connect to the game.
 import fs from 'node:fs';
 
-export function solve({ id, board }, { metric = 'push', forbidAway = false, forbidGoalExit = false, forbidDirections = '', orderConstraint = null, forbiddenAssignment = null, forbiddenPush = null, forbiddenDestination = null } = {}) {
+export function solve({ id, board }, { metric = 'push', forbidAway = false, forbidGoalExit = false, forbidDirections = '', orderConstraint = null, forbiddenAssignment = null, forbiddenPush = null, forbiddenDestination = null, maxExpanded = Infinity } = {}) {
   const height = board.length;
   const width = board[0]?.length ?? 0;
   if (!width || board.some(row => row.length !== width)) throw new Error(`${id}: ragged board`);
@@ -71,6 +71,7 @@ export function solve({ id, board }, { metric = 'push', forbidAway = false, forb
   const directions = [['U', -width], ['D', width], ['L', -1], ['R', 1]];
   let expanded = 0, winning = null;
   while (queue.length) {
+    if (expanded >= maxExpanded) break;
     const state = remove();
     const record = seen.get(key(state.player, state.boxes, state.movedMask));
     if (record.push !== state.push || record.move !== state.move) continue;

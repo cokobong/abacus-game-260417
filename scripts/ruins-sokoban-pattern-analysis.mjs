@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { solve } from './ruins-sokoban-design-solver.mjs';
 
-export function analyze(puzzle) {
+export function analyze(puzzle, solveOptions = {}) {
   const board = puzzle.board, width = board[0].length, height = board.length;
   const walls = new Set(), goals = new Set(), boxes = [], floor = board.map(row => [...row]);
   let player;
@@ -37,7 +37,7 @@ export function analyze(puzzle) {
       const open = nextBoard.flat().findIndex(cell => cell === ' ');
       nextBoard[Math.floor(open / width)][open % width] = 'E';
     }
-    const result = solve({ id: `${puzzle.id}:${box}:${direction}`, board: nextBoard.map(row => row.join('')) });
+    const result = solve({ id: `${puzzle.id}:${box}:${direction}`, board: nextBoard.map(row => row.join('')) }, solveOptions);
     firstPushes.push({ box: [box % width + 1, Math.floor(box / width) + 1], direction, destination: [destination % width + 1, Math.floor(destination / width) + 1], solvable: result.solvable, remainingMinPush: result.pushes });
   }
   const staticCorners = [];

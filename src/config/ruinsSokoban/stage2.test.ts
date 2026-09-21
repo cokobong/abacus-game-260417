@@ -60,6 +60,6 @@ test('solver paths clear every runtime Stage 2 mission using the actual movement
   }
 });
 
-test('ancient ruins Stage 3 remains unavailable', () => {
-  assert.equal(getAdventureStage('ancientRuins', 3).implemented, false);
+test('ancient ruins Stage 3 is available', () => {
+  assert.equal(getAdventureStage('ancientRuins', 3).implemented, true);
 });

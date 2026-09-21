@@ -2411,6 +2411,17 @@ summary:focus-visible {
 .ruins-sokoban-result div { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1.15rem; }
 .ruins-sokoban-result button { display: flex; min-height: 3.3rem; align-items: center; justify-content: center; gap: .3rem; border-radius: .9rem; color: #fff; background: #608153; font-weight: 1000; }
 .ruins-sokoban-result button:last-child { background: #65513c; }
+.ruins-sokoban-mission-list { width: min(94%,34rem); max-height: min(88%,46rem); overflow: auto; border: 4px solid #d7b26c; border-radius: 1.4rem; padding: 1rem; color: #402f1f; background: #fff0c9; box-shadow: 0 10px 0 rgb(25 30 23 / 55%); }
+.ruins-sokoban-mission-list h2 { font-size: 1.55rem; font-weight: 1000; }
+.ruins-sokoban-mission-list > p { color: #756044; font-weight: 1000; }
+.ruins-sokoban-mission-list > div { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .5rem; margin: .8rem 0; }
+.ruins-sokoban-mission-list > div button { display: grid; min-height: 4rem; place-items: center; border: 2px solid #bd975b; border-radius: .8rem; color: #fff; background: #5e7e51; font-weight: 1000; }
+.ruins-sokoban-mission-list > div button:disabled { color: #8b806e; background: #d4c7ad; opacity: .75; }
+.ruins-sokoban-mission-list > div span { display: flex; align-items: center; gap: .2rem; font-size: .68rem; }
+.ruins-sokoban-mission-list > div svg { width: .75rem; }
+.ruins-sokoban-mission-list > button { min-height: 3rem; border-radius: .8rem; padding: .4rem 1.4rem; color: #fff; background: #65513c; font-weight: 1000; }
+.ruins-sokoban-relic { width: 6rem; height: 6rem; margin: .65rem auto 0; object-fit: contain; filter: drop-shadow(0 6px 8px rgb(116 74 24 / 35%)); }
+@media (max-width: 430px) { .ruins-sokoban-mission-list > div { grid-template-columns: repeat(4,minmax(0,1fr)); gap: .35rem; }.ruins-sokoban-mission-list > div button { min-height: 3.5rem; } }
 
 .deep-sea-game { position: relative; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto auto; width: 100%; height: 100%; min-height: 0; overflow: hidden; color: #e9fbff; background: #031923; isolation: isolate; user-select: none; }
 .deep-sea-hud { z-index: 12; display: grid; grid-template-columns: minmax(5rem,.7fr) minmax(0,2fr) minmax(5.3rem,.8fr); align-items: center; gap: .5rem; padding: max(.35rem,env(safe-area-inset-top)) max(.65rem,env(safe-area-inset-right)) .4rem max(.65rem,env(safe-area-inset-left)); border-bottom: 2px solid #287083; background: #07303d; }

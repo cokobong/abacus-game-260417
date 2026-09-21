@@ -79,10 +79,10 @@ test('beam tracing terminates safely for every initial mission state', () => {
   }
 });
 
-test('Stage 2 completion keeps Stage 3 locked', () => {
+test('Stage 2 completion unlocks the implemented Stage 3 campaign', () => {
   const stage1 = completeAdventureStage({}, 'ancientRuins', 1);
   assert.equal(canPlayAdventureStage(stage1.progress, 'ancientRuins', 2), true);
   const stage2 = completeAdventureStage(stage1.progress, 'ancientRuins', 2);
   assert.equal(getAdventureStageState(stage2.progress, 'ancientRuins', 2), 'completed');
-  assert.equal(canPlayAdventureStage(stage2.progress, 'ancientRuins', 3), false);
+  assert.equal(canPlayAdventureStage(stage2.progress, 'ancientRuins', 3), true);
 });

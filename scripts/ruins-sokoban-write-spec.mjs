@@ -18,6 +18,8 @@ const proofNames = {
   'right box before center box': '오른쪽 상자를 가운데 상자보다 늦게 움직이면 불가능',
   'lower box before upper right box': '아래 상자를 오른쪽 위 상자보다 늦게 움직이면 불가능',
   'left box before adjacent box': '왼쪽 상자를 바로 옆 상자보다 늦게 움직이면 불가능',
+  'distance-increasing push required': '거리 증가 밀기 금지 시 불가능',
+  'goal retrieval required': '목표에서 상자 빼기 금지 시 불가능',
 };
 
 let markdown = `# 유적지 Sokoban 정식 퍼즐 설계 사양
@@ -36,7 +38,7 @@ let markdown = `# 유적지 Sokoban 정식 퍼즐 설계 사양
 
 좌표는 왼쪽 위를 (1,1)로 하는 (열,행)이다. 보드는 \`#\` 벽, \`@\` 플레이어, \`$\` 상자, \`.\` 목표, \`*\` 목표 위 상자, \`+\` 목표 위 플레이어, \`E\` 장식 출구다. 클리어 판정은 모든 상자의 목표 배치다.
 
-## 15문제 요약
+## 30문제 요약 (Stage 2 10 + Stage 3 20)
 
 | 미션 | 크기 | 상자/목표 | 최소 밀기 | 최소 이동 | 최소 밀기 해 이동 | 대체 첫 밀기 | 핵심 패턴의 필수성 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
@@ -78,7 +80,7 @@ for (const puzzle of puzzles) {
 ### ${short(puzzle.id)} ${puzzle.title}
 
 ~~~text
-${puzzle.board.join('\n')}
+${puzzle.board.map(row => row.trimEnd()).join('\n')}
 ~~~
 
 - **ID·크기·시작:** \`${puzzle.id}\`, ${result.size.replace('x', '×')}, ${point(result.playerStart)}.
@@ -89,13 +91,13 @@ ${puzzle.board.join('\n')}
 - **교착 주의:** 비목표 정적 모서리 ${points(result.staticDeadlockCorners)}. 첫 밀기 함정 목적지 ${points(result.trappedFirstPushes.map(push => push.destination))}.
 - **단계 힌트:** ① ${puzzle.hintSteps[0]} ② ${puzzle.hintSteps[1]} ③ ${puzzle.hintSteps[2]}
 `;
-  if (puzzle.rewardPartId) markdown += `- **최초 클리어 확정 부품:** \`${puzzle.rewardPartId}\`. 재클리어 지급 없음.\n`;
+  if (puzzle.milestoneRewardPartId) markdown += `- **마일스톤 확정 부품:** \`${puzzle.milestoneRewardPartId}\`. 런타임 지급 연결은 아직 하지 않는다.\n`;
 }
 markdown += `
 ## 난이도 곡선과 남은 검토
 
-2-1~2-3은 워밍업으로 유지했다. 2-4~2-6은 한 번의 Undo와 순서 판단, 2-7~2-9는 두 패턴의 결합, 2-10은 네 단계의 연쇄 판단을 목표로 한다. 보드 크기는 기존 7×7~9×7 범위를 유지했다. 2-5는 사고 요소와 함께 이동 수도 늘었으므로 아이가 걷기 피로를 느끼는지 우선 관찰해야 한다.
+2-1~2-3은 워밍업으로 유지했다. 2-4~2-6은 한 번의 Undo와 순서 판단, 2-7~2-9는 두 패턴의 결합, 2-10은 네 단계의 연쇄 판단을 목표로 한다. Stage 3는 네 문제마다 새 패턴 소개→조합→도전→봉인 이정표의 리듬을 사용하며, 3-1~3-20 전체가 계속 가팔라지지 않도록 회복 문제를 섞었다.
 
-solver의 회피 탐색은 정의된 기계적 패턴의 필수성을 증명한다. 첫 선택이 2~4 push 뒤에야 잘못되었음을 **사람이 알아차리는지**는 증명하지 못한다. 실제 아이 테스트에서 시도한 첫 밀기, 막힘을 깨달은 push 번호, Undo 횟수, 힌트 사용량을 기록하고 늦은 좌절이나 즉시 보이는 모서리 함정이 많으면 후속 조정한다. Stage 3의 보드와 구현은 이번 재조정 범위에서 변경하지 않았다.
+solver의 회피 탐색은 인증서가 기록된 기계적 패턴의 필수성을 증명한다. 그 밖의 패턴명은 최단해와 보드 구조를 바탕으로 한 설계 의도이며 아동 플레이테스트 대상이다. 첫 선택이 2~4 push 뒤에야 잘못되었음을 **사람이 알아차리는지**는 증명하지 못한다. 실제 아이 테스트에서 시도한 첫 밀기, 막힘을 깨달은 push 번호, Undo 횟수, 힌트 사용량을 기록하고 늦은 좌절이나 즉시 보이는 모서리 함정이 많으면 후속 조정한다. Stage 3는 설계 JSON과 보고서에만 있으며 런타임에는 연결하지 않았다.
 `;
 fs.writeFileSync('docs/ruins-sokoban-puzzle-spec.md', markdown, 'utf8');

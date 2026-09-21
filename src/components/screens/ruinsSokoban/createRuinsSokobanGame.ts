@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ruinsSokobanAssets } from '../../../assets/adventure/ruins';
-import { getRuinsSokobanMissions, parseSokobanPuzzle, sokobanKey, type SokobanDirection, type SokobanParsedPuzzle, type SokobanPuzzleConfig } from '../../../config/ruinsSokoban';
+import { getRuinsSokobanMissions, parseSokobanPuzzle, sokobanKey, type SokobanDirection, type SokobanParsedPuzzle, type SokobanPuzzleConfig, type SokobanRuntimeSnapshot } from '../../../config/ruinsSokoban';
 import { createSokobanState, getStaticDeadlockKeys, isMissionComplete, moveSokoban, type SokobanState } from '../../../utils/ruinsSokobanRules';
 import { SokobanInputGate } from './sokobanInputGate';
 
@@ -10,7 +10,7 @@ const GAME_HEIGHT = 720;
 export interface RuinsSokobanCallbacks {
   onMissionComplete?: (missionId: string) => void;
   onMissionChange: (config: SokobanPuzzleConfig, total: number) => void;
-  onStateChange: (moves: number, pushes: number, canUndo: boolean) => void;
+  onStateChange: (moves: number, pushes: number, canUndo: boolean, snapshot: SokobanRuntimeSnapshot) => void;
   onDeadlock: () => void;
   onBlocked: (reason: 'wall' | 'box') => void;
   onStageComplete: () => void;
@@ -20,6 +20,9 @@ export interface RuinsSokobanController {
   move: (direction: SokobanDirection) => void;
   undo: () => void;
   reset: () => void;
+  selectMission: (index: number) => void;
+  nextMission: () => boolean;
+  showHintMarker: (point: { column: number; row: number }, direction?: SokobanDirection) => void;
   setEnabled: (enabled: boolean) => void;
   destroy: () => void;
 }
@@ -28,7 +31,7 @@ class MissionManager {
   private index = 0;
   readonly missions;
 
-  constructor(stage: 1 | 2, startIndex = 0) {
+  constructor(readonly stage: 1 | 2 | 3, startIndex = 0) {
     this.missions = getRuinsSokobanMissions(stage);
     this.index = Math.max(0, Math.min(startIndex, this.missions.length - 1));
   }
@@ -38,6 +41,12 @@ class MissionManager {
   advance() {
     if (this.index >= this.missions.length - 1) return false;
     this.index += 1;
+    return true;
+  }
+
+  select(index: number) {
+    if (index < 0 || index >= this.missions.length) return false;
+    this.index = index;
     return true;
   }
 }
@@ -57,6 +66,7 @@ class RuinsSokobanScene extends Phaser.Scene {
   private playerStateTimer?: Phaser.Time.TimerEvent;
   private movementTimer?: Phaser.Time.TimerEvent;
   private completionTimer?: Phaser.Time.TimerEvent;
+  private hintMarker?: Phaser.GameObjects.Graphics;
 
   constructor(private readonly manager: MissionManager, private readonly callbacks: RuinsSokobanCallbacks) {
     super('RuinsSokoban');
@@ -90,6 +100,8 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.playerStateTimer?.remove(false);
     this.movementTimer?.remove(false);
     this.completionTimer?.remove(false);
+    this.hintMarker?.destroy();
+    this.hintMarker = undefined;
     this.playerStateTimer = undefined;
     this.children.removeAll(true);
     this.player = undefined;
@@ -109,7 +121,7 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.createPlayer();
     this.callbacks.onMissionChange(this.manager.current, this.manager.missions.length);
     this.notifyState();
-    if (this.manager.current.stage === 2) this.inputGate.setEnabled(true);
+    if (this.manager.current.stage !== 1) this.inputGate.setEnabled(true);
   }
 
   move(direction: SokobanDirection) {
@@ -313,7 +325,36 @@ class RuinsSokobanScene extends Phaser.Scene {
   }
 
   private notifyState() {
-    this.callbacks.onStateChange(this.state.moveCount, this.state.pushCount, this.history.length > 0);
+    this.callbacks.onStateChange(this.state.moveCount, this.state.pushCount, this.history.length > 0, {
+      player: { ...this.state.player },
+      boxes: this.state.boxes.map(box => ({ ...box })),
+      goalsCompleted: this.state.boxes.filter(box => this.puzzle.goals.has(sokobanKey(box))).length,
+      moveCount: this.state.moveCount,
+      pushCount: this.state.pushCount,
+      deadlock: this.state.boxes.some(box => this.deadlocks.has(sokobanKey(box))),
+    });
+  }
+
+  showHintMarker(point: { column: number; row: number }, direction?: SokobanDirection) {
+    this.hintMarker?.destroy();
+    const { x, y } = this.center(point);
+    const marker = this.add.graphics().setDepth(30);
+    marker.lineStyle(Math.max(4, this.cellSize * 0.055), 0xff5b35, 0.95);
+    marker.strokeCircle(x, y, this.cellSize * 0.44);
+    if (direction) {
+      const step = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[direction];
+      const startX = x + step.x * this.cellSize * 0.48;
+      const startY = y + step.y * this.cellSize * 0.48;
+      const endX = x + step.x * this.cellSize * 0.82;
+      const endY = y + step.y * this.cellSize * 0.82;
+      marker.lineBetween(startX, startY, endX, endY);
+      const sideX = -step.y * this.cellSize * 0.1;
+      const sideY = step.x * this.cellSize * 0.1;
+      marker.fillStyle(0xff7a3d, 1).fillTriangle(endX, endY, endX - step.x * this.cellSize * 0.16 + sideX, endY - step.y * this.cellSize * 0.16 + sideY, endX - step.x * this.cellSize * 0.16 - sideX, endY - step.y * this.cellSize * 0.16 - sideY);
+    }
+    marker.setAlpha(0.35).setScale(0.92);
+    this.tweens.add({ targets: marker, alpha: 1, scaleX: 1.08, scaleY: 1.08, duration: 360, ease: 'Sine.InOut', yoyo: true, repeat: 2, onComplete: () => marker.destroy() });
+    this.hintMarker = marker;
   }
 
   private checkComplete() {
@@ -326,13 +367,25 @@ class RuinsSokobanScene extends Phaser.Scene {
     this.cameras.main.flash(180, 255, 226, 130, false);
     this.callbacks.onMissionComplete?.(this.manager.current.id);
     this.completionTimer = this.time.delayedCall(850, () => {
-      if (this.manager.advance()) this.loadMission();
-      else this.callbacks.onStageComplete();
+      if (this.manager.stage !== 3) {
+        if (this.manager.advance()) this.loadMission();
+        else this.callbacks.onStageComplete();
+      }
     });
+  }
+
+  selectMission(index: number) {
+    if (this.manager.select(index)) this.loadMission();
+  }
+
+  nextMission() {
+    if (!this.manager.advance()) return false;
+    this.loadMission();
+    return true;
   }
 }
 
-export function createRuinsSokobanGame(parent: HTMLElement, stage: 1 | 2, callbacks: RuinsSokobanCallbacks, startIndex = 0): RuinsSokobanController {
+export function createRuinsSokobanGame(parent: HTMLElement, stage: 1 | 2 | 3, callbacks: RuinsSokobanCallbacks, startIndex = 0): RuinsSokobanController {
   const manager = new MissionManager(stage, startIndex);
   let scene: RuinsSokobanScene | undefined;
   class ActiveScene extends RuinsSokobanScene {
@@ -356,6 +409,9 @@ export function createRuinsSokobanGame(parent: HTMLElement, stage: 1 | 2, callba
     move: direction => scene?.move(direction),
     undo: () => scene?.undo(),
     reset: () => scene?.resetMission(),
+    selectMission: index => scene?.selectMission(index),
+    nextMission: () => scene?.nextMission() ?? false,
+    showHintMarker: (point, direction) => scene?.showHintMarker(point, direction),
     setEnabled: enabled => scene?.setEnabled(enabled),
     destroy: () => { scene = undefined; game.destroy(true); },
   };
