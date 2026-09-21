@@ -1,0 +1,2866 @@
+[
+  {
+    "id": "ruins-sokoban-2-1",
+    "board": [
+      "########",
+      "# . .$ #",
+      "#      #",
+      "#  ##$ #",
+      "#     @#",
+      "#     E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "기둥을 돌아 자리 잡기",
+    "corePattern": "기본 우회와 밀기 면 확보",
+    "hintSteps": [
+      "밀 자리를 찾아봐요.",
+      "위 상자 오른쪽을 봐요.",
+      "위 상자를 왼쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-2",
+    "board": [
+      "########",
+      "# $. . #",
+      "#   #  #",
+      "# #  # #",
+      "# @  $ #",
+      "#    #E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "먼저 비워야 할 길",
+    "corePattern": "상자 처리 순서",
+    "hintSteps": [
+      "순서를 생각해요.",
+      "아래 오른쪽 상자를 봐요.",
+      "그 상자를 왼쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-3",
+    "board": [
+      "########",
+      "# . .  #",
+      "#  # . #",
+      "# $$ $ #",
+      "#   #  #",
+      "# @   E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "좁은 통로의 차례",
+    "corePattern": "통로 진입 순서",
+    "hintSteps": [
+      "통로를 막지 마세요.",
+      "왼쪽 상자를 봐요.",
+      "왼쪽 상자를 위로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-4",
+    "board": [
+      "#######",
+      "#     #",
+      "#  . .#",
+      "# @$  #",
+      "#  #$ #",
+      "#    E#",
+      "#######"
+    ],
+    "status": "solver-validated-design",
+    "title": "멀어졌다 가까워져요",
+    "corePattern": "목표에서 멀어지는 밀기와 오른쪽 밀기 자리 확보",
+    "hintSteps": [
+      "바로 목표로 밀기 전에, 다음에 설 자리를 찾아봐요.",
+      "아래 상자를 옮기면 어느 쪽에 설 수 있을까요?",
+      "아래 상자를 위로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-5",
+    "board": [
+      "########",
+      "# .  * #",
+      "# #$#  #",
+      "#      #",
+      "#  . $ #",
+      "# @  #E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "비워야 지나가요",
+    "corePattern": "목표 위 상자를 비우고 아래 통로의 밀기 면 확보",
+    "hintSteps": [
+      "제단에 놓인 상자도 아직 움직일 수 있어요.",
+      "아래 통로에 서려면 무엇을 먼저 비워야 할까요?",
+      "오른쪽 아래 상자를 왼쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-6",
+    "board": [
+      "########",
+      "# ..   #",
+      "#  #   #",
+      "# $  # #",
+      "# $#  ##",
+      "#  @  E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "서로 막는 두 상자",
+    "corePattern": "상자 간 간섭과 목표 반대 방향의 임시 이동",
+    "hintSteps": [
+      "두 상자 중 하나가 다른 상자의 길을 만들어요.",
+      "위쪽 왼편 상자를 먼저 살펴봐요.",
+      "그 상자를 오른쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-7",
+    "board": [
+      "########",
+      "#.# . .#",
+      "# # #  #",
+      "#$# $  #",
+      "#@  $  #",
+      "# #   E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "어느 상자가 어느 제단으로?",
+    "corePattern": "목표 배정과 통로를 위한 임시 퇴보",
+    "hintSteps": [
+      "왼쪽 제단에는 어느 상자가 갈 수 있을까요?",
+      "가운데 통로를 먼저 차지하면 오른쪽 상자는 어떻게 될까요?",
+      "왼쪽 상자를 위로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-8",
+    "board": [
+      "########",
+      "# .  * #",
+      "#  #$  #",
+      "#  #   #",
+      "#    *@#",
+      "#     E#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "제단에서 잠깐 내려요",
+    "corePattern": "제단의 상자 회수와 통로 우회",
+    "hintSteps": [
+      "제단 위 상자를 다시 비워야 할 수도 있어요.",
+      "아래쪽 제단과 가운데 상자의 길을 함께 봐요.",
+      "아래쪽 제단의 상자를 위로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-9",
+    "board": [
+      "#########",
+      "# .   * #",
+      "# ###$@ #",
+      "#   #   #",
+      "#  .  $ #",
+      "#      E#",
+      "#########"
+    ],
+    "status": "solver-validated-design",
+    "title": "막힌 길을 다시 열어요",
+    "corePattern": "목표 회수와 목표 반대 방향 밀기의 결합",
+    "hintSteps": [
+      "윗길은 상자를 놓으면 막힐 수 있어요.",
+      "위쪽 제단과 오른쪽 상자를 함께 봐요.",
+      "제단 위 상자를 왼쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-2-10",
+    "board": [
+      "#########",
+      "# . * .##",
+      "#   # $ #",
+      "# $  @  #",
+      "# #  .$ #",
+      "#      E#",
+      "#########"
+    ],
+    "status": "solver-validated-design",
+    "title": "유적 훈련 최종 시험",
+    "corePattern": "임시 퇴보·제단 회수·상자 재배치가 이어지는 최종 순서",
+    "hintSteps": [
+      "먼저 길을 만들 상자를 찾아봐요.",
+      "가운데 제단 위 상자는 계속 그곳에 둘 수 있을까요?",
+      "오른쪽 위 상자를 왼쪽으로 한 칸 밀어봐요."
+    ]
+  },
+  {
+    "id": "ruins-sokoban-3-1",
+    "board": [
+      "####### ",
+      "#E    # ",
+      "#@$$$ ##",
+      "#  #...#",
+      "##    ##",
+      " ###### "
+    ],
+    "status": "solver-validated-design",
+    "title": "엇갈린 첫 선택",
+    "corePattern": "box-ordering · pushing-face-creation",
+    "difficultyBand": "medium",
+    "requiredPatterns": [
+      "box-ordering",
+      "pushing-face-creation",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 2,
+    "orderDependency": "medium",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "medium",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "바로 밀지 말고, 상자 순서를 먼저 비교해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "3,2",
+          "4,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "4,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "3,2",
+          "4,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "3,2",
+          "4,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,2",
+          "4,3",
+          "5,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "5,2",
+          "4,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "3,2",
+          "4,3",
+          "5,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "5,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "3,2",
+          "4,3",
+          "6,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "6,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "4,2",
+          "4,3",
+          "6,3"
+        ],
+        "boxPositions": [
+          "4,2",
+          "6,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microban 41를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-2",
+    "board": [
+      "######",
+      "#...E#",
+      "#  $ #",
+      "# #$##",
+      "#  $ #",
+      "#  @ #",
+      "######"
+    ],
+    "status": "solver-validated-design",
+    "title": "비켜 두는 석실",
+    "corePattern": "box-ordering · pushing-face-creation",
+    "difficultyBand": "medium",
+    "requiredPatterns": [
+      "box-ordering",
+      "pushing-face-creation",
+      "distance-increasing-push"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 1,
+    "orderDependency": "medium",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "medium",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "바로 밀지 말고, 상자 순서를 먼저 비교해요.",
+      "다른 상자의 길을 막는 상자와 빈 공간을 함께 봐요.",
+      "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "3,2",
+          "3,3",
+          "3,4"
+        ],
+        "boxPositions": [
+          "3,2",
+          "3,3",
+          "3,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "left",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,2",
+          "2,4",
+          "3,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "2,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "1,3",
+          "2,1",
+          "2,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "2,1",
+          "1,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 왼쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 왼쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "1,1",
+          "2,1",
+          "2,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "2,1",
+          "1,1"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microban 45를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-3",
+    "board": [
+      " ##### ",
+      "##.E.##",
+      "# * * #",
+      "#  #  #",
+      "# $ $ #",
+      "## @ ##",
+      " ##### "
+    ],
+    "status": "solver-validated-design",
+    "title": "뒤쪽 밀기 자리",
+    "corePattern": "box-ordering · pushing-face-creation",
+    "difficultyBand": "medium",
+    "requiredPatterns": [
+      "box-ordering",
+      "pushing-face-creation",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 2,
+    "orderDependency": "medium",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "medium",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "바로 밀지 말고, 상자 순서를 먼저 비교해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "아래쪽 오른쪽 상자를 위로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "2,4",
+          "4,2",
+          "4,4"
+        ],
+        "boxPositions": [
+          "2,2",
+          "4,2",
+          "2,4",
+          "4,4"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "up",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "3,2",
+          "3,4",
+          "4,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "3,2",
+          "3,4",
+          "4,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,1",
+          "3,2",
+          "3,4",
+          "4,1"
+        ],
+        "boxPositions": [
+          "2,1",
+          "3,2",
+          "3,4",
+          "4,1"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,1",
+          "2,2",
+          "4,1",
+          "4,4"
+        ],
+        "boxPositions": [
+          "2,1",
+          "2,2",
+          "4,4",
+          "4,1"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microban 53를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-4",
+    "board": [
+      "####E####",
+      "#  ###  #",
+      "# $ * $ #",
+      "#   +   #",
+      "### .$###",
+      "  # . #  ",
+      "  #####  "
+    ],
+    "status": "solver-validated-design",
+    "title": "첫 심층 봉인",
+    "corePattern": "box-ordering · pushing-face-creation",
+    "difficultyBand": "medium",
+    "requiredPatterns": [
+      "box-ordering",
+      "pushing-face-creation",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 3,
+    "requiredRepositionCount": 2,
+    "orderDependency": "medium",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "medium",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "9개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "바로 밀지 말고, 상자 순서를 먼저 비교해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "4,2",
+          "5,4",
+          "6,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "4,2",
+          "6,2",
+          "5,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,2",
+          "4,2",
+          "5,3",
+          "5,4"
+        ],
+        "boxPositions": [
+          "2,2",
+          "4,2",
+          "5,3",
+          "5,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,2",
+          "3,2",
+          "4,4",
+          "5,4"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "4,4",
+          "5,4"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "2,2",
+          "3,2",
+          "4,5",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "4,5",
+          "5,3"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "2,3",
+          "3,2",
+          "4,4",
+          "4,5"
+        ],
+        "boxPositions": [
+          "2,3",
+          "3,2",
+          "4,5",
+          "4,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,3",
+          "4,2",
+          "4,4",
+          "4,5"
+        ],
+        "boxPositions": [
+          "2,3",
+          "4,2",
+          "4,5",
+          "4,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 왼쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 왼쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microcosmos 1를 캠페인 규격에 맞춰 검증·배치",
+    "milestoneRewardPartId": "ancient_tablet"
+  },
+  {
+    "id": "ruins-sokoban-3-5",
+    "board": [
+      " E ####",
+      "#### @#",
+      "#  *$ #",
+      "#     #",
+      "## .###",
+      " #$ #  ",
+      " # .#  ",
+      " ####  "
+    ],
+    "status": "solver-validated-design",
+    "title": "세 상자의 약속",
+    "corePattern": "box-ordering · temporary-placement",
+    "difficultyBand": "medium-plus",
+    "requiredPatterns": [
+      "box-ordering",
+      "temporary-placement",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,5",
+          "3,2",
+          "4,2"
+        ],
+        "boxPositions": [
+          "3,2",
+          "4,2",
+          "2,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,2",
+          "2,4",
+          "3,3"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,3",
+          "2,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,4",
+          "3,5",
+          "4,2"
+        ],
+        "boxPositions": [
+          "4,2",
+          "3,5",
+          "2,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "3,3",
+          "3,6",
+          "4,2"
+        ],
+        "boxPositions": [
+          "4,2",
+          "3,6",
+          "3,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 3를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-6",
+    "board": [
+      "#####E  ",
+      "# ..####",
+      "# $    #",
+      "#  #$# #",
+      "# @ .$ #",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "잠깐 놓는 자리",
+    "corePattern": "box-ordering · temporary-placement",
+    "difficultyBand": "medium-plus",
+    "requiredPatterns": [
+      "box-ordering",
+      "temporary-placement",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "6개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "4,3",
+          "5,4"
+        ],
+        "boxPositions": [
+          "2,2",
+          "4,3",
+          "5,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "3,2",
+          "3,4"
+        ],
+        "boxPositions": [
+          "2,3",
+          "3,2",
+          "3,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "3,1",
+          "3,2",
+          "3,4"
+        ],
+        "boxPositions": [
+          "3,1",
+          "3,2",
+          "3,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,2",
+          "3,1",
+          "5,4"
+        ],
+        "boxPositions": [
+          "3,1",
+          "2,2",
+          "5,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 6를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-7",
+    "board": [
+      " ###### ",
+      "##@.E # ",
+      "# $$* # ",
+      "#  #  ##",
+      "#  #  .#",
+      "#### # #",
+      "   #   #",
+      "   #####"
+    ],
+    "status": "solver-validated-design",
+    "title": "막힌 길의 순서",
+    "corePattern": "box-ordering · temporary-placement",
+    "difficultyBand": "medium-plus",
+    "requiredPatterns": [
+      "box-ordering",
+      "temporary-placement",
+      "distance-increasing-push",
+      "goal-retrieval"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "1개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "3,2",
+          "4,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "4,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "4,3",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "5,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,3",
+          "4,1",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "5,3",
+          "4,1"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,2",
+          "3,1",
+          "6,4"
+        ],
+        "boxPositions": [
+          "2,2",
+          "6,4",
+          "3,1"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 23를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-8",
+    "board": [
+      "#####E  ",
+      "#  .### ",
+      "# $.. # ",
+      "#  ##$##",
+      "##  #  #",
+      " #$   @#",
+      " #  ####",
+      " ####   "
+    ],
+    "status": "solver-validated-design",
+    "title": "두 번째 심층 봉인",
+    "corePattern": "box-ordering · temporary-placement",
+    "difficultyBand": "medium-plus",
+    "requiredPatterns": [
+      "box-ordering",
+      "temporary-placement",
+      "distance-increasing-push"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 2,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "6개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "다른 상자의 길을 막는 상자와 빈 공간을 함께 봐요.",
+      "가운데 상자를 위로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "2,5",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,2",
+          "5,3",
+          "2,5"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "up",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,1",
+          "2,3",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,1",
+          "5,3",
+          "2,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,3",
+          "3,1",
+          "5,4"
+        ],
+        "boxPositions": [
+          "3,1",
+          "5,4",
+          "2,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "2,3",
+          "3,1",
+          "3,5"
+        ],
+        "boxPositions": [
+          "3,1",
+          "3,5",
+          "2,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "2,5",
+          "3,1",
+          "4,2"
+        ],
+        "boxPositions": [
+          "3,1",
+          "2,5",
+          "4,2"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,3",
+          "3,1",
+          "4,2"
+        ],
+        "boxPositions": [
+          "3,1",
+          "2,3",
+          "4,2"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 25를 캠페인 규격에 맞춰 검증·배치",
+    "milestoneRewardPartId": "dinosaur_skull_emblem"
+  },
+  {
+    "id": "ruins-sokoban-3-9",
+    "board": [
+      " E  ####",
+      "    #  #",
+      "  ###$.#",
+      "  #  . #",
+      "###  #.#",
+      "# $  $ #",
+      "#   #@ #",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "돌기둥 교차로",
+    "corePattern": "box-ordering · corridor-clearing · distance-increasing-push",
+    "difficultyBand": "medium-hard",
+    "requiredPatterns": [
+      "box-ordering",
+      "corridor-clearing",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "4개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,5",
+          "5,2",
+          "5,5"
+        ],
+        "boxPositions": [
+          "5,2",
+          "2,5",
+          "5,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,5",
+          "3,4",
+          "5,3"
+        ],
+        "boxPositions": [
+          "5,3",
+          "3,4",
+          "2,5"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "3,4",
+          "5,3",
+          "6,2"
+        ],
+        "boxPositions": [
+          "5,3",
+          "3,4",
+          "6,2"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "5,3",
+          "5,5",
+          "6,2"
+        ],
+        "boxPositions": [
+          "5,3",
+          "5,5",
+          "6,2"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 24를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-10",
+    "board": [
+      "########",
+      "#E     #",
+      "# # ##*#",
+      "# #@ $ #",
+      "#.$ .  #",
+      "#####  #",
+      "    #  #",
+      "    ####"
+    ],
+    "status": "solver-validated-design",
+    "title": "되돌아오는 상자",
+    "corePattern": "box-ordering · corridor-clearing · distance-increasing-push",
+    "difficultyBand": "medium-hard",
+    "requiredPatterns": [
+      "box-ordering",
+      "corridor-clearing",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment"
+    ],
+    "meaningfulDecisionCount": 3,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "3개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,4",
+          "5,3",
+          "6,2"
+        ],
+        "boxPositions": [
+          "6,2",
+          "5,3",
+          "2,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "5,3",
+          "5,4",
+          "6,4"
+        ],
+        "boxPositions": [
+          "6,4",
+          "5,3",
+          "5,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "1,4",
+          "5,4",
+          "6,4"
+        ],
+        "boxPositions": [
+          "6,4",
+          "1,4",
+          "5,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "1,4",
+          "4,4",
+          "6,4"
+        ],
+        "boxPositions": [
+          "6,4",
+          "1,4",
+          "4,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "up",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 31를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-11",
+    "board": [
+      "#####E  ",
+      "#   ####",
+      "# $$   #",
+      "# .#.  #",
+      "#  ## ##",
+      "#  ##$# ",
+      "# @  .# ",
+      "####### "
+    ],
+    "status": "solver-validated-design",
+    "title": "빈자리 만들기",
+    "corePattern": "box-ordering · corridor-clearing · distance-increasing-push",
+    "difficultyBand": "medium-hard",
+    "requiredPatterns": [
+      "box-ordering",
+      "corridor-clearing",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "1개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "3,2",
+          "5,5"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "5,5"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,5",
+          "5,2",
+          "5,5"
+        ],
+        "boxPositions": [
+          "2,5",
+          "5,2",
+          "5,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,3",
+          "2,5",
+          "5,4"
+        ],
+        "boxPositions": [
+          "2,5",
+          "2,3",
+          "5,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,3",
+          "4,6",
+          "5,3"
+        ],
+        "boxPositions": [
+          "4,6",
+          "2,3",
+          "5,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 34를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-12",
+    "board": [
+      "###### ",
+      "#E.  # ",
+      "#  #@# ",
+      "#  $ ##",
+      "##$#  #",
+      "#   # #",
+      "#. *  #",
+      "#######"
+    ],
+    "status": "solver-validated-design",
+    "title": "세 번째 심층 봉인",
+    "corePattern": "box-ordering · corridor-clearing · distance-increasing-push",
+    "difficultyBand": "medium-hard",
+    "requiredPatterns": [
+      "box-ordering",
+      "corridor-clearing",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "아래쪽 가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,4",
+          "3,3",
+          "3,6"
+        ],
+        "boxPositions": [
+          "3,3",
+          "2,4",
+          "3,6"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "left",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,2",
+          "2,6",
+          "3,3"
+        ],
+        "boxPositions": [
+          "3,3",
+          "2,2",
+          "2,6"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,1",
+          "2,3",
+          "3,6"
+        ],
+        "boxPositions": [
+          "2,3",
+          "2,1",
+          "3,6"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "2,2",
+          "3,1",
+          "4,6"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,1",
+          "4,6"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "2,5",
+          "3,1",
+          "4,6"
+        ],
+        "boxPositions": [
+          "2,5",
+          "3,1",
+          "4,6"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "1,6",
+          "3,1",
+          "4,6"
+        ],
+        "boxPositions": [
+          "1,6",
+          "3,1",
+          "4,6"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "위쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "위쪽 가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 38를 캠페인 규격에 맞춰 검증·배치",
+    "milestoneRewardPartId": "emerald_stone"
+  },
+  {
+    "id": "ruins-sokoban-3-13",
+    "board": [
+      " ###### ",
+      "E#@   ##",
+      " ##$   #",
+      "### .  #",
+      "# $ #$##",
+      "# .  .# ",
+      "####  # ",
+      "   #### "
+    ],
+    "status": "solver-validated-design",
+    "title": "숨은 밀기 면",
+    "corePattern": "box-ordering · box-interference · distance-increasing-push",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "box-interference",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 3,
+    "requiredRepositionCount": 3,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "3개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,4",
+          "3,2",
+          "5,4"
+        ],
+        "boxPositions": [
+          "3,2",
+          "2,4",
+          "5,4"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,5",
+          "3,2",
+          "4,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "2,5",
+          "4,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "3,2",
+          "4,2",
+          "4,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "4,2",
+          "4,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,5",
+          "4,3",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,5",
+          "5,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 32를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-14",
+    "board": [
+      " E  ####",
+      "    #@ #",
+      "##### .#",
+      "# $ $ $#",
+      "#   .  #",
+      "### .  #",
+      "  ######"
+    ],
+    "status": "solver-validated-design",
+    "title": "이어지는 회랑",
+    "corePattern": "box-ordering · box-interference · distance-increasing-push",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "box-interference",
+      "distance-increasing-push",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 3,
+    "requiredRepositionCount": 2,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "3개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "다른 상자의 길을 막는 상자와 빈 공간을 함께 봐요.",
+      "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,3",
+          "4,3",
+          "6,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "4,3",
+          "6,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "5,4",
+          "6,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "5,4",
+          "6,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "4,4",
+          "5,2",
+          "6,4"
+        ],
+        "boxPositions": [
+          "5,2",
+          "4,4",
+          "6,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "4,4",
+          "5,4",
+          "6,2"
+        ],
+        "boxPositions": [
+          "5,4",
+          "4,4",
+          "6,2"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 41를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-15",
+    "board": [
+      "########",
+      "#E  #  #",
+      "# #.$ $#",
+      "#   $  #",
+      "#####. #",
+      "  #   @#",
+      "  #   .#",
+      "  ######"
+    ],
+    "status": "solver-validated-design",
+    "title": "상자들의 간섭",
+    "corePattern": "box-ordering · box-interference · distance-increasing-push",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "box-interference",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "4,2",
+          "4,3",
+          "6,2"
+        ],
+        "boxPositions": [
+          "4,2",
+          "6,2",
+          "4,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "5,3",
+          "6,4"
+        ],
+        "boxPositions": [
+          "5,3",
+          "6,4",
+          "2,3"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "5,3",
+          "5,5",
+          "6,5"
+        ],
+        "boxPositions": [
+          "5,5",
+          "6,5",
+          "5,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "5,2",
+          "5,4",
+          "6,6"
+        ],
+        "boxPositions": [
+          "5,4",
+          "6,6",
+          "5,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "left",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 42를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-16",
+    "board": [
+      "######E ",
+      "#   @#  ",
+      "# $$####",
+      "# $ .  #",
+      "## #.# #",
+      "#.   # #",
+      "#      #",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "네 번째 심층 봉인",
+    "corePattern": "box-ordering · box-interference · distance-increasing-push",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "box-interference",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "medium",
+    "deadlockNotes": "0개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,2",
+          "2,3",
+          "3,2"
+        ],
+        "boxPositions": [
+          "2,2",
+          "3,2",
+          "2,3"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,4",
+          "3,2",
+          "3,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "3,3",
+          "2,4"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "down",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,5",
+          "3,2",
+          "4,3"
+        ],
+        "boxPositions": [
+          "3,2",
+          "4,3",
+          "2,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "2,3",
+          "3,2",
+          "4,5"
+        ],
+        "boxPositions": [
+          "3,2",
+          "2,3",
+          "4,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "2,5",
+          "3,2",
+          "4,5"
+        ],
+        "boxPositions": [
+          "3,2",
+          "2,5",
+          "4,5"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "1,5",
+          "3,2",
+          "4,4"
+        ],
+        "boxPositions": [
+          "3,2",
+          "1,5",
+          "4,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 44를 캠페인 규격에 맞춰 검증·배치",
+    "milestoneRewardPartId": "rune_core"
+  },
+  {
+    "id": "ruins-sokoban-3-17",
+    "board": [
+      " E #### ",
+      "   #  # ",
+      "#### $##",
+      "# @$.  #",
+      "# ##   #",
+      "#   ## #",
+      "#   * .#",
+      "########"
+    ],
+    "status": "solver-validated-design",
+    "title": "깊은 창고의 순서",
+    "corePattern": "box-ordering · multi-step-setup · distance-increasing-push · goal-retrieval",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "multi-step-setup",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "medium",
+    "deadlockNotes": "0개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "3,3",
+          "4,6",
+          "5,2"
+        ],
+        "boxPositions": [
+          "5,2",
+          "3,3",
+          "4,6"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "right",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "3,3",
+          "4,6",
+          "5,4"
+        ],
+        "boxPositions": [
+          "5,4",
+          "3,3",
+          "4,6"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "4,6",
+          "5,3",
+          "5,4"
+        ],
+        "boxPositions": [
+          "5,4",
+          "5,3",
+          "4,6"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "4,6",
+          "5,2",
+          "6,6"
+        ],
+        "boxPositions": [
+          "6,6",
+          "5,2",
+          "4,6"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "down",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 아래로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "yoshio52 45를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-18",
+    "board": [
+      "####E  ",
+      "#. ##  ",
+      "#.@ #  ",
+      "#. $#  ",
+      "##$ ###",
+      " # $  #",
+      " #    #",
+      " #  ###",
+      " ####  "
+    ],
+    "status": "solver-validated-design",
+    "title": "가짜 제단의 유혹",
+    "corePattern": "box-ordering · multi-step-setup · distance-increasing-push · goal-assignment",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "multi-step-setup",
+      "distance-increasing-push",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 2,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "medium",
+    "deadlockNotes": "0개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "다른 상자의 길을 막는 상자와 빈 공간을 함께 봐요.",
+      "가운데 상자를 아래로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "2,4",
+          "3,3",
+          "3,5"
+        ],
+        "boxPositions": [
+          "3,3",
+          "2,4",
+          "3,5"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "down",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 아래로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "3,4",
+          "4,5"
+        ],
+        "boxPositions": [
+          "3,4",
+          "2,3",
+          "4,5"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "1,1",
+          "2,3",
+          "3,4"
+        ],
+        "boxPositions": [
+          "3,4",
+          "1,1",
+          "2,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "1,1",
+          "2,2",
+          "2,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "1,1",
+          "2,2"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "left",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microban 13를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-19",
+    "board": [
+      " ####E    ",
+      " #  ######",
+      "##    $  #",
+      "# .# $   #",
+      "# .#$#####",
+      "# .@ #    ",
+      "######    "
+    ],
+    "status": "solver-validated-design",
+    "title": "마지막 우회로",
+    "corePattern": "box-ordering · multi-step-setup · distance-increasing-push · goal-assignment",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "multi-step-setup",
+      "distance-increasing-push",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 2,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "2개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "다른 상자의 길을 막는 상자와 빈 공간을 함께 봐요.",
+      "가운데 오른쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "4,4",
+          "5,3",
+          "6,2"
+        ],
+        "boxPositions": [
+          "6,2",
+          "5,3",
+          "4,4"
+        ],
+        "targetBoxIndex": 0,
+        "direction": "right",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,4",
+          "4,3",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,4",
+          "5,3",
+          "4,3"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "2,5",
+          "4,2",
+          "7,2"
+        ],
+        "boxPositions": [
+          "2,5",
+          "4,2",
+          "7,2"
+        ],
+        "targetBoxIndex": 1,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,4",
+          "2,5",
+          "3,2"
+        ],
+        "boxPositions": [
+          "2,5",
+          "2,4",
+          "3,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "left",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microban 68를 캠페인 규격에 맞춰 검증·배치"
+  },
+  {
+    "id": "ruins-sokoban-3-20",
+    "board": [
+      " E####  ",
+      "###  ###",
+      "#   .  #",
+      "#  $ $ #",
+      "##.#+#.#",
+      " # $ $ #",
+      " ###  ##",
+      "   #### "
+    ],
+    "status": "solver-validated-design",
+    "title": "태양 심층 제단",
+    "corePattern": "box-ordering · multi-step-setup · distance-increasing-push · goal-retrieval",
+    "difficultyBand": "hard-child",
+    "requiredPatterns": [
+      "box-ordering",
+      "multi-step-setup",
+      "distance-increasing-push",
+      "goal-retrieval",
+      "goal-assignment",
+      "temporary-storage"
+    ],
+    "meaningfulDecisionCount": 2,
+    "requiredRepositionCount": 3,
+    "orderDependency": "very-high",
+    "alternateTrivialSolution": false,
+    "obviousFirstMove": false,
+    "obviousGoalAssignment": "low",
+    "obviousSolutionRisk": "low",
+    "deadlockNotes": "6개의 losing first push 후보를 확인했다. 잘못된 접근은 짧은 재시도 안에 통로 또는 밀기 면 부족으로 드러나는지 플레이테스트한다.",
+    "hintSteps": [
+      "목표보다 다음에 설 자리와 상자 순서를 먼저 생각해요.",
+      "제단에 가까운 상자도 다시 움직일 수 있어요.",
+      "아래쪽 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+    ],
+    "hintMilestones": [
+      {
+        "id": "initial-plan",
+        "boxKeys": [
+          "3,3",
+          "3,5",
+          "5,3",
+          "5,5"
+        ],
+        "boxPositions": [
+          "3,3",
+          "5,3",
+          "3,5",
+          "5,5"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "left",
+        "hints": [
+          "먼저 움직일 상자와 마지막에 움직일 상자를 나눠 생각해요.",
+          "아래쪽 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-1",
+        "boxKeys": [
+          "2,3",
+          "3,5",
+          "4,2",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,3",
+          "5,3",
+          "3,5",
+          "4,2"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-2",
+        "boxKeys": [
+          "3,3",
+          "4,2",
+          "4,5",
+          "5,2"
+        ],
+        "boxPositions": [
+          "3,3",
+          "4,2",
+          "4,5",
+          "5,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "아래쪽 가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "아래쪽 가운데 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-3",
+        "boxKeys": [
+          "2,4",
+          "4,2",
+          "4,4",
+          "5,2"
+        ],
+        "boxPositions": [
+          "2,4",
+          "4,2",
+          "4,4",
+          "5,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "up",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 상자를 위로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "setup-4",
+        "boxKeys": [
+          "2,3",
+          "2,4",
+          "4,4",
+          "5,2"
+        ],
+        "boxPositions": [
+          "2,4",
+          "4,4",
+          "2,3",
+          "5,2"
+        ],
+        "targetBoxIndex": 3,
+        "direction": "left",
+        "hints": [
+          "좋아요. 지금 만든 빈 공간을 다음 상자에 사용해요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 왼쪽으로 한 칸 밀어봐요."
+        ]
+      },
+      {
+        "id": "final-setup",
+        "boxKeys": [
+          "2,4",
+          "4,2",
+          "4,4",
+          "5,3"
+        ],
+        "boxPositions": [
+          "2,4",
+          "4,4",
+          "5,3",
+          "4,2"
+        ],
+        "targetBoxIndex": 2,
+        "direction": "right",
+        "hints": [
+          "좋아요. 이제 마지막 밀기 자리를 만들 차례예요.",
+          "가운데 오른쪽 상자와 그 뒤에 설 자리를 살펴봐요.",
+          "가운데 오른쪽 상자를 오른쪽으로 한 칸 밀어봐요."
+        ]
+      }
+    ],
+    "designSource": "microcosmos 8를 캠페인 규격에 맞춰 검증·배치",
+    "milestoneRewardPartId": "sun_gear"
+  }
+]

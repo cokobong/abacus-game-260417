@@ -231,3 +231,24 @@ MVP 이후에 확장할 것:
 - 퀘스트/업적
 - PWA 설치
 - 클라우드 동기화
+
+## 11. 현재 체크포인트 이후 추천 순서
+
+현재 구현은 온보딩, 저장/복원, 훈련 보상, active dinosaur, 상점 food 구매, 알 부화, 도감 등록까지 연결된 상태다. 다음 기능을 붙이기 전 상태 구조 점검은 `game-architecture-checkpoint.md`를 기준으로 한다.
+
+추천 순서:
+
+1. `abacus-curriculum.md` 작성
+2. `StageConfig` 타입/데이터 구조 추가
+3. MVP 1차 stage만 문제 생성기와 연결
+4. 훈련장 stage 선택 UI 추가
+5. 부모 설정/자동 추천은 나중에 구현
+6. 디자인 목업 재정리
+7. 컴포넌트 분리 / UI 리팩터링
+
+주의:
+
+- 당장은 디자인 리팩터링보다 상태 구조 안정화를 우선한다.
+- 알 런타임 구조는 `ownedEggs + activeEggId`를 기준으로 유지하고, legacy `egg`는 localStorage 호환 fallback으로만 다룬다.
+- 코스튬은 구매와 장착을 분리해 구현한다.
+- 주산 훈련 난이도는 `easy / normal / hard`가 아니라 stage id 기반으로 설계한다.

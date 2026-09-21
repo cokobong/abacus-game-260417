@@ -1,0 +1,31 @@
+.asset-review-page { min-height: 100vh; padding: 28px; color: #19352e; background: #edf5f0; font-family: system-ui, sans-serif; }
+.asset-review-heading { display: flex; justify-content: space-between; gap: 24px; max-width: 1320px; margin: 0 auto 20px; }
+.asset-review-heading h1 { margin: 2px 0 6px; font-size: clamp(26px, 4vw, 42px); line-height: 1.1; }
+.asset-review-heading p { margin: 0; color: #597069; }
+.asset-review-eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: #16836c !important; }
+.asset-review-summary { display: flex; min-width: 180px; align-items: center; justify-content: center; flex-direction: column; border: 1px solid #c5ddd5; border-radius: 18px; padding: 14px 20px; background: white; box-shadow: 0 8px 24px rgb(29 71 58 / 8%); }
+.asset-review-summary strong { font-size: 28px; color: #08715c; }
+.asset-review-summary span { color: #597069; font-size: 13px; }
+.asset-review-toolbar { position: sticky; z-index: 10; top: 12px; display: flex; max-width: 1320px; margin: 0 auto 22px; align-items: end; justify-content: space-between; gap: 16px; border: 1px solid #c5ddd5; border-radius: 16px; padding: 12px 16px; background: rgb(255 255 255 / 94%); box-shadow: 0 8px 28px rgb(29 71 58 / 12%); backdrop-filter: blur(12px); }
+.asset-review-toolbar label, .asset-review-toolbar fieldset { display: flex; align-items: center; gap: 8px; border: 0; padding: 0; margin: 0; font-weight: 750; }
+.asset-review-toolbar legend { float: left; margin-right: 8px; }
+.asset-review-toolbar select, .asset-review-toolbar button { border: 1px solid #b9d0c9; border-radius: 10px; padding: 8px 12px; color: #294b42; background: #f7fbf9; font: inherit; cursor: pointer; }
+.asset-review-toolbar button.is-active { border-color: #16836c; color: white; background: #16836c; }
+.asset-review-list { display: grid; max-width: 1320px; margin: auto; gap: 22px; }
+.asset-review-pair { border: 1px solid #cfe1db; border-radius: 20px; padding: 18px; background: white; box-shadow: 0 9px 28px rgb(29 71 58 / 7%); }
+.asset-review-pair h2 { margin: 0 0 14px; font-size: 20px; }
+.asset-review-pair h2 span { margin-left: 5px; border-radius: 999px; padding: 4px 9px; color: #08715c; background: #dff4ed; font-size: 12px; vertical-align: 3px; }
+.asset-review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.asset-review-card { min-width: 0; overflow: hidden; border: 1px solid #d5e3de; border-radius: 15px; background: #f9fbfa; }
+.asset-review-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 13px; }
+.asset-review-badge { flex: none; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; }
+.asset-review-badge.is-clear { color: #08715c; background: #d8f3e9; }
+.asset-review-badge.is-opaque { color: #a14420; background: #ffdfd2; }
+.asset-review-canvas { display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; }
+.asset-review-canvas.is-checker { background-color: #fff; background-image: linear-gradient(45deg, #d9dedc 25%, transparent 25%), linear-gradient(-45deg, #d9dedc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d9dedc 75%), linear-gradient(-45deg, transparent 75%, #d9dedc 75%); background-position: 0 0, 0 12px, 12px -12px, -12px 0; background-size: 24px 24px; }
+.asset-review-canvas.is-light { background: #f8e7a7; }
+.asset-review-canvas.is-dark { background: #17272d; }
+.asset-review-canvas img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.asset-review-card footer { padding: 10px 13px; color: #60756f; font-size: 12px; font-variant-numeric: tabular-nums; }
+.asset-review-missing { display: grid; min-height: 200px; place-items: center; border: 2px dashed #e6a589; border-radius: 15px; color: #a14420; }
+@media (max-width: 700px) { .asset-review-page { padding: 16px; } .asset-review-heading, .asset-review-toolbar { align-items: stretch; flex-direction: column; } .asset-review-toolbar fieldset { flex-wrap: wrap; } .asset-review-grid { grid-template-columns: 1fr; } }

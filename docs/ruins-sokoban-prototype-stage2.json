@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ruins-sokoban-2-1",
+    "status": "replaced-prototype",
+    "board": ["######", "# .. #", "# #$ #", "# $  #", "#  @E#", "######"],
+    "minPush": 5,
+    "minMove": 16
+  },
+  {
+    "id": "ruins-sokoban-2-2",
+    "status": "replaced-prototype",
+    "board": ["#######", "# . . #", "#  #  #", "# $$  #", "#  #$ #", "# @ .E#", "#######"],
+    "minPush": 6,
+    "minMove": 37
+  },
+  {
+    "id": "ruins-sokoban-2-3",
+    "status": "replaced-prototype",
+    "board": ["#######", "# .####", "# .   #", "# .$$ #", "#  $  #", "#  @ E#", "#######"],
+    "minPush": 8,
+    "minMove": 19
+  }
+]
